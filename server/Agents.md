@@ -1,454 +1,431 @@
-# Nepal Accounting Software - Authentication & Onboarding Specification (V1)
+# Phase 1 — Foundation (Authentication & Company Setup)
 
-## Overview
+## Objective
 
-Design and implement the authentication and onboarding flow for a modern web-based accounting software targeted at the Nepali market.
+Build the foundational infrastructure of the application.
 
-The software is **multi-tenant**, meaning each company has its own isolated data.
+At the end of this phase, a business owner should be able to:
 
+- Create an account
+- Sign in securely
+- Complete the onboarding wizard
+- Create their first company
+- Configure the Nepali fiscal year
+- Configure company settings
+- Access an empty dashboard
 
-Development phase
-Phase 1
-Authentication + Company + Onboarding
-                │
-                ▼
-Phase 2
-Accounting Foundation
-(Accounts, Fiscal Year, Customers, Products, Journals)
-                │
-                ▼
-Phase 3
-Transactions
-(Sales, Purchases, Expenses, Payments)
-                │
-                ▼
-Phase 4
-Reports
-(P&L, Balance Sheet, Trial Balance, Ledgers)
-                │
-                ▼
-Phase 5
-Nepal Features
-(BS Calendar, VAT, PAN, Tax Reports)
-                │
-                ▼
-Phase 6
-Enterprise Features
-(Roles, Multi-branch, POS, AI, Integrations)
+> **Phase 1 does NOT include accounting, inventory, contacts, products, transactions, or reports.**
 
 ---
 
-# Core Principles
+# Architecture
 
-- A user account is separate from a company.
-- A user can own multiple companies in the future.
-- A company can have multiple users in the future.
-- Every business record (sales, purchases, inventory, expenses, etc.) belongs to exactly one company.
-- Authentication should use JWT Access Tokens + Refresh Tokens.
-- Passwords must be hashed using bcrypt.
-
----
-
-# User Journey
-
-## 1. Landing Page
-
-Provide two actions:
-
-- Sign In
-- Create Account
-
----
-
-# 2. User Registration
-
-Required fields:
-
-- Full Name
-- Email Address
-- Password
-- Confirm Password
-
-Validation:
-
-- Email must be unique.
-- Password minimum 8 characters.
-- Password should contain uppercase, lowercase, number, and special character.
-- Store password as a bcrypt hash.
-
-Create only a **User** record.
-
-Do NOT create a company during registration.
-
-Example:
-
-```json
-{
-  "_id": "...",
-  "name": "John Doe",
-  "email": "john@example.com",
-  "password": "hashed_password",
-  "emailVerified": false,
-  "createdAt": "..."
-}
+```
+User
+│
+├── Authentication
+│
+├── Company
+│
+├── Membership
+│
+├── Fiscal Year
+│
+├── Company Settings
+│
+└── Dashboard
 ```
 
-After successful registration:
+---
 
-- Automatically sign the user in.
-- Redirect to the onboarding flow.
+# User Flow
+
+```
+Landing Page
+      │
+      ▼
+Register
+      │
+      ▼
+Login
+      │
+      ▼
+Check Onboarding Status
+      │
+      ├── Completed → Dashboard
+      │
+      └── Not Completed
+              │
+              ▼
+      Onboarding Wizard
+              │
+              ├── Company Information
+              ├── Fiscal Year
+              ├── Company Settings
+              └── Finish
+              │
+              ▼
+          Dashboard
+```
 
 ---
 
-# 3. Onboarding
+# Module 1 — Authentication
 
-If the authenticated user does not belong to any company, automatically redirect to onboarding.
+## Features
 
-Users should not access the dashboard until onboarding is completed.
+- Register
+- Login
+- Logout
+- Refresh Access Token
 
 ---
 
-# Step 1 – Create Company
+## Register
 
-Collect:
+### Route
 
-- Company Name
-- PAN Number
-- VAT Registered (Yes / No)
+```
+POST /auth/register
+```
 
-If VAT Registered:
+### Fields
 
-- VAT Number
+| Field | Required |
+|--------|----------|
+| Full Name | ✅ |
+| Email | ✅ |
+| Password | ✅ |
+| Confirm Password | ✅ |
 
-Optional:
+### Validation
 
-- Phone Number
-- Email
-- Address
-- Company Logo
+- Email must be unique.
+- Password must contain:
+  - Minimum 8 characters
+  - Uppercase letter
+  - Lowercase letter
+  - Number
+  - Special character
 
-Create:
+Passwords must be hashed using bcrypt.
+
+---
+
+## Login
+
+### Route
+
+```
+POST /auth/login
+```
+
+Generate
+
+- Access Token (15 minutes)
+- Refresh Token (30 days)
+
+Store Refresh Token in database.
+
+Send Refresh Token using an HTTP-only cookie.
+
+---
+
+## Refresh Token
+
+```
+POST /auth/refresh
+```
+
+Returns a new Access Token.
+
+---
+
+## Logout
+
+```
+POST /auth/logout
+```
+
+Actions
+
+- Delete Refresh Token
+- Clear Refresh Cookie
+
+---
+
+# Module 2 — Company
+
+After the first login, users must create a company.
+
+---
+
+## Route
+
+```
+POST /companies
+```
+
+---
+
+## Fields
+
+| Field | Required |
+|--------|----------|
+| Company Name | ✅ |
+| PAN Number | ✅ |
+| VAT Registered | ✅ |
+| VAT Number | Conditional |
+| Phone | Optional |
+| Email | Optional |
+| Address | Optional |
+| Logo | Optional |
+
+---
+
+## Example
 
 ```json
-Company
 {
   "_id": "...",
   "name": "ABC Traders",
-  "panNumber": "...",
+  "panNumber": "123456789",
   "vatRegistered": true,
-  "vatNumber": "...",
-  "phone": "...",
-  "email": "...",
-  "address": "...",
-  "logo": "...",
-  "createdAt": "..."
+  "vatNumber": "987654321",
+  "phone": "",
+  "email": "",
+  "address": "",
+  "logo": ""
 }
 ```
 
 ---
 
-# Step 2 – Nepal Fiscal Year
+# Module 3 — Membership
 
-The software must support the Nepali fiscal year (Bikram Sambat).
+A user belongs to a company through a Membership.
 
-Default example:
+Never store `companyId` inside the User document.
 
-Fiscal Year:
-2082/83
+---
 
-Start:
-2082-04-01 (Shrawan 1)
-
-End:
-2083-03-31 (Ashadh End)
-
-Allow selecting:
-
-- Current Fiscal Year
-- Previous Fiscal Years
-
-Store internally:
+## Membership
 
 ```json
 {
-    "name": "2082/83",
-    "startDateBS": "2082-04-01",
-    "endDateBS": "2083-03-31"
+  "userId": "...",
+  "companyId": "...",
+  "role": "OWNER"
 }
 ```
 
-The selected fiscal year becomes the company's active fiscal year.
+---
 
-Future feature:
+## Future Roles
 
-- Close Fiscal Year
-- Open New Fiscal Year
-- Carry Forward Balances
+- OWNER
+- ADMIN
+- ACCOUNTANT
+- STAFF
 
 ---
 
-# Step 3 – Business Type
+# Module 4 — Fiscal Year
 
-Allow selecting one:
+Support Nepali fiscal years.
 
-- Retail Shop
+Default example
+
+```
+2082/83
+```
+
+Store both BS and AD dates.
+
+---
+
+## Fields
+
+| Field | Description |
+|--------|-------------|
+| Name | 2082/83 |
+| BS Start Date | 2082-04-01 |
+| BS End Date | 2083-03-31 |
+| AD Start Date | 2025-07-17 |
+| AD End Date | 2026-07-16 |
+| Active | true |
+
+---
+
+## Business Rules
+
+- One company can have many fiscal years.
+- Only one fiscal year may be active.
+- Every company must always have one active fiscal year.
+
+---
+
+# Module 5 — Company Settings
+
+Instead of scattering configuration throughout the system, store company-wide settings in one document.
+
+---
+
+## Route
+
+```
+POST /settings
+```
+
+---
+
+## Fields
+
+```json
+{
+  "companyId": "...",
+  "businessType": "RETAIL",
+  "currency": "NPR",
+  "currencySymbol": "Rs.",
+  "language": "en",
+  "dateFormat": "BS",
+  "timezone": "Asia/Kathmandu",
+  "decimalPlaces": 2,
+  "allowNegativeStock": false
+}
+```
+
+---
+
+## Business Types
+
+- Retail
 - Wholesale
-- Service Business
+- Service
 - Manufacturing
 - Pharmacy
 - Restaurant
 - Other
 
-Business type will be used later to generate default Chart of Accounts and reports.
+---
+
+## Default Values
+
+| Setting | Value |
+|----------|-------|
+| Currency | NPR |
+| Currency Symbol | Rs. |
+| Language | English |
+| Date Format | BS |
+| Timezone | Asia/Kathmandu |
+| Decimal Places | 2 |
+| Negative Stock | Disabled |
 
 ---
 
-# Step 4 – Default Setup
+# Module 6 — Onboarding
 
-Automatically create:
-
-Default Chart of Accounts
-
-Assets
-
-- Cash
-- Bank
-- Inventory
-
-Liabilities
-
-- Accounts Payable
-
-Income
-
-- Sales
-
-Expenses
-
-- Rent
-- Salary
-- Utilities
-
-Also create:
-
-- Default Cash Account
-- Default Inventory Account
-- Default Sales Account
+Users cannot access the dashboard until onboarding is complete.
 
 ---
 
-# Step 5 – Membership
+## Steps
 
-Create a membership document.
+```
+Company Information
 
-Do NOT store companyId directly inside User.
+↓
 
-Example:
+Fiscal Year
+
+↓
+
+Company Settings
+
+↓
+
+Finish
+```
+
+---
+
+## Completion
+
+Set
 
 ```json
 {
-    "_id":"...",
-    "userId":"...",
-    "companyId":"...",
-    "role":"OWNER"
+  "onboardingCompleted": true
 }
 ```
 
-Reason:
-
-Future support for:
-
-- Multiple companies
-- Multiple users
-- Invitations
-- Permissions
+Store this flag on the **Company** document.
 
 ---
 
-# Step 6 – Redirect
+# Module 7 — Company Context Middleware
 
-After onboarding:
+Every authenticated request must resolve:
 
-Redirect to Dashboard.
-
----
-
-# Login
-
-Login fields:
-
-- Email
-- Password
-
-Flow:
-
-Validate credentials
+```
+JWT
 
 ↓
 
-Generate JWT Access Token
+Authenticated User
 
 ↓
 
-Generate Refresh Token
+Membership
 
 ↓
 
-Redirect to Dashboard
+Company
 
----
+↓
 
-# JWT
+Active Fiscal Year
 
-Access Token
+↓
 
-Contains only:
-
-```json
-{
-    "sub":"userId",
-    "email":"..."
-}
+Company Settings
 ```
 
-Never include:
+Attach the following to the request context:
+
+- user
+- company
+- membership
+- fiscalYear
+- settings
+
+Reject requests if:
+
+- User is not authenticated.
+- User is not a member of the company.
+- Company does not exist.
+
+---
+
+# Module 8 — Dashboard
+
+Display only:
 
 - Company Name
-- PAN
-- VAT
-- Permissions
-- Role
+- Business Type
+- Active Fiscal Year
+- Logged-in User
+- Current Date
 
-Those should always come from the database.
-
----
-
-# Refresh Token
-
-Store refresh tokens in database.
-
-Suggested expiry:
-
-Access Token
-
-15 minutes
-
-Refresh Token
-
-30 days
-
-Flow:
-
-Login
-
-↓
-
-Access Token
-
-↓
-
-Refresh Token
-
-↓
-
-Access expires
-
-↓
-
-/auth/refresh
-
-↓
-
-New Access Token
-
----
-
-# Dashboard Access
-
-Every request must:
-
-1. Verify JWT.
-2. Identify User.
-3. Identify Active Company.
-4. Verify Membership.
-5. Continue.
-
-Never return another company's data.
-
-Example:
-
-```
-GET /sales
-
-WHERE companyId = activeCompany
-```
-
-Company isolation is mandatory.
-
----
-
-# Active Company
-
-Store active company in the user's session or securely manage it on the client.
-
-Future support:
-
-```
-Switch Company
-
-ABC Traders
-
-XYZ Suppliers
-
-Cafe Nepal
-```
-
-Changing the active company changes all displayed data.
-
----
-
-# Roles
-
-V1
-
-OWNER
-
-STAFF
-
-OWNER
-
-Can:
-
-- Manage company
-- Create users (future)
-- Sales
-- Purchases
-- Expenses
-- Products
-- Reports
-- Settings
-
-STAFF
-
-Can:
+Placeholder cards:
 
 - Sales
 - Purchases
 - Expenses
+- Profit
+- Cash
 
-Cannot:
-
-- Delete Company
-- Manage Users
-- Settings
-
-Future roles:
-
-- Accountant
-- Manager
-- Cashier
-- Auditor
-- Viewer
+No accounting calculations are required.
 
 ---
 
@@ -456,125 +433,81 @@ Future roles:
 
 ```
 users
+
 companies
+
 memberships
-refresh_tokens
-fiscal_years
-accounts
-customers
-suppliers
-products
-sales
-purchases
-expenses
-journal_entries
+
+refreshTokens
+
+fiscalYears
+
+settings
 ```
 
 ---
 
-# Middleware Flow
+# Folder Structure
 
 ```
-Request
+src/
 
-↓
+foundation/
+├── auth/
+├── onboarding/
+├── companies/
+├── memberships/
+├── fiscal-years/
+├── settings/
+└── dashboard/
 
-Verify JWT
+shared/
+├── middleware/
+├── utils/
+├── validators/
+└── constants/
 
-↓
-
-Find User
-
-↓
-
-Find Membership
-
-↓
-
-Determine Active Company
-
-↓
-
-Authorize Role
-
-↓
-
-Continue
+config/
+database/
 ```
 
 ---
 
-# Security Requirements
+# Security
 
-- Hash passwords with bcrypt.
-- Use JWT Access + Refresh Tokens.
-- Validate all input.
-- Rate-limit login endpoint.
-- Never expose password hashes.
-- Protect all APIs with authentication middleware.
-- Every query must include companyId filtering.
-- Log authentication failures.
-
----
-
-# Future Enhancements (Not V1)
-
-- Email verification
-- Password reset
-- Two-factor authentication (2FA)
-- Google Login
-- Microsoft Login
-- Company invitations
-- Multi-company switcher
-- Audit logs
-- Session management
-- Device management
+- bcrypt password hashing
+- JWT Access Token
+- Refresh Token
+- HTTP-only Refresh Cookie
+- Protected Routes
+- Request Validation
+- Rate Limiting
+- CORS Configuration
+- Helmet Security Headers
 
 ---
 
-# Expected User Flow
+# Business Rules
 
-```
-Landing Page
-        │
-        ▼
-Create Account
-        │
-        ▼
-Login
-        │
-        ▼
-Create Company
-        │
-        ▼
-Select Nepali Fiscal Year
-        │
-        ▼
-Select Business Type
-        │
-        ▼
-Generate Default Accounts
-        │
-        ▼
-Create Membership
-        │
-        ▼
-Dashboard
-```
+- One user may belong to multiple companies.
+- One company may have multiple users.
+- Every company must have one active fiscal year.
+- Every company has one settings document.
+- Dashboard is inaccessible until onboarding is completed.
+- Company context must be resolved before accessing protected resources.
 
 ---
 
 # Definition of Done
 
-The feature is complete when:
-
-- A new user can register.
-- A new company can be created.
-- Nepali fiscal year is configured during onboarding.
-- Business type is selected.
-- Default chart of accounts is generated.
-- Membership is created.
-- JWT authentication works correctly.
-- Refresh token flow works.
-- All company data is isolated by `companyId`.
-- The user is redirected to the dashboard after successful onboarding.
+- ✅ User registration works.
+- ✅ Secure login/logout works.
+- ✅ Refresh token authentication works.
+- ✅ Company creation works.
+- ✅ Membership is created automatically.
+- ✅ Nepali fiscal year is initialized.
+- ✅ Company settings are created.
+- ✅ Onboarding wizard is completed successfully.
+- ✅ Company context middleware is implemented.
+- ✅ Dashboard is accessible only after onboarding.
+- ✅ All protected APIs require authentication.
