@@ -1,0 +1,153 @@
+const test = require("node:test");
+const assert = require("node:assert/strict");
+
+const { loadWithMocks } = require("./helpers/load-with-mocks");
+
+test("bootstrapAccountingForCompany creates default fiscal year, groups, ledgers, and voucher sequence", async () => {
+  const calls = {
+    fiscalYear: null,
+    groups: null,
+    ledgers: null,
+    sequence: null
+  };
+
+  const { module: bootstrapService, restore } = loadWithMocks(
+    "../../src/services/accountingBootstrapService",
+    {
+      "../models/FiscalYear": {
+        FiscalYear: {
+          create: async (payload) => {
+            calls.fiscalYear = payload;
+            return { _id: "fy-1", ...payload };
+          }
+        }
+      },
+      "../models/AccountGroup": {
+        AccountGroup: {
+          insertMany: async (payload) => {
+            calls.groups = payload;
+          }
+        }
+      },
+      "../models/Ledger": {
+        Ledger: {
+          insertMany: async (payload) => {
+            calls.ledgers = payload;
+          }
+        }
+      },
+      "../models/VoucherSequence": {
+        VoucherSequence: {
+          create: async (payload) => {
+            calls.sequence = payload;
+          }
+        }
+      }
+    }
+  );
+
+  try {
+    const company = {
+      _id: "company-1",
+      activeFiscalYear: {
+        name: "2082/83",
+        startDateBS: "2082-04-01",
+        endDateBS: "2083-03-31"
+      }
+    };
+
+    const fiscalYear = await bootstrapService.bootstrapAccountingForCompany(company);
+
+    assert.equal(fiscalYear._id, "fy-1");
+    assert.equal(calls.fiscalYear.companyId, "company-1");
+    assert.equal(calls.groups.length, 11);
+    assert.equal(calls.ledgers.length, 13);
+    assert.equal(calls.ledgers[0].fiscalYearId, "fy-1");
+    assert.deepEqual(calls.sequence, {
+      companyId: "company-1",
+      type: "JV",
+      currentNumber: 0
+    });
+  } finally {
+    restore();
+  }
+});
+
+test("createFiscalYear deactivates the current year and updates company active fiscal year", async () => {
+  let saved = false;
+  let companyUpdate = null;
+
+  const activeFiscalYear = {
+    isActive: true,
+    save: async () => {
+      saved = true;
+    }
+  };
+
+  const { module: fiscalYearService, restore } = loadWithMocks(
+    "../../src/services/fiscalYearService",
+    {
+      "../models/FiscalYear": {
+        FiscalYear: {
+          findOne: async () => activeFiscalYear,
+          create: async (payload) => ({
+            _id: "fy-2",
+            createdAt: new Date("2026-07-17T00:00:00Z"),
+            isLocked: false,
+            ...payload
+          })
+        }
+      },
+      "../models/Company": {
+        Company: {
+          findByIdAndUpdate: async (_companyId, payload) => {
+            companyUpdate = payload;
+          }
+        }
+      }
+    }
+  );
+
+  try {
+    const result = await fiscalYearService.createFiscalYear("company-1", {
+      name: "2081/82",
+      startDateBS: "2081-04-01",
+      endDateBS: "2082-03-31"
+    });
+
+    assert.equal(saved, true);
+    assert.equal(activeFiscalYear.isActive, false);
+    assert.equal(result.id, "fy-2");
+    assert.equal(companyUpdate.activeFiscalYearId, "fy-2");
+    assert.equal(companyUpdate.activeFiscalYear.name, "2081/82");
+  } finally {
+    restore();
+  }
+});
+
+test("switchFiscalYear throws when the fiscal year does not belong to the company", async () => {
+  const { module: fiscalYearService, restore } = loadWithMocks(
+    "../../src/services/fiscalYearService",
+    {
+      "../models/FiscalYear": {
+        FiscalYear: {
+          findOne: async () => null
+        }
+      },
+      "../models/Company": {
+        Company: {
+          findByIdAndUpdate: async () => {}
+        }
+      }
+    }
+  );
+
+  try {
+    await assert.rejects(
+      () => fiscalYearService.switchFiscalYear("company-1", "fy-missing"),
+      (error) => error.statusCode === 404
+    );
+  } finally {
+    restore();
+  }
+});
