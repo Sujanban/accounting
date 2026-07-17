@@ -48,7 +48,7 @@ async function issueTokenPair(user, metadata = {}) {
   };
 }
 
-async function registerUser({ name, email, phone, password }, metadata) {
+async function registerUser({ name, email, password }, metadata) {
   const normalizedEmail = email.trim().toLowerCase();
   const existingUser = await User.findOne({ email: normalizedEmail });
 
@@ -61,16 +61,17 @@ async function registerUser({ name, email, phone, password }, metadata) {
   const user = await User.create({
     name: name.trim(),
     email: normalizedEmail,
-    phone: phone.trim(),
     passwordHash
   });
 
-  const tokens = await issueTokenPair(user, metadata);
-  const session = await buildSessionPayload(user);
-
   return {
-    tokens,
-    session
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      emailVerified: user.emailVerified,
+      isActive: user.isActive
+    }
   };
 }
 

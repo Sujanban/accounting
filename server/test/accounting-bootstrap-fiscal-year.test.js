@@ -8,7 +8,7 @@ test("bootstrapAccountingForCompany creates default fiscal year, groups, ledgers
     fiscalYear: null,
     groups: null,
     ledgers: null,
-    sequence: null
+    sequences: null
   };
 
   const { module: bootstrapService, restore } = loadWithMocks(
@@ -38,8 +38,8 @@ test("bootstrapAccountingForCompany creates default fiscal year, groups, ledgers
       },
       "../models/VoucherSequence": {
         VoucherSequence: {
-          create: async (payload) => {
-            calls.sequence = payload;
+          insertMany: async (payload) => {
+            calls.sequences = payload;
           }
         }
       }
@@ -52,7 +52,9 @@ test("bootstrapAccountingForCompany creates default fiscal year, groups, ledgers
       activeFiscalYear: {
         name: "2082/83",
         startDateBS: "2082-04-01",
-        endDateBS: "2083-03-31"
+        endDateBS: "2083-03-31",
+        startDateAD: new Date("2025-07-17T00:00:00Z"),
+        endDateAD: new Date("2026-07-16T00:00:00Z")
       }
     };
 
@@ -60,14 +62,22 @@ test("bootstrapAccountingForCompany creates default fiscal year, groups, ledgers
 
     assert.equal(fiscalYear._id, "fy-1");
     assert.equal(calls.fiscalYear.companyId, "company-1");
+    assert.equal(
+      calls.fiscalYear.startDateAD.toISOString(),
+      "2025-07-17T00:00:00.000Z"
+    );
     assert.equal(calls.groups.length, 11);
     assert.equal(calls.ledgers.length, 13);
     assert.equal(calls.ledgers[0].fiscalYearId, "fy-1");
-    assert.deepEqual(calls.sequence, {
-      companyId: "company-1",
-      type: "JV",
-      currentNumber: 0
-    });
+    assert.equal(calls.sequences.length, 6);
+    assert.deepEqual(calls.sequences.map((item) => item.type), [
+      "JV",
+      "SV",
+      "PV",
+      "RV",
+      "PMV",
+      "CV"
+    ]);
   } finally {
     restore();
   }
@@ -112,7 +122,9 @@ test("createFiscalYear deactivates the current year and updates company active f
     const result = await fiscalYearService.createFiscalYear("company-1", {
       name: "2081/82",
       startDateBS: "2081-04-01",
-      endDateBS: "2082-03-31"
+      endDateBS: "2082-03-31",
+      startDateAD: new Date("2024-07-16T00:00:00Z"),
+      endDateAD: new Date("2025-07-16T00:00:00Z")
     });
 
     assert.equal(saved, true);
@@ -120,6 +132,10 @@ test("createFiscalYear deactivates the current year and updates company active f
     assert.equal(result.id, "fy-2");
     assert.equal(companyUpdate.activeFiscalYearId, "fy-2");
     assert.equal(companyUpdate.activeFiscalYear.name, "2081/82");
+    assert.equal(
+      companyUpdate.activeFiscalYear.startDateAD.toISOString(),
+      "2024-07-16T00:00:00.000Z"
+    );
   } finally {
     restore();
   }

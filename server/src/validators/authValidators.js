@@ -13,13 +13,6 @@ function validateRegister(body) {
     errors.push({ field: "email", message: "A valid email is required." });
   }
 
-  if (!body.phone || body.phone.trim().length < 7) {
-    errors.push({
-      field: "phone",
-      message: "A valid phone number is required."
-    });
-  }
-
   if (!body.password || body.password.length < 8) {
     errors.push({
       field: "password",

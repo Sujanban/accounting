@@ -1,13 +1,3 @@
-const BUSINESS_TYPES = new Set([
-  "Retail Shop",
-  "Wholesale",
-  "Service Business",
-  "Manufacturing",
-  "Pharmacy",
-  "Restaurant",
-  "Other"
-]);
-
 function validateCreateCompany(body) {
   const errors = [];
 
@@ -48,18 +38,14 @@ function validateCreateCompany(body) {
     typeof body.fiscalYear !== "object" ||
     !body.fiscalYear.name ||
     !body.fiscalYear.startDateBS ||
-    !body.fiscalYear.endDateBS
+    !body.fiscalYear.endDateBS ||
+    !body.fiscalYear.startDateAD ||
+    !body.fiscalYear.endDateAD
   ) {
     errors.push({
       field: "fiscalYear",
-      message: "Fiscal year name, startDateBS, and endDateBS are required."
-    });
-  }
-
-  if (!BUSINESS_TYPES.has(body.businessType)) {
-    errors.push({
-      field: "businessType",
-      message: "A valid business type is required."
+      message:
+        "Fiscal year name, BS dates, and AD dates are required."
     });
   }
 

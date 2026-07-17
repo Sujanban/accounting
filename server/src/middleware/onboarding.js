@@ -1,7 +1,7 @@
 const { ApiError } = require("../utils/apiError");
 
 function requireCompletedOnboarding(request, _response, next) {
-  if (request.auth.user.onboardingStatus !== "completed") {
+  if (!request.context.company || !request.context.company.onboardingCompleted) {
     return next(
       new ApiError(
         403,
@@ -10,11 +10,11 @@ function requireCompletedOnboarding(request, _response, next) {
     );
   }
 
-  if (!request.auth.activeCompanyId) {
+  if (!request.context.settings) {
     return next(
       new ApiError(
         403,
-        "An active company is required before accessing this resource."
+        "Company settings must be configured before accessing this resource."
       )
     );
   }

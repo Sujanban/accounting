@@ -1,5 +1,7 @@
 const { Company } = require("../models/Company");
+const { FiscalYear } = require("../models/FiscalYear");
 const { Membership } = require("../models/Membership");
+const { Setting } = require("../models/Setting");
 const { User } = require("../models/User");
 const { ApiError } = require("../utils/apiError");
 const { asyncHandler } = require("../utils/asyncHandler");
@@ -28,6 +30,10 @@ const requireAuth = asyncHandler(async (request, _response, next) => {
   }
 
   request.auth = {
+    user
+  };
+
+  request.context = {
     user
   };
 
@@ -61,6 +67,7 @@ const resolveActiveCompany = asyncHandler(async (request, _response, next) => {
   request.auth.memberships = memberships;
   request.auth.membership = activeMembership || null;
   request.auth.activeCompanyId = activeMembership ? activeMembership.companyId : null;
+  request.context.membership = activeMembership || null;
 
   next();
 });
@@ -77,14 +84,31 @@ const resolveActiveFiscalYear = asyncHandler(async (request, _response, next) =>
     throw new ApiError(404, "Active company was not found.");
   }
 
+  request.context.company = company;
+
   const fiscalYearIdHeader = request.get("x-fiscal-year-id");
 
   if (fiscalYearIdHeader) {
     request.auth.activeFiscalYearId = fiscalYearIdHeader;
-    return next();
+  } else {
+    request.auth.activeFiscalYearId = company.activeFiscalYearId || null;
   }
 
-  request.auth.activeFiscalYearId = company.activeFiscalYearId || null;
+  const fiscalYear = request.auth.activeFiscalYearId
+    ? await FiscalYear.findOne({
+        _id: request.auth.activeFiscalYearId,
+        companyId: company._id
+      }).lean()
+    : null;
+
+  if (!fiscalYear) {
+    throw new ApiError(404, "Active fiscal year was not found.");
+  }
+
+  const settings = await Setting.findOne({ companyId: company._id }).lean();
+
+  request.context.fiscalYear = fiscalYear;
+  request.context.settings = settings;
   next();
 });
 

@@ -8,7 +8,7 @@ const createCompany = asyncHandler(async (request, response) => {
   return sendSuccess(
     response,
     201,
-    "Company created successfully. Onboarding completed.",
+    "Company created successfully.",
     result
   );
 });

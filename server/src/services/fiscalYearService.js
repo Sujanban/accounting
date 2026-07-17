@@ -35,8 +35,8 @@ async function createFiscalYear(companyId, payload) {
     name: payload.name.trim(),
     startDateBS: payload.startDateBS.trim(),
     endDateBS: payload.endDateBS.trim(),
-    startDateAD: payload.startDateAD || null,
-    endDateAD: payload.endDateAD || null,
+    startDateAD: payload.startDateAD ? new Date(payload.startDateAD) : null,
+    endDateAD: payload.endDateAD ? new Date(payload.endDateAD) : null,
     isActive: true,
     isLocked: false
   });
@@ -46,7 +46,9 @@ async function createFiscalYear(companyId, payload) {
     activeFiscalYear: {
       name: fiscalYear.name,
       startDateBS: fiscalYear.startDateBS,
-      endDateBS: fiscalYear.endDateBS
+      endDateBS: fiscalYear.endDateBS,
+      startDateAD: fiscalYear.startDateAD,
+      endDateAD: fiscalYear.endDateAD
     }
   });
 
@@ -69,7 +71,9 @@ async function switchFiscalYear(companyId, fiscalYearId) {
     activeFiscalYear: {
       name: fiscalYear.name,
       startDateBS: fiscalYear.startDateBS,
-      endDateBS: fiscalYear.endDateBS
+      endDateBS: fiscalYear.endDateBS,
+      startDateAD: fiscalYear.startDateAD,
+      endDateAD: fiscalYear.endDateAD
     }
   });
 

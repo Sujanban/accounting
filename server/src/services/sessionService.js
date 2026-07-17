@@ -1,4 +1,5 @@
 const { Membership } = require("../models/Membership");
+const { Setting } = require("../models/Setting");
 
 function mapCompany(company) {
   if (!company) {
@@ -15,9 +16,28 @@ function mapCompany(company) {
     email: company.email,
     address: company.address,
     logo: company.logo,
+    onboardingCompleted: company.onboardingCompleted,
     activeFiscalYearId: company.activeFiscalYearId,
-    activeFiscalYear: company.activeFiscalYear,
-    businessType: company.businessType
+    activeFiscalYear: company.activeFiscalYear
+  };
+}
+
+function mapSettings(settings) {
+  if (!settings) {
+    return null;
+  }
+
+  return {
+    id: settings._id,
+    companyId: settings.companyId,
+    businessType: settings.businessType,
+    currency: settings.currency,
+    currencySymbol: settings.currencySymbol,
+    language: settings.language,
+    dateFormat: settings.dateFormat,
+    timezone: settings.timezone,
+    decimalPlaces: settings.decimalPlaces,
+    allowNegativeStock: settings.allowNegativeStock
   };
 }
 
@@ -40,14 +60,16 @@ async function buildSessionPayload(user, activeCompanyId = null) {
         String(membership.company.id) === String(activeCompanyId)
     ) || normalizedMemberships[0] || null;
 
+  const settings = resolvedActiveMembership && resolvedActiveMembership.company
+    ? await Setting.findOne({ companyId: resolvedActiveMembership.company.id }).lean()
+    : null;
+
   return {
     user: {
       id: user._id,
       name: user.name,
       email: user.email,
-      phone: user.phone,
       emailVerified: user.emailVerified,
-      onboardingStatus: user.onboardingStatus,
       isActive: user.isActive
     },
     activeCompany: resolvedActiveMembership ? resolvedActiveMembership.company : null,
@@ -57,6 +79,7 @@ async function buildSessionPayload(user, activeCompanyId = null) {
           role: resolvedActiveMembership.role
         }
       : null,
+    activeSettings: mapSettings(settings),
     memberships: normalizedMemberships
   };
 }

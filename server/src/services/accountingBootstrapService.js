@@ -33,12 +33,16 @@ const DEFAULT_LEDGERS = [
   { name: "Miscellaneous Expense", accountGroup: "Indirect Expenses" }
 ];
 
+const DEFAULT_VOUCHER_SEQUENCES = ["JV", "SV", "PV", "RV", "PMV", "CV"];
+
 async function bootstrapAccountingForCompany(company) {
   const fiscalYear = await FiscalYear.create({
     companyId: company._id,
     name: company.activeFiscalYear.name,
     startDateBS: company.activeFiscalYear.startDateBS,
     endDateBS: company.activeFiscalYear.endDateBS,
+    startDateAD: company.activeFiscalYear.startDateAD || null,
+    endDateAD: company.activeFiscalYear.endDateAD || null,
     isActive: true
   });
 
@@ -66,11 +70,13 @@ async function bootstrapAccountingForCompany(company) {
     }))
   );
 
-  await VoucherSequence.create({
-    companyId: company._id,
-    type: "JV",
-    currentNumber: 0
-  });
+  await VoucherSequence.insertMany(
+    DEFAULT_VOUCHER_SEQUENCES.map((type) => ({
+      companyId: company._id,
+      type,
+      currentNumber: 0
+    }))
+  );
 
   return fiscalYear;
 }

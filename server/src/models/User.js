@@ -14,11 +14,6 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true
     },
-    phone: {
-      type: String,
-      required: true,
-      trim: true
-    },
     passwordHash: {
       type: String,
       required: true
@@ -30,11 +25,6 @@ const userSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true
-    },
-    onboardingStatus: {
-      type: String,
-      enum: ["registered", "completed"],
-      default: "registered"
     }
   },
   {

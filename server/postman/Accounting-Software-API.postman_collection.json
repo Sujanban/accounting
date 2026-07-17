@@ -25,6 +25,10 @@
     {
       "key": "fiscalYearId",
       "value": ""
+    },
+    {
+      "key": "refreshCookie",
+      "value": ""
     }
   ],
   "item": [
@@ -52,7 +56,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"name\": \"Sujan Ban\",\n  \"email\": \"sujan@example.com\",\n  \"phone\": \"+9779800000000\",\n  \"password\": \"StrongPass123!\",\n  \"confirmPassword\": \"StrongPass123!\"\n}"
+          "raw": "{\n  \"name\": \"Sujan Ban\",\n  \"email\": \"sujan@example.com\",\n  \"password\": \"StrongPass123!\",\n  \"confirmPassword\": \"StrongPass123!\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/api/auth/register",
@@ -88,14 +92,10 @@
         "method": "POST",
         "header": [
           {
-            "key": "Content-Type",
-            "value": "application/json"
+            "key": "Cookie",
+            "value": "refreshToken={{refreshCookie}}"
           }
         ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
-        },
         "url": {
           "raw": "{{baseUrl}}/api/auth/refresh",
           "host": ["{{baseUrl}}"],
@@ -109,14 +109,10 @@
         "method": "POST",
         "header": [
           {
-            "key": "Content-Type",
-            "value": "application/json"
+            "key": "Cookie",
+            "value": "refreshToken={{refreshCookie}}"
           }
         ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
-        },
         "url": {
           "raw": "{{baseUrl}}/api/auth/logout",
           "host": ["{{baseUrl}}"],
@@ -162,12 +158,41 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"name\": \"Acme Accounting Pvt Ltd\",\n  \"panNumber\": \"123456789\",\n  \"vatRegistered\": true,\n  \"vatNumber\": \"VAT-123456\",\n  \"phone\": \"+9779800000000\",\n  \"email\": \"info@acme.com\",\n  \"address\": \"Kathmandu, Nepal\",\n  \"logo\": \"https://cdn.example.com/logo.png\",\n  \"fiscalYear\": {\n    \"name\": \"2082/83\",\n    \"startDateBS\": \"2082-04-01\",\n    \"endDateBS\": \"2083-03-31\"\n  },\n  \"businessType\": \"Retail Shop\"\n}"
+          "raw": "{\n  \"name\": \"Acme Accounting Pvt Ltd\",\n  \"panNumber\": \"123456789\",\n  \"vatRegistered\": true,\n  \"vatNumber\": \"VAT-123456\",\n  \"phone\": \"+9779800000000\",\n  \"email\": \"info@acme.com\",\n  \"address\": \"Kathmandu, Nepal\",\n  \"logo\": \"https://cdn.example.com/logo.png\",\n  \"fiscalYear\": {\n    \"name\": \"2082/83\",\n    \"startDateBS\": \"2082-04-01\",\n    \"endDateBS\": \"2083-03-31\",\n    \"startDateAD\": \"2025-07-17\",\n    \"endDateAD\": \"2026-07-16\"\n  }\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/api/companies",
           "host": ["{{baseUrl}}"],
           "path": ["api", "companies"]
+        }
+      }
+    },
+    {
+      "name": "Create Company Settings",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "x-company-id",
+            "value": "{{companyId}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"businessType\": \"RETAIL\",\n  \"currency\": \"NPR\",\n  \"currencySymbol\": \"Rs.\",\n  \"language\": \"en\",\n  \"dateFormat\": \"BS\",\n  \"timezone\": \"Asia/Kathmandu\",\n  \"decimalPlaces\": 2,\n  \"allowNegativeStock\": false\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/settings",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "settings"]
         }
       }
     },

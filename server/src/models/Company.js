@@ -42,6 +42,10 @@ const companySchema = new mongoose.Schema(
       trim: true,
       default: null
     },
+    onboardingCompleted: {
+      type: Boolean,
+      default: false
+    },
     activeFiscalYear: {
       name: {
         type: String,
@@ -57,52 +61,20 @@ const companySchema = new mongoose.Schema(
         type: String,
         required: true,
         trim: true
+      },
+      startDateAD: {
+        type: Date,
+        default: null
+      },
+      endDateAD: {
+        type: Date,
+        default: null
       }
     },
     activeFiscalYearId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "FiscalYear",
       default: null
-    },
-    businessType: {
-      type: String,
-      enum: [
-        "Retail Shop",
-        "Wholesale",
-        "Service Business",
-        "Manufacturing",
-        "Pharmacy",
-        "Restaurant",
-        "Other"
-      ],
-      required: true
-    },
-    defaultSetup: {
-      chartOfAccounts: {
-        type: [String],
-        default: [
-          "Cash",
-          "Bank",
-          "Inventory",
-          "Accounts Payable",
-          "Sales",
-          "Rent",
-          "Salary",
-          "Utilities"
-        ]
-      },
-      defaultCashAccount: {
-        type: String,
-        default: "Cash"
-      },
-      defaultInventoryAccount: {
-        type: String,
-        default: "Inventory"
-      },
-      defaultSalesAccount: {
-        type: String,
-        default: "Sales"
-      }
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,

@@ -178,7 +178,6 @@ Request:
 {
   "name": "Sujan Ban",
   "email": "sujan@example.com",
-  "phone": "+9779800000000",
   "password": "StrongPass123!"
 }
 ```
@@ -199,7 +198,6 @@ Response:
         "id": "user_id",
         "name": "Sujan Ban",
         "email": "sujan@example.com",
-        "phone": "+9779800000000",
         "onboardingStatus": "registered",
         "isActive": true
       },

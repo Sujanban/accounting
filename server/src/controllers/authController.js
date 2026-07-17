@@ -1,6 +1,8 @@
 const { loginUser, logoutUser, refreshUserToken, registerUser } = require("../services/authService");
+const { env } = require("../config/env");
 const { buildSessionPayload } = require("../services/sessionService");
 const { sendSuccess } = require("../utils/apiResponse");
+const { getRefreshCookieOptions, parseCookies } = require("../utils/cookies");
 const { asyncHandler } = require("../utils/asyncHandler");
 
 function getRequestMetadata(request) {
@@ -8,6 +10,14 @@ function getRequestMetadata(request) {
     userAgent: request.get("user-agent"),
     ip: request.ip
   };
+}
+
+function readRefreshToken(request) {
+  if (request.body && typeof request.body.refreshToken === "string") {
+    return request.body.refreshToken;
+  }
+
+  return parseCookies(request.headers.cookie || "").refreshToken || null;
 }
 
 const register = asyncHandler(async (request, response) => {
@@ -19,20 +29,46 @@ const register = asyncHandler(async (request, response) => {
 const login = asyncHandler(async (request, response) => {
   const result = await loginUser(request.body, getRequestMetadata(request));
 
-  return sendSuccess(response, 200, "Login successful.", result);
+  response.cookie(
+    "refreshToken",
+    result.tokens.refreshToken,
+    {
+      ...getRefreshCookieOptions(env.nodeEnv),
+      maxAge: 30 * 24 * 60 * 60 * 1000
+    }
+  );
+
+  return sendSuccess(response, 200, "Login successful.", {
+    accessToken: result.tokens.accessToken,
+    session: result.session
+  });
 });
 
 const refresh = asyncHandler(async (request, response) => {
+  const refreshToken = readRefreshToken(request);
   const result = await refreshUserToken(
-    request.body.refreshToken,
+    refreshToken,
     getRequestMetadata(request)
   );
 
-  return sendSuccess(response, 200, "Token refreshed successfully.", result);
+  response.cookie(
+    "refreshToken",
+    result.tokens.refreshToken,
+    {
+      ...getRefreshCookieOptions(env.nodeEnv),
+      maxAge: 30 * 24 * 60 * 60 * 1000
+    }
+  );
+
+  return sendSuccess(response, 200, "Token refreshed successfully.", {
+    accessToken: result.tokens.accessToken,
+    session: result.session
+  });
 });
 
 const logout = asyncHandler(async (request, response) => {
-  await logoutUser(request.body.refreshToken);
+  await logoutUser(readRefreshToken(request));
+  response.clearCookie("refreshToken", getRefreshCookieOptions(env.nodeEnv));
 
   return sendSuccess(response, 200, "Logout successful.");
 });

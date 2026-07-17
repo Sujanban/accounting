@@ -4,7 +4,7 @@ const openApiDocument = {
     title: "Accounting Software API",
     version: "1.0.0",
     description:
-      "Authentication, onboarding, and accounting foundation APIs for the accounting software backend."
+      "Foundation APIs for authentication, company onboarding, settings, and dashboard access."
   },
   servers: [
     {
@@ -16,8 +16,8 @@ const openApiDocument = {
     { name: "Health", description: "Service health endpoints" },
     { name: "Auth", description: "Authentication and session endpoints" },
     { name: "Companies", description: "Company onboarding endpoints" },
-    { name: "Dashboard", description: "Dashboard bootstrap endpoints" },
-    { name: "Accounting", description: "Phase 2 accounting foundation endpoints" }
+    { name: "Settings", description: "Company settings onboarding endpoints" },
+    { name: "Dashboard", description: "Dashboard bootstrap endpoints" }
   ],
   components: {
     securitySchemes: {
@@ -61,12 +61,7 @@ const openApiDocument = {
           id: { type: "string", example: "6878f8f6b2b52fb6c88ac001" },
           name: { type: "string", example: "Sujan Ban" },
           email: { type: "string", example: "sujan@example.com" },
-          phone: { type: "string", example: "+9779800000000" },
           emailVerified: { type: "boolean", example: false },
-          onboardingStatus: {
-            type: "string",
-            enum: ["registered", "completed"]
-          },
           isActive: { type: "boolean", example: true }
         }
       },
@@ -75,7 +70,9 @@ const openApiDocument = {
         properties: {
           name: { type: "string", example: "2082/83" },
           startDateBS: { type: "string", example: "2082-04-01" },
-          endDateBS: { type: "string", example: "2083-03-31" }
+          endDateBS: { type: "string", example: "2083-03-31" },
+          startDateAD: { type: "string", format: "date", example: "2025-07-17" },
+          endDateAD: { type: "string", format: "date", example: "2026-07-16" }
         }
       },
       Company: {
@@ -90,19 +87,36 @@ const openApiDocument = {
           email: { type: "string", nullable: true, example: "info@acme.com" },
           address: { type: "string", nullable: true, example: "Kathmandu, Nepal" },
           logo: { type: "string", nullable: true, example: "https://cdn.example.com/logo.png" },
+          onboardingCompleted: { type: "boolean", example: false },
           activeFiscalYear: { $ref: "#/components/schemas/FiscalYear" },
+          activeFiscalYearId: { type: "string", nullable: true, example: "6878f8f6b2b52fb6c88ac110" }
+        }
+      },
+      Setting: {
+        type: "object",
+        properties: {
+          id: { type: "string", example: "6878f8f6b2b52fb6c88ac030" },
+          companyId: { type: "string", example: "6878f8f6b2b52fb6c88ac010" },
           businessType: {
             type: "string",
             enum: [
-              "Retail Shop",
-              "Wholesale",
-              "Service Business",
-              "Manufacturing",
-              "Pharmacy",
-              "Restaurant",
-              "Other"
-            ]
-          }
+              "RETAIL",
+              "WHOLESALE",
+              "SERVICE",
+              "MANUFACTURING",
+              "PHARMACY",
+              "RESTAURANT",
+              "OTHER"
+            ],
+            example: "RETAIL"
+          },
+          currency: { type: "string", example: "NPR" },
+          currencySymbol: { type: "string", example: "Rs." },
+          language: { type: "string", example: "en" },
+          dateFormat: { type: "string", enum: ["BS", "AD"], example: "BS" },
+          timezone: { type: "string", example: "Asia/Kathmandu" },
+          decimalPlaces: { type: "integer", example: 2 },
+          allowNegativeStock: { type: "boolean", example: false }
         }
       },
       Membership: {
@@ -132,27 +146,22 @@ const openApiDocument = {
               role: { type: "string", enum: ["OWNER", "STAFF"], example: "OWNER" }
             }
           },
+          activeSettings: {
+            allOf: [{ $ref: "#/components/schemas/Setting" }],
+            nullable: true
+          },
           memberships: {
             type: "array",
             items: { $ref: "#/components/schemas/Membership" }
           }
         }
       },
-      Summary: {
-        type: "object",
-        properties: {
-          totalAccounts: { type: "integer", example: 0 },
-          totalInvoices: { type: "integer", example: 0 },
-          totalCustomers: { type: "integer", example: 0 }
-        }
-      },
       RegisterRequest: {
         type: "object",
-        required: ["name", "email", "phone", "password", "confirmPassword"],
+        required: ["name", "email", "password", "confirmPassword"],
         properties: {
           name: { type: "string", example: "Sujan Ban" },
           email: { type: "string", example: "sujan@example.com" },
-          phone: { type: "string", example: "+9779800000000" },
           password: { type: "string", example: "StrongPass123!" },
           confirmPassword: { type: "string", example: "StrongPass123!" }
         }
@@ -167,14 +176,11 @@ const openApiDocument = {
       },
       RefreshRequest: {
         type: "object",
-        required: ["refreshToken"],
-        properties: {
-          refreshToken: { type: "string", example: "jwt-refresh-token" }
-        }
+        description: "Refresh token is provided via an HTTP-only cookie."
       },
       CreateCompanyRequest: {
         type: "object",
-        required: ["name", "panNumber", "vatRegistered", "fiscalYear", "businessType"],
+        required: ["name", "panNumber", "vatRegistered", "fiscalYear"],
         properties: {
           name: { type: "string", example: "Acme Accounting Pvt Ltd" },
           panNumber: { type: "string", example: "123456789" },
@@ -184,20 +190,33 @@ const openApiDocument = {
           email: { type: "string", example: "info@acme.com" },
           address: { type: "string", example: "Kathmandu, Nepal" },
           logo: { type: "string", example: "https://cdn.example.com/logo.png" },
-          fiscalYear: { $ref: "#/components/schemas/FiscalYear" },
+          fiscalYear: { $ref: "#/components/schemas/FiscalYear" }
+        }
+      },
+      CreateSettingsRequest: {
+        type: "object",
+        required: ["businessType"],
+        properties: {
           businessType: {
             type: "string",
             enum: [
-              "Retail Shop",
-              "Wholesale",
-              "Service Business",
-              "Manufacturing",
-              "Pharmacy",
-              "Restaurant",
-              "Other"
+              "RETAIL",
+              "WHOLESALE",
+              "SERVICE",
+              "MANUFACTURING",
+              "PHARMACY",
+              "RESTAURANT",
+              "OTHER"
             ],
-            example: "Retail Shop"
-          }
+            example: "RETAIL"
+          },
+          currency: { type: "string", example: "NPR" },
+          currencySymbol: { type: "string", example: "Rs." },
+          language: { type: "string", example: "en" },
+          dateFormat: { type: "string", enum: ["BS", "AD"], example: "BS" },
+          timezone: { type: "string", example: "Asia/Kathmandu" },
+          decimalPlaces: { type: "integer", example: 2 },
+          allowNegativeStock: { type: "boolean", example: false }
         }
       },
       AuthResponse: {
@@ -208,7 +227,7 @@ const openApiDocument = {
           data: {
             type: "object",
             properties: {
-              tokens: { $ref: "#/components/schemas/Tokens" },
+              accessToken: { type: "string", example: "jwt-access-token" },
               session: { $ref: "#/components/schemas/Session" }
             }
           }
@@ -228,12 +247,29 @@ const openApiDocument = {
           success: { type: "boolean", example: true },
           message: {
             type: "string",
-            example: "Company created successfully. Onboarding completed."
+            example: "Company created successfully."
           },
           data: {
             type: "object",
             properties: {
               company: { $ref: "#/components/schemas/Company" },
+              session: { $ref: "#/components/schemas/Session" }
+            }
+          }
+        }
+      },
+      SettingsCreatedResponse: {
+        type: "object",
+        properties: {
+          success: { type: "boolean", example: true },
+          message: {
+            type: "string",
+            example: "Company settings created successfully. Onboarding completed."
+          },
+          data: {
+            type: "object",
+            properties: {
+              settings: { $ref: "#/components/schemas/Setting" },
               session: { $ref: "#/components/schemas/Session" }
             }
           }
@@ -248,9 +284,29 @@ const openApiDocument = {
             example: "Dashboard bootstrap fetched successfully."
           },
           data: {
-            allOf: [{ $ref: "#/components/schemas/Session" }],
             properties: {
-              summary: { $ref: "#/components/schemas/Summary" }
+              companyName: { type: "string", nullable: true, example: "Acme Accounting Pvt Ltd" },
+              activeFiscalYear: {
+                allOf: [{ $ref: "#/components/schemas/FiscalYear" }],
+                nullable: true
+              },
+              currentUser: { $ref: "#/components/schemas/User" },
+              currentDate: { type: "string", format: "date-time", example: "2026-07-17T10:30:00.000Z" },
+              cards: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    key: { type: "string", example: "sales" },
+                    label: { type: "string", example: "Sales" },
+                    value: { nullable: true, example: null }
+                  }
+                }
+              },
+              recentTransactions: {
+                type: "array",
+                items: { type: "object" }
+              }
             }
           }
         }

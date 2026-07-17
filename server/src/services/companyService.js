@@ -1,8 +1,8 @@
 const { Company } = require("../models/Company");
+const { FiscalYear } = require("../models/FiscalYear");
 const { Membership } = require("../models/Membership");
 const { User } = require("../models/User");
 const { ApiError } = require("../utils/apiError");
-const { bootstrapAccountingForCompany } = require("./accountingBootstrapService");
 const { buildSessionPayload } = require("./sessionService");
 
 async function createCompanyForUser(userId, payload) {
@@ -30,9 +30,14 @@ async function createCompanyForUser(userId, payload) {
     activeFiscalYear: {
       name: payload.fiscalYear.name.trim(),
       startDateBS: payload.fiscalYear.startDateBS.trim(),
-      endDateBS: payload.fiscalYear.endDateBS.trim()
+      endDateBS: payload.fiscalYear.endDateBS.trim(),
+      startDateAD: payload.fiscalYear.startDateAD
+        ? new Date(payload.fiscalYear.startDateAD)
+        : null,
+      endDateAD: payload.fiscalYear.endDateAD
+        ? new Date(payload.fiscalYear.endDateAD)
+        : null
     },
-    businessType: payload.businessType,
     createdBy: user._id
   });
 
@@ -42,13 +47,19 @@ async function createCompanyForUser(userId, payload) {
     role: "OWNER"
   });
 
-  const fiscalYear = await bootstrapAccountingForCompany(company);
+  const fiscalYear = await FiscalYear.create({
+    companyId: company._id,
+    name: company.activeFiscalYear.name,
+    startDateBS: company.activeFiscalYear.startDateBS,
+    endDateBS: company.activeFiscalYear.endDateBS,
+    startDateAD: company.activeFiscalYear.startDateAD || null,
+    endDateAD: company.activeFiscalYear.endDateAD || null,
+    isActive: true,
+    isLocked: false
+  });
 
   company.activeFiscalYearId = fiscalYear._id;
   await company.save();
-
-  user.onboardingStatus = "completed";
-  await user.save();
 
   const session = await buildSessionPayload(user, company._id);
 
