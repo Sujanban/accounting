@@ -15,6 +15,7 @@ function mapCompany(company) {
     email: company.email,
     address: company.address,
     logo: company.logo,
+    activeFiscalYearId: company.activeFiscalYearId,
     activeFiscalYear: company.activeFiscalYear,
     businessType: company.businessType
   };

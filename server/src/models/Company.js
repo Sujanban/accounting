@@ -59,6 +59,11 @@ const companySchema = new mongoose.Schema(
         trim: true
       }
     },
+    activeFiscalYearId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "FiscalYear",
+      default: null
+    },
     businessType: {
       type: String,
       enum: [

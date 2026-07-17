@@ -8,7 +8,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:5000"
+      "value": "http://localhost:5001"
     },
     {
       "key": "accessToken",
@@ -20,6 +20,10 @@
     },
     {
       "key": "companyId",
+      "value": ""
+    },
+    {
+      "key": "fiscalYearId",
       "value": ""
     }
   ],
@@ -200,6 +204,309 @@
           "path": ["api", "docs", "openapi.json"]
         }
       }
+    },
+    {
+      "name": "Accounting",
+      "item": [
+        {
+          "name": "Accounting Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-company-id",
+                "value": "{{companyId}}"
+              },
+              {
+                "key": "x-fiscal-year-id",
+                "value": "{{fiscalYearId}}",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounting/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounting", "dashboard"]
+            }
+          }
+        },
+        {
+          "name": "List Fiscal Years",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-company-id",
+                "value": "{{companyId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounting/fiscal-years",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounting", "fiscal-years"]
+            }
+          }
+        },
+        {
+          "name": "Create Fiscal Year",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-company-id",
+                "value": "{{companyId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"2081/82\",\n  \"startDateBS\": \"2081-04-01\",\n  \"endDateBS\": \"2082-03-31\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/accounting/fiscal-years",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounting", "fiscal-years"]
+            }
+          }
+        },
+        {
+          "name": "List Ledgers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-company-id",
+                "value": "{{companyId}}"
+              },
+              {
+                "key": "x-fiscal-year-id",
+                "value": "{{fiscalYearId}}",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounting/ledgers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounting", "ledgers"]
+            }
+          }
+        },
+        {
+          "name": "Create Ledger",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-company-id",
+                "value": "{{companyId}}"
+              },
+              {
+                "key": "x-fiscal-year-id",
+                "value": "{{fiscalYearId}}",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Office Expense\",\n  \"accountGroup\": \"Indirect Expenses\",\n  \"openingBalance\": 0,\n  \"openingBalanceType\": \"DEBIT\",\n  \"description\": \"Manual expense ledger\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/accounting/ledgers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounting", "ledgers"]
+            }
+          }
+        },
+        {
+          "name": "Create Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-company-id",
+                "value": "{{companyId}}"
+              },
+              {
+                "key": "x-fiscal-year-id",
+                "value": "{{fiscalYearId}}",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"ABC Customer\",\n  \"phone\": \"+9779811111111\",\n  \"email\": \"customer@example.com\",\n  \"openingBalance\": 5000,\n  \"openingBalanceType\": \"DEBIT\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/accounting/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounting", "customers"]
+            }
+          }
+        },
+        {
+          "name": "Create Supplier",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-company-id",
+                "value": "{{companyId}}"
+              },
+              {
+                "key": "x-fiscal-year-id",
+                "value": "{{fiscalYearId}}",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"XYZ Supplier\",\n  \"phone\": \"+9779822222222\",\n  \"email\": \"supplier@example.com\",\n  \"openingBalance\": 3500,\n  \"openingBalanceType\": \"CREDIT\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/accounting/suppliers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounting", "suppliers"]
+            }
+          }
+        },
+        {
+          "name": "Create Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-company-id",
+                "value": "{{companyId}}"
+              },
+              {
+                "key": "x-fiscal-year-id",
+                "value": "{{fiscalYearId}}",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Demo Product\",\n  \"unit\": \"Piece\",\n  \"purchasePrice\": 100,\n  \"sellingPrice\": 150,\n  \"openingQuantity\": 10,\n  \"openingRate\": 100,\n  \"minimumStock\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/accounting/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounting", "products"]
+            }
+          }
+        },
+        {
+          "name": "Create Journal Entry",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-company-id",
+                "value": "{{companyId}}"
+              },
+              {
+                "key": "x-fiscal-year-id",
+                "value": "{{fiscalYearId}}",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2026-07-17\",\n  \"narration\": \"Initial capital entry\",\n  \"rows\": [\n    {\n      \"ledgerId\": \"LEDGER_ID_CASH\",\n      \"debit\": 10000,\n      \"credit\": 0,\n      \"remarks\": \"Cash introduced\"\n    },\n    {\n      \"ledgerId\": \"LEDGER_ID_CAPITAL\",\n      \"debit\": 0,\n      \"credit\": 10000,\n      \"remarks\": \"Owner capital\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/accounting/journal-entries",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounting", "journal-entries"]
+            }
+          }
+        },
+        {
+          "name": "Trial Balance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-company-id",
+                "value": "{{companyId}}"
+              },
+              {
+                "key": "x-fiscal-year-id",
+                "value": "{{fiscalYearId}}",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounting/trial-balance",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounting", "trial-balance"]
+            }
+          }
+        }
+      ]
     }
   ]
 }

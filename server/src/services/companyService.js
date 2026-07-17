@@ -2,6 +2,7 @@ const { Company } = require("../models/Company");
 const { Membership } = require("../models/Membership");
 const { User } = require("../models/User");
 const { ApiError } = require("../utils/apiError");
+const { bootstrapAccountingForCompany } = require("./accountingBootstrapService");
 const { buildSessionPayload } = require("./sessionService");
 
 async function createCompanyForUser(userId, payload) {
@@ -40,6 +41,11 @@ async function createCompanyForUser(userId, payload) {
     companyId: company._id,
     role: "OWNER"
   });
+
+  const fiscalYear = await bootstrapAccountingForCompany(company);
+
+  company.activeFiscalYearId = fiscalYear._id;
+  await company.save();
 
   user.onboardingStatus = "completed";
   await user.save();

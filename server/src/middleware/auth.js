@@ -1,3 +1,4 @@
+const { Company } = require("../models/Company");
 const { Membership } = require("../models/Membership");
 const { User } = require("../models/User");
 const { ApiError } = require("../utils/apiError");
@@ -64,7 +65,31 @@ const resolveActiveCompany = asyncHandler(async (request, _response, next) => {
   next();
 });
 
+const resolveActiveFiscalYear = asyncHandler(async (request, _response, next) => {
+  if (!request.auth.activeCompanyId) {
+    request.auth.activeFiscalYearId = null;
+    return next();
+  }
+
+  const company = await Company.findById(request.auth.activeCompanyId).lean();
+
+  if (!company) {
+    throw new ApiError(404, "Active company was not found.");
+  }
+
+  const fiscalYearIdHeader = request.get("x-fiscal-year-id");
+
+  if (fiscalYearIdHeader) {
+    request.auth.activeFiscalYearId = fiscalYearIdHeader;
+    return next();
+  }
+
+  request.auth.activeFiscalYearId = company.activeFiscalYearId || null;
+  next();
+});
+
 module.exports = {
   requireAuth,
-  resolveActiveCompany
+  resolveActiveCompany,
+  resolveActiveFiscalYear
 };

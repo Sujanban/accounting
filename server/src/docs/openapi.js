@@ -4,11 +4,11 @@ const openApiDocument = {
     title: "Accounting Software API",
     version: "1.0.0",
     description:
-      "Authentication, company onboarding, and dashboard bootstrap APIs for the accounting software backend."
+      "Authentication, onboarding, and accounting foundation APIs for the accounting software backend."
   },
   servers: [
     {
-      url: "http://localhost:5000",
+      url: "http://localhost:5001",
       description: "Local development server"
     }
   ],
@@ -16,7 +16,8 @@ const openApiDocument = {
     { name: "Health", description: "Service health endpoints" },
     { name: "Auth", description: "Authentication and session endpoints" },
     { name: "Companies", description: "Company onboarding endpoints" },
-    { name: "Dashboard", description: "Dashboard bootstrap endpoints" }
+    { name: "Dashboard", description: "Dashboard bootstrap endpoints" },
+    { name: "Accounting", description: "Phase 2 accounting foundation endpoints" }
   ],
   components: {
     securitySchemes: {
