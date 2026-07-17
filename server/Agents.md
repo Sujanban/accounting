@@ -6,6 +6,36 @@ Design and implement the authentication and onboarding flow for a modern web-bas
 
 The software is **multi-tenant**, meaning each company has its own isolated data.
 
+
+Development phase
+Phase 1
+Authentication + Company + Onboarding
+                │
+                ▼
+Phase 2
+Accounting Foundation
+(Accounts, Fiscal Year, Customers, Products, Journals)
+                │
+                ▼
+Phase 3
+Transactions
+(Sales, Purchases, Expenses, Payments)
+                │
+                ▼
+Phase 4
+Reports
+(P&L, Balance Sheet, Trial Balance, Ledgers)
+                │
+                ▼
+Phase 5
+Nepal Features
+(BS Calendar, VAT, PAN, Tax Reports)
+                │
+                ▼
+Phase 6
+Enterprise Features
+(Roles, Multi-branch, POS, AI, Integrations)
+
 ---
 
 # Core Principles
