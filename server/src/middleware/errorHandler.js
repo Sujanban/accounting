@@ -1,0 +1,35 @@
+const { ApiError } = require("../utils/apiError");
+
+function notFoundHandler(request, _response, next) {
+  next(new ApiError(404, `Route not found: ${request.method} ${request.originalUrl}`));
+}
+
+function errorHandler(error, _request, response, _next) {
+  if (error && error.code === 11000) {
+    return response.status(409).json({
+      success: false,
+      message: "A unique field already exists.",
+      errors: error.keyValue
+    });
+  }
+
+  const statusCode = error instanceof ApiError ? error.statusCode : 500;
+  const message =
+    error instanceof ApiError ? error.message : "Internal server error";
+  const errors = error instanceof ApiError ? error.errors : undefined;
+
+  if (!(error instanceof ApiError)) {
+    console.error(error);
+  }
+
+  return response.status(statusCode).json({
+    success: false,
+    message,
+    ...(errors ? { errors } : {})
+  });
+}
+
+module.exports = {
+  notFoundHandler,
+  errorHandler
+};

@@ -1,0 +1,205 @@
+{
+  "info": {
+    "_postman_id": "4f67f6f1-5b34-47b8-9bf3-c1b6176b7d90",
+    "name": "Accounting Software API",
+    "description": "Postman collection for authentication, onboarding, and dashboard bootstrap endpoints.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "companyId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "Register",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Sujan Ban\",\n  \"email\": \"sujan@example.com\",\n  \"phone\": \"+9779800000000\",\n  \"password\": \"StrongPass123!\",\n  \"confirmPassword\": \"StrongPass123!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/register",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "register"]
+        }
+      }
+    },
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"sujan@example.com\",\n  \"password\": \"StrongPass123!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "Refresh Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/refresh",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "refresh"]
+        }
+      }
+    },
+    {
+      "name": "Logout",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/logout",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "logout"]
+        }
+      }
+    },
+    {
+      "name": "Get Current Session",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "x-company-id",
+            "value": "{{companyId}}",
+            "disabled": true
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/me",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "me"]
+        }
+      }
+    },
+    {
+      "name": "Create First Company",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Acme Accounting Pvt Ltd\",\n  \"panNumber\": \"123456789\",\n  \"vatRegistered\": true,\n  \"vatNumber\": \"VAT-123456\",\n  \"phone\": \"+9779800000000\",\n  \"email\": \"info@acme.com\",\n  \"address\": \"Kathmandu, Nepal\",\n  \"logo\": \"https://cdn.example.com/logo.png\",\n  \"fiscalYear\": {\n    \"name\": \"2082/83\",\n    \"startDateBS\": \"2082-04-01\",\n    \"endDateBS\": \"2083-03-31\"\n  },\n  \"businessType\": \"Retail Shop\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/companies",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "companies"]
+        }
+      }
+    },
+    {
+      "name": "Dashboard Bootstrap",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "x-company-id",
+            "value": "{{companyId}}",
+            "disabled": true
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/dashboard/bootstrap",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "dashboard", "bootstrap"]
+        }
+      }
+    },
+    {
+      "name": "Swagger OpenAPI JSON",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/docs/openapi.json",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "docs", "openapi.json"]
+        }
+      }
+    }
+  ]
+}
