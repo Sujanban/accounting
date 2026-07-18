@@ -2,6 +2,137 @@
 
 This flow reflects the features currently available in the server. It describes what a person can do in the product today, including the rules that stop them from continuing.
 
+## Visual screen flow
+
+```mermaid
+flowchart TD
+    A[Welcome screen] --> B[Create account]
+    A --> C[Sign in]
+    B --> D{Registration valid?}
+    D -- No --> B
+    D -- Yes --> C
+    C --> E{Signed in?}
+    E -- No --> C
+    E -- Yes --> F{Company already exists?}
+    F -- No --> G[Company details]
+    G --> H[Fiscal year details]
+    H --> I[Business & company settings]
+    I --> J{Settings saved?}
+    J -- No --> I
+    J -- Yes --> K[Accounting setup home]
+    F -- Yes --> K
+    K --> L[Chart of accounts]
+    K --> M[Account groups]
+    K --> N[Ledgers]
+    K --> O[Voucher numbering]
+    K --> P[Accounting preferences]
+    L --> K
+    M --> K
+    N --> K
+    O --> K
+    P --> K
+```
+
+### Main screens at a glance
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│                         Welcome                              │
+│                                                              │
+│              [ Create account ]  [ Sign in ]                 │
+└──────────────────────────────────────────────────────────────┘
+```
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ Create account                                                │
+│                                                              │
+│ Full name             [____________________________]         │
+│ Email                 [____________________________]         │
+│ Password              [____________________________]         │
+│ Confirm password      [____________________________]         │
+│                                                              │
+│                                      [ Create account ]       │
+│ Already have an account? Sign in                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ Sign in                                                       │
+│                                                              │
+│ Email                 [____________________________]         │
+│ Password              [____________________________]         │
+│                                                              │
+│                                              [ Sign in ]      │
+└──────────────────────────────────────────────────────────────┘
+```
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ Set up your company                              Step 1 of 3 │
+│                                                              │
+│ Company name          [____________________________]         │
+│ PAN number            [____________________________]         │
+│ VAT registered        ( ) Yes   ( ) No                        │
+│ VAT number            [____________________________]         │
+│ Phone                 [____________________________]         │
+│ Company email         [____________________________]         │
+│ Address               [____________________________]         │
+│ Logo                  [ Upload logo ]                         │
+│                                                              │
+│                                              [ Continue ]     │
+└──────────────────────────────────────────────────────────────┘
+```
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ Set up your company                              Step 2 of 3 │
+│ Fiscal year                                                  │
+│                                                              │
+│ Fiscal-year name      [ 2082/83___________________]          │
+│ Start date (BS)       [____________________________]         │
+│ End date (BS)         [____________________________]         │
+│ Start date (AD)       [____________________________]         │
+│ End date (AD)         [____________________________]         │
+│                                                              │
+│                 [ Back ]              [ Continue ]           │
+└──────────────────────────────────────────────────────────────┘
+```
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ Set up your company                              Step 3 of 3 │
+│                                                              │
+│ Business type         [ Retail                         v ]    │
+│ Currency              [ NPR                            v ]    │
+│ Currency symbol       [ Rs.                            ]      │
+│ Date format           (•) BS   ( ) AD                         │
+│ Decimal places        [ 2                              v ]    │
+│ Allow negative stock  [ Off                            ]      │
+│                                                              │
+│                 [ Back ]              [ Finish setup ]       │
+└──────────────────────────────────────────────────────────────┘
+```
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ Acme Traders  |  2082/83                         [ Profile ] │
+├───────────────┬──────────────────────────────────────────────┤
+│ ACCOUNTING    │ Accounting setup                              │
+│               │                                              │
+│ Chart accounts│ [ Chart of accounts ]                         │
+│ Account groups│ See groups, add a custom group                │
+│ Ledgers       │ See ledgers, add a custom ledger              │
+│ Voucher nos.  │ Set prefixes and next voucher numbers         │
+│ Preferences   │ Voucher and fiscal-lock preferences           │
+│               │                                              │
+│ [ Sign out ]  │                                              │
+└───────────────┴──────────────────────────────────────────────┘
+```
+
+The dashboard shown above is an accounting-setup home, not a financial dashboard: the server does not yet provide dashboard balances, sales, transactions, inventory, or reports.
+
 ## 1. Create an account
 
 1. The visitor opens the registration screen.
