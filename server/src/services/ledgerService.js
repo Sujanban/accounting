@@ -3,6 +3,7 @@ const { JournalLine } = require("../models/JournalLine");
 const { Ledger } = require("../models/Ledger");
 const { ApiError } = require("../utils/apiError");
 const { createOpeningBalanceJournal } = require("./journalService");
+const { assertFiscalYearWritable } = require("./fiscalYearGuardService");
 
 function normalizeSignedBalance(openingBalance, openingBalanceType) {
   return openingBalanceType === "DEBIT" ? openingBalance : -openingBalance;
@@ -18,6 +19,7 @@ function mapLedger(ledger) {
     companyId: ledger.companyId,
     fiscalYearId: ledger.fiscalYearId,
     name: ledger.name,
+    systemCode: ledger.systemCode,
     code: ledger.code,
     accountGroup: ledger.accountGroup,
     parentLedgerId: ledger.parentLedgerId,
@@ -73,10 +75,13 @@ async function listLedgers(companyId, fiscalYearId, query = {}) {
 }
 
 async function createLedger(companyId, fiscalYearId, payload) {
+  await assertFiscalYearWritable(companyId, fiscalYearId);
+
   const ledger = await Ledger.create({
     companyId,
     fiscalYearId,
     name: payload.name.trim(),
+    systemCode: payload.systemCode ? payload.systemCode.trim() : null,
     code: payload.code ? payload.code.trim() : null,
     accountGroup: payload.accountGroup,
     parentLedgerId: payload.parentLedgerId || null,
@@ -84,7 +89,9 @@ async function createLedger(companyId, fiscalYearId, payload) {
     openingBalanceType: payload.openingBalanceType || "DEBIT",
     description: payload.description ? payload.description.trim() : null,
     isSystem: false,
-    isActive: true
+    isActive: true,
+    createdBy: payload.actorUserId || null,
+    updatedBy: payload.actorUserId || null
   });
 
   await createOpeningBalanceJournal({
@@ -93,13 +100,15 @@ async function createLedger(companyId, fiscalYearId, payload) {
     ledgerId: ledger._id,
     amount: ledger.openingBalance,
     balanceType: ledger.openingBalanceType,
-    narration: `Opening balance for ledger ${ledger.name}`
+    narration: `Opening balance for ledger ${ledger.name}`,
+    userId: payload.actorUserId || null
   });
 
   return mapLedger(ledger);
 }
 
 async function updateLedger(companyId, fiscalYearId, ledgerId, payload) {
+  await assertFiscalYearWritable(companyId, fiscalYearId);
   const ledger = await Ledger.findOne({ _id: ledgerId, companyId, fiscalYearId });
 
   if (!ledger) {
@@ -119,12 +128,14 @@ async function updateLedger(companyId, fiscalYearId, ledgerId, payload) {
         ? payload.description.trim()
         : null
       : ledger.description;
+  ledger.updatedBy = payload.actorUserId || ledger.updatedBy || null;
   await ledger.save();
 
   return mapLedger(ledger);
 }
 
-async function archiveLedger(companyId, fiscalYearId, ledgerId) {
+async function archiveLedger(companyId, fiscalYearId, ledgerId, actorUserId = null) {
+  await assertFiscalYearWritable(companyId, fiscalYearId);
   const ledger = await Ledger.findOne({ _id: ledgerId, companyId, fiscalYearId });
 
   if (!ledger) {
@@ -136,6 +147,9 @@ async function archiveLedger(companyId, fiscalYearId, ledgerId) {
   }
 
   ledger.isActive = false;
+  ledger.deletedAt = new Date();
+  ledger.deletedBy = actorUserId;
+  ledger.updatedBy = actorUserId || ledger.updatedBy || null;
   await ledger.save();
 
   return mapLedger(ledger);

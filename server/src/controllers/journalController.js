@@ -20,7 +20,8 @@ const postJournalEntry = asyncHandler(async (request, response) => {
     fiscalYearId: request.auth.activeFiscalYearId,
     date: new Date(request.body.date),
     narration: request.body.narration,
-    rows: request.body.rows
+    rows: request.body.rows,
+    userId: request.auth.user._id
   });
 
   return sendSuccess(

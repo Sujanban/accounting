@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { applySoftDeleteFields, applyAuditFields } = require("./schemaHelpers");
 
 const supplierSchema = new mongoose.Schema(
   {
@@ -61,6 +62,9 @@ const supplierSchema = new mongoose.Schema(
     timestamps: true
   }
 );
+
+applySoftDeleteFields(supplierSchema);
+applyAuditFields(supplierSchema);
 
 supplierSchema.index({ companyId: 1, name: 1 }, { unique: true });
 

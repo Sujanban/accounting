@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { applySoftDeleteFields, applyAuditFields } = require("./schemaHelpers");
 
 const refreshTokenSchema = new mongoose.Schema(
   {
@@ -33,6 +34,9 @@ const refreshTokenSchema = new mongoose.Schema(
     timestamps: true
   }
 );
+
+applySoftDeleteFields(refreshTokenSchema);
+applyAuditFields(refreshTokenSchema);
 
 refreshTokenSchema.index({ userId: 1 });
 refreshTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });

@@ -16,6 +16,9 @@ test("createParty creates linked ledger and party record with default opening ba
   };
 
   const { module: partyService, restore } = loadWithMocks("../../src/services/partyService", {
+    "./fiscalYearGuardService": {
+      assertFiscalYearWritable: async () => ({ isLocked: false })
+    },
     "../models/Ledger": {
       Ledger: {
         create: async (payload) => ({
@@ -74,6 +77,9 @@ test("archiveParty disables both the party record and its ledger", async () => {
   };
 
   const { module: partyService, restore } = loadWithMocks("../../src/services/partyService", {
+    "./fiscalYearGuardService": {
+      assertFiscalYearWritable: async () => ({ isLocked: false })
+    },
     "../models/Ledger": {
       Ledger: {
         create: async () => ({}),
@@ -98,7 +104,8 @@ test("archiveParty disables both the party record and its ledger", async () => {
     });
 
     assert.equal(result.isActive, false);
-    assert.deepEqual(ledgerUpdate, { isActive: false });
+    assert.equal(ledgerUpdate.isActive, false);
+    assert.ok(ledgerUpdate.deletedAt instanceof Date);
   } finally {
     restore();
   }
@@ -125,13 +132,19 @@ test("updateProduct persists trimmed and numeric fields", async () => {
     save: async () => {}
   };
 
-  const { updateProduct } = require("../src/services/productService");
-  const { Product } = require("../src/models/Product");
-  const originalFindOne = Product.findOne;
-  Product.findOne = async () => productRecord;
+  const { module: productService, restore } = loadWithMocks("../../src/services/productService", {
+    "./fiscalYearGuardService": {
+      assertFiscalYearWritable: async () => ({ isLocked: false })
+    },
+    "../models/Product": {
+      Product: {
+        findOne: async () => productRecord
+      }
+    }
+  });
 
   try {
-    const result = await updateProduct("company-1", "fy-1", "product-1", {
+    const result = await productService.updateProduct("company-1", "fy-1", "product-1", {
       name: "  New Product  ",
       purchasePrice: "15",
       sellingPrice: "20",
@@ -143,7 +156,7 @@ test("updateProduct persists trimmed and numeric fields", async () => {
     assert.equal(result.sellingPrice, 20);
     assert.equal(result.minimumStock, 3);
   } finally {
-    Product.findOne = originalFindOne;
+    restore();
   }
 });
 
@@ -170,10 +183,10 @@ test("getAccountingDashboard returns counts and trial balance status", async () 
         Ledger: {
           find: () => ({
             lean: async () => [
-              { _id: "cash", name: "Cash in Hand" },
-              { _id: "bank", name: "Bank Account" },
-              { _id: "ar", name: "Accounts Receivable" },
-              { _id: "ap", name: "Accounts Payable" }
+              { _id: "cash", name: "Cash in Hand", systemCode: "CASH" },
+              { _id: "bank", name: "Bank Account", systemCode: "BANK" },
+              { _id: "ar", name: "Accounts Receivable", systemCode: "ACCOUNTS_RECEIVABLE" },
+              { _id: "ap", name: "Accounts Payable", systemCode: "ACCOUNTS_PAYABLE" }
             ]
           })
         }

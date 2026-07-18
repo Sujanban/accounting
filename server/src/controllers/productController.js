@@ -20,7 +20,10 @@ const postProduct = asyncHandler(async (request, response) => {
   const data = await createProduct(
     request.auth.activeCompanyId,
     request.auth.activeFiscalYearId,
-    request.body
+    {
+      ...request.body,
+      actorUserId: request.auth.user._id
+    }
   );
   return sendSuccess(response, 201, "Product created successfully.", data);
 });
@@ -30,7 +33,10 @@ const patchProduct = asyncHandler(async (request, response) => {
     request.auth.activeCompanyId,
     request.auth.activeFiscalYearId,
     request.params.productId,
-    request.body
+    {
+      ...request.body,
+      actorUserId: request.auth.user._id
+    }
   );
   return sendSuccess(response, 200, "Product updated successfully.", data);
 });
@@ -39,7 +45,8 @@ const archiveProductRecord = asyncHandler(async (request, response) => {
   const data = await archiveProduct(
     request.auth.activeCompanyId,
     request.auth.activeFiscalYearId,
-    request.params.productId
+    request.params.productId,
+    request.auth.user._id
   );
   return sendSuccess(response, 200, "Product archived successfully.", data);
 });

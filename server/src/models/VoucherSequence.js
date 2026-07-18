@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { applySoftDeleteFields, applyAuditFields } = require("./schemaHelpers");
 
 const voucherSequenceSchema = new mongoose.Schema(
   {
@@ -21,6 +22,9 @@ const voucherSequenceSchema = new mongoose.Schema(
     timestamps: true
   }
 );
+
+applySoftDeleteFields(voucherSequenceSchema);
+applyAuditFields(voucherSequenceSchema);
 
 voucherSequenceSchema.index({ companyId: 1, type: 1 }, { unique: true });
 

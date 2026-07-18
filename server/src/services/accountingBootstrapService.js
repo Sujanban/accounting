@@ -2,38 +2,54 @@ const { AccountGroup } = require("../models/AccountGroup");
 const { FiscalYear } = require("../models/FiscalYear");
 const { Ledger } = require("../models/Ledger");
 const { VoucherSequence } = require("../models/VoucherSequence");
+const {
+  DEFAULT_ACCOUNT_GROUPS,
+  DEFAULT_LEDGERS,
+  DEFAULT_VOUCHER_SEQUENCES,
+  ACCOUNT_GROUP_NAME_BY_CODE
+} = require("../shared/constants/accounting");
 
-const DEFAULT_ACCOUNT_GROUPS = [
-  { category: "Assets", name: "Current Assets" },
-  { category: "Assets", name: "Fixed Assets" },
-  { category: "Assets", name: "Investments" },
-  { category: "Liabilities", name: "Current Liabilities" },
-  { category: "Liabilities", name: "Long-term Liabilities" },
-  { category: "Equity", name: "Capital Account" },
-  { category: "Equity", name: "Retained Earnings" },
-  { category: "Income", name: "Direct Income" },
-  { category: "Income", name: "Indirect Income" },
-  { category: "Expenses", name: "Direct Expenses" },
-  { category: "Expenses", name: "Indirect Expenses" }
-];
+async function initializeAccountingForCompany(company, fiscalYear, userId = null) {
+  await AccountGroup.insertMany(
+    DEFAULT_ACCOUNT_GROUPS.map((group) => ({
+      companyId: company._id,
+      name: group.name,
+      systemCode: group.systemCode,
+      category: group.category,
+      isSystem: true,
+      isActive: true,
+      createdBy: userId,
+      updatedBy: userId
+    }))
+  );
 
-const DEFAULT_LEDGERS = [
-  { name: "Cash in Hand", accountGroup: "Current Assets" },
-  { name: "Bank Account", accountGroup: "Current Assets" },
-  { name: "Inventory", accountGroup: "Current Assets" },
-  { name: "Accounts Receivable", accountGroup: "Current Assets" },
-  { name: "Accounts Payable", accountGroup: "Current Liabilities" },
-  { name: "Capital", accountGroup: "Capital Account" },
-  { name: "Sales", accountGroup: "Direct Income" },
-  { name: "Purchase", accountGroup: "Direct Expenses" },
-  { name: "Salary Expense", accountGroup: "Indirect Expenses" },
-  { name: "Rent Expense", accountGroup: "Indirect Expenses" },
-  { name: "Electricity Expense", accountGroup: "Indirect Expenses" },
-  { name: "Internet Expense", accountGroup: "Indirect Expenses" },
-  { name: "Miscellaneous Expense", accountGroup: "Indirect Expenses" }
-];
+  await Ledger.insertMany(
+    DEFAULT_LEDGERS.map((ledger) => ({
+      companyId: company._id,
+      fiscalYearId: fiscalYear._id,
+      name: ledger.name,
+      systemCode: ledger.systemCode,
+      accountGroup: ACCOUNT_GROUP_NAME_BY_CODE[ledger.accountGroupCode],
+      openingBalance: 0,
+      openingBalanceType: "DEBIT",
+      isSystem: true,
+      isActive: true,
+      sourceType: "SYSTEM",
+      createdBy: userId,
+      updatedBy: userId
+    }))
+  );
 
-const DEFAULT_VOUCHER_SEQUENCES = ["JV", "SV", "PV", "RV", "PMV", "CV"];
+  await VoucherSequence.insertMany(
+    DEFAULT_VOUCHER_SEQUENCES.map((type) => ({
+      companyId: company._id,
+      type,
+      currentNumber: 0,
+      createdBy: userId,
+      updatedBy: userId
+    }))
+  );
+}
 
 async function bootstrapAccountingForCompany(company) {
   const fiscalYear = await FiscalYear.create({
@@ -46,41 +62,12 @@ async function bootstrapAccountingForCompany(company) {
     isActive: true
   });
 
-  await AccountGroup.insertMany(
-    DEFAULT_ACCOUNT_GROUPS.map((group) => ({
-      companyId: company._id,
-      name: group.name,
-      category: group.category,
-      isSystem: true,
-      isActive: true
-    }))
-  );
-
-  await Ledger.insertMany(
-    DEFAULT_LEDGERS.map((ledger) => ({
-      companyId: company._id,
-      fiscalYearId: fiscalYear._id,
-      name: ledger.name,
-      accountGroup: ledger.accountGroup,
-      openingBalance: 0,
-      openingBalanceType: "DEBIT",
-      isSystem: true,
-      isActive: true,
-      sourceType: "SYSTEM"
-    }))
-  );
-
-  await VoucherSequence.insertMany(
-    DEFAULT_VOUCHER_SEQUENCES.map((type) => ({
-      companyId: company._id,
-      type,
-      currentNumber: 0
-    }))
-  );
+  await initializeAccountingForCompany(company, fiscalYear, null);
 
   return fiscalYear;
 }
 
 module.exports = {
-  bootstrapAccountingForCompany
+  bootstrapAccountingForCompany,
+  initializeAccountingForCompany
 };

@@ -10,6 +10,9 @@ test("createJournalEntry creates a balanced voucher and journal lines", async ()
   const { module: journalService, restore } = loadWithMocks(
     "../../src/services/journalService",
     {
+      "./fiscalYearGuardService": {
+        assertFiscalYearWritable: async () => ({ isLocked: false })
+      },
       "../models/VoucherSequence": {
         VoucherSequence: {
           findOneAndUpdate: async () => ({ currentNumber: 7 })
@@ -74,6 +77,9 @@ test("createJournalEntry rejects unbalanced rows", async () => {
   const { module: journalService, restore } = loadWithMocks(
     "../../src/services/journalService",
     {
+      "./fiscalYearGuardService": {
+        assertFiscalYearWritable: async () => ({ isLocked: false })
+      },
       "../models/VoucherSequence": {
         VoucherSequence: {
           findOneAndUpdate: async () => ({ currentNumber: 1 })
@@ -126,6 +132,9 @@ test("createLedger posts an opening balance journal when opening balance is pres
   const { module: ledgerService, restore } = loadWithMocks(
     "../../src/services/ledgerService",
     {
+      "./fiscalYearGuardService": {
+        assertFiscalYearWritable: async () => ({ isLocked: false })
+      },
       "../models/AccountGroup": {
         AccountGroup: {
           find: () => ({
@@ -191,6 +200,9 @@ test("getTrialBalance combines opening balances and non-opening journal entries"
   const { module: ledgerService, restore } = loadWithMocks(
     "../../src/services/ledgerService",
     {
+      "./fiscalYearGuardService": {
+        assertFiscalYearWritable: async () => ({ isLocked: false })
+      },
       "../models/AccountGroup": {
         AccountGroup: {
           find: () => ({
@@ -248,6 +260,64 @@ test("getTrialBalance combines opening balances and non-opening journal entries"
 
     assert.equal(result.isBalanced, true);
     assert.deepEqual(result.totals, { debit: 150, credit: 150 });
+  } finally {
+    restore();
+  }
+});
+
+test("createJournalEntry rejects writes to locked fiscal years", async () => {
+  const { module: journalService, restore } = loadWithMocks(
+    "../../src/services/journalService",
+    {
+      "./fiscalYearGuardService": {
+        assertFiscalYearWritable: async () => {
+          const error = new Error("locked");
+          error.statusCode = 403;
+          error.errorCode = "FISCAL_YEAR_LOCKED";
+          throw error;
+        }
+      },
+      "../models/VoucherSequence": {
+        VoucherSequence: {
+          findOneAndUpdate: async () => ({ currentNumber: 1 })
+        }
+      },
+      "../models/Ledger": {
+        Ledger: {
+          find: () => ({
+            lean: async () => [{ _id: "ledger-a" }, { _id: "ledger-b" }]
+          })
+        }
+      },
+      "../models/JournalEntry": {
+        JournalEntry: {
+          create: async () => {
+            throw new Error("should not create");
+          }
+        }
+      },
+      "../models/JournalLine": {
+        JournalLine: {
+          insertMany: async () => []
+        }
+      }
+    }
+  );
+
+  try {
+    await assert.rejects(
+      () =>
+        journalService.createJournalEntry({
+          companyId: "company-1",
+          fiscalYearId: "fy-locked",
+          date: new Date(),
+          rows: [
+            { ledgerId: "ledger-a", debit: 100, credit: 0 },
+            { ledgerId: "ledger-b", debit: 0, credit: 100 }
+          ]
+        }),
+      (error) => error.statusCode === 403 && error.errorCode === "FISCAL_YEAR_LOCKED"
+    );
   } finally {
     restore();
   }

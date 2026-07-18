@@ -2,6 +2,7 @@ const { Customer } = require("../models/Customer");
 const { Ledger } = require("../models/Ledger");
 const { Product } = require("../models/Product");
 const { Supplier } = require("../models/Supplier");
+const { LEDGERS } = require("../shared/constants/accounting");
 const { getTrialBalance } = require("./ledgerService");
 
 async function getAccountingDashboard(companyId, fiscalYearId) {
@@ -14,8 +15,8 @@ async function getAccountingDashboard(companyId, fiscalYearId) {
       Ledger.find({ companyId, fiscalYearId, isActive: true }).lean()
     ]);
 
-  function getLedgerBalance(name) {
-    const ledger = ledgers.find((item) => item.name === name);
+  function getLedgerBalance(systemCode) {
+    const ledger = ledgers.find((item) => item.systemCode === systemCode);
     const trialBalanceRow = trialBalance.rows.find(
       (row) => String(row.ledgerId) === String(ledger ? ledger._id : "")
     );
@@ -29,10 +30,10 @@ async function getAccountingDashboard(companyId, fiscalYearId) {
 
   return {
     activeFiscalYearId: fiscalYearId,
-    cashBalance: getLedgerBalance("Cash in Hand"),
-    bankBalance: getLedgerBalance("Bank Account"),
-    totalReceivable: getLedgerBalance("Accounts Receivable"),
-    totalPayable: getLedgerBalance("Accounts Payable"),
+    cashBalance: getLedgerBalance(LEDGERS.CASH.systemCode),
+    bankBalance: getLedgerBalance(LEDGERS.BANK.systemCode),
+    totalReceivable: getLedgerBalance(LEDGERS.ACCOUNTS_RECEIVABLE.systemCode),
+    totalPayable: getLedgerBalance(LEDGERS.ACCOUNTS_PAYABLE.systemCode),
     customerCount,
     supplierCount,
     productCount,

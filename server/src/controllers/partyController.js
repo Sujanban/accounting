@@ -4,7 +4,8 @@ const {
   archiveParty,
   createParty,
   listParties,
-  updateParty
+  updateParty,
+  ACCOUNT_GROUPS
 } = require("../services/partyService");
 const { asyncHandler } = require("../utils/asyncHandler");
 const { sendSuccess } = require("../utils/apiResponse");
@@ -23,11 +24,14 @@ const postCustomer = asyncHandler(async (request, response) => {
   const data = await createParty({
     model: Customer,
     sourceType: "CUSTOMER",
-    ledgerGroup: "Current Assets",
+    ledgerGroup: ACCOUNT_GROUPS.CURRENT_ASSETS.name,
     defaultOpeningBalanceType: "DEBIT",
     companyId: request.auth.activeCompanyId,
     fiscalYearId: request.auth.activeFiscalYearId,
-    payload: request.body
+    payload: {
+      ...request.body,
+      actorUserId: request.auth.user._id
+    }
   });
 
   return sendSuccess(response, 201, "Customer created successfully.", data);
@@ -39,7 +43,10 @@ const patchCustomer = asyncHandler(async (request, response) => {
     companyId: request.auth.activeCompanyId,
     fiscalYearId: request.auth.activeFiscalYearId,
     partyId: request.params.customerId,
-    payload: request.body
+    payload: {
+      ...request.body,
+      actorUserId: request.auth.user._id
+    }
   });
 
   return sendSuccess(response, 200, "Customer updated successfully.", data);
@@ -50,7 +57,8 @@ const archiveCustomer = asyncHandler(async (request, response) => {
     model: Customer,
     companyId: request.auth.activeCompanyId,
     fiscalYearId: request.auth.activeFiscalYearId,
-    partyId: request.params.customerId
+    partyId: request.params.customerId,
+    actorUserId: request.auth.user._id
   });
 
   return sendSuccess(response, 200, "Customer archived successfully.", data);
@@ -70,11 +78,14 @@ const postSupplier = asyncHandler(async (request, response) => {
   const data = await createParty({
     model: Supplier,
     sourceType: "SUPPLIER",
-    ledgerGroup: "Current Liabilities",
+    ledgerGroup: ACCOUNT_GROUPS.CURRENT_LIABILITIES.name,
     defaultOpeningBalanceType: "CREDIT",
     companyId: request.auth.activeCompanyId,
     fiscalYearId: request.auth.activeFiscalYearId,
-    payload: request.body
+    payload: {
+      ...request.body,
+      actorUserId: request.auth.user._id
+    }
   });
 
   return sendSuccess(response, 201, "Supplier created successfully.", data);
@@ -86,7 +97,10 @@ const patchSupplier = asyncHandler(async (request, response) => {
     companyId: request.auth.activeCompanyId,
     fiscalYearId: request.auth.activeFiscalYearId,
     partyId: request.params.supplierId,
-    payload: request.body
+    payload: {
+      ...request.body,
+      actorUserId: request.auth.user._id
+    }
   });
 
   return sendSuccess(response, 200, "Supplier updated successfully.", data);
@@ -97,7 +111,8 @@ const archiveSupplier = asyncHandler(async (request, response) => {
     model: Supplier,
     companyId: request.auth.activeCompanyId,
     fiscalYearId: request.auth.activeFiscalYearId,
-    partyId: request.params.supplierId
+    partyId: request.params.supplierId,
+    actorUserId: request.auth.user._id
   });
 
   return sendSuccess(response, 200, "Supplier archived successfully.", data);

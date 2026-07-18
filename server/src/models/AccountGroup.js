@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { applySoftDeleteFields, applyAuditFields } = require("./schemaHelpers");
 
 const accountGroupSchema = new mongoose.Schema(
   {
@@ -11,6 +12,11 @@ const accountGroupSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true
+    },
+    systemCode: {
+      type: String,
+      trim: true,
+      default: null
     },
     category: {
       type: String,
@@ -41,7 +47,17 @@ const accountGroupSchema = new mongoose.Schema(
   }
 );
 
+applySoftDeleteFields(accountGroupSchema);
+applyAuditFields(accountGroupSchema);
+
 accountGroupSchema.index({ companyId: 1, name: 1 }, { unique: true });
+accountGroupSchema.index(
+  { companyId: 1, systemCode: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { systemCode: { $type: "string" } }
+  }
+);
 
 module.exports = {
   AccountGroup: mongoose.model("AccountGroup", accountGroupSchema)

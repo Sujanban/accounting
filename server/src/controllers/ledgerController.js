@@ -28,7 +28,10 @@ const postLedger = asyncHandler(async (request, response) => {
   const data = await createLedger(
     request.auth.activeCompanyId,
     request.auth.activeFiscalYearId,
-    request.body
+    {
+      ...request.body,
+      actorUserId: request.auth.user._id
+    }
   );
   return sendSuccess(response, 201, "Ledger created successfully.", data);
 });
@@ -38,7 +41,10 @@ const patchLedger = asyncHandler(async (request, response) => {
     request.auth.activeCompanyId,
     request.auth.activeFiscalYearId,
     request.params.ledgerId,
-    request.body
+    {
+      ...request.body,
+      actorUserId: request.auth.user._id
+    }
   );
   return sendSuccess(response, 200, "Ledger updated successfully.", data);
 });
@@ -47,7 +53,8 @@ const archiveLedgerRecord = asyncHandler(async (request, response) => {
   const data = await archiveLedger(
     request.auth.activeCompanyId,
     request.auth.activeFiscalYearId,
-    request.params.ledgerId
+    request.params.ledgerId,
+    request.auth.user._id
   );
   return sendSuccess(response, 200, "Ledger archived successfully.", data);
 });

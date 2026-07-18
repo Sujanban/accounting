@@ -52,10 +52,13 @@ async function createSettingsForCompany(userId, companyId, payload) {
     allowNegativeStock:
       payload.allowNegativeStock !== undefined
         ? payload.allowNegativeStock
-        : false
+        : false,
+    createdBy: userId,
+    updatedBy: userId
   });
 
   company.onboardingCompleted = true;
+  company.updatedBy = userId;
   await company.save();
 
   const user = await User.findById(userId);

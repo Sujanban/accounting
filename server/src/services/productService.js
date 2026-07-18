@@ -1,5 +1,6 @@
 const { Product } = require("../models/Product");
 const { ApiError } = require("../utils/apiError");
+const { assertFiscalYearWritable } = require("./fiscalYearGuardService");
 
 function mapProduct(product) {
   return {
@@ -38,6 +39,7 @@ async function listProducts(companyId, fiscalYearId, query = {}) {
 }
 
 async function createProduct(companyId, fiscalYearId, payload) {
+  await assertFiscalYearWritable(companyId, fiscalYearId);
   const product = await Product.create({
     companyId,
     fiscalYearId,
@@ -52,13 +54,16 @@ async function createProduct(companyId, fiscalYearId, payload) {
     minimumStock: Number(payload.minimumStock || 0),
     barcode: payload.barcode ? payload.barcode.trim() : null,
     description: payload.description ? payload.description.trim() : null,
-    isActive: payload.isActive !== undefined ? payload.isActive : true
+    isActive: payload.isActive !== undefined ? payload.isActive : true,
+    createdBy: payload.actorUserId || null,
+    updatedBy: payload.actorUserId || null
   });
 
   return mapProduct(product);
 }
 
 async function updateProduct(companyId, fiscalYearId, productId, payload) {
+  await assertFiscalYearWritable(companyId, fiscalYearId);
   const product = await Product.findOne({ _id: productId, companyId, fiscalYearId });
 
   if (!product) {
@@ -96,11 +101,13 @@ async function updateProduct(companyId, fiscalYearId, productId, payload) {
     product.isActive = payload.isActive;
   }
 
+  product.updatedBy = payload.actorUserId || product.updatedBy || null;
   await product.save();
   return mapProduct(product);
 }
 
-async function archiveProduct(companyId, fiscalYearId, productId) {
+async function archiveProduct(companyId, fiscalYearId, productId, actorUserId = null) {
+  await assertFiscalYearWritable(companyId, fiscalYearId);
   const product = await Product.findOne({ _id: productId, companyId, fiscalYearId });
 
   if (!product) {
@@ -108,6 +115,9 @@ async function archiveProduct(companyId, fiscalYearId, productId) {
   }
 
   product.isActive = false;
+  product.deletedAt = new Date();
+  product.deletedBy = actorUserId;
+  product.updatedBy = actorUserId || product.updatedBy || null;
   await product.save();
   return mapProduct(product);
 }

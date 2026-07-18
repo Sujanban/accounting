@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { applySoftDeleteFields, applyAuditFields } = require("./schemaHelpers");
 
 const settingSchema = new mongoose.Schema(
   {
@@ -61,6 +62,9 @@ const settingSchema = new mongoose.Schema(
     timestamps: true
   }
 );
+
+applySoftDeleteFields(settingSchema);
+applyAuditFields(settingSchema);
 
 module.exports = {
   Setting: mongoose.model("Setting", settingSchema)

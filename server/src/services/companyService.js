@@ -4,6 +4,11 @@ const { Membership } = require("../models/Membership");
 const { User } = require("../models/User");
 const { ApiError } = require("../utils/apiError");
 const { buildSessionPayload } = require("./sessionService");
+const { eventBus } = require("../events/eventBus");
+const { registerCoreListeners } = require("../events/registerCoreListeners");
+const { DOMAIN_EVENTS } = require("../shared/constants/events");
+
+registerCoreListeners();
 
 async function createCompanyForUser(userId, payload) {
   const user = await User.findById(userId);
@@ -38,13 +43,16 @@ async function createCompanyForUser(userId, payload) {
         ? new Date(payload.fiscalYear.endDateAD)
         : null
     },
-    createdBy: user._id
+    createdBy: user._id,
+    updatedBy: user._id
   });
 
   await Membership.create({
     userId: user._id,
     companyId: company._id,
-    role: "OWNER"
+    role: "OWNER",
+    createdBy: user._id,
+    updatedBy: user._id
   });
 
   const fiscalYear = await FiscalYear.create({
@@ -55,11 +63,20 @@ async function createCompanyForUser(userId, payload) {
     startDateAD: company.activeFiscalYear.startDateAD || null,
     endDateAD: company.activeFiscalYear.endDateAD || null,
     isActive: true,
-    isLocked: false
+    isLocked: false,
+    createdBy: user._id,
+    updatedBy: user._id
   });
 
   company.activeFiscalYearId = fiscalYear._id;
+  company.updatedBy = user._id;
   await company.save();
+
+  await eventBus.emitAsync(DOMAIN_EVENTS.COMPANY_CREATED, {
+    company,
+    fiscalYear,
+    userId: user._id
+  });
 
   const session = await buildSessionPayload(user, company._id);
 

@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { applySoftDeleteFields, applyAuditFields } = require("./schemaHelpers");
 
 const fiscalYearSchema = new mongoose.Schema(
   {
@@ -43,6 +44,9 @@ const fiscalYearSchema = new mongoose.Schema(
     timestamps: true
   }
 );
+
+applySoftDeleteFields(fiscalYearSchema);
+applyAuditFields(fiscalYearSchema);
 
 fiscalYearSchema.index({ companyId: 1, name: 1 }, { unique: true });
 

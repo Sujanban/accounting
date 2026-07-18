@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { applySoftDeleteFields, applyAuditFields } = require("./schemaHelpers");
 
 const membershipSchema = new mongoose.Schema(
   {
@@ -22,6 +23,9 @@ const membershipSchema = new mongoose.Schema(
     timestamps: true
   }
 );
+
+applySoftDeleteFields(membershipSchema);
+applyAuditFields(membershipSchema);
 
 membershipSchema.index({ userId: 1, companyId: 1 }, { unique: true });
 

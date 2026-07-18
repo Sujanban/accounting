@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { applySoftDeleteFields, applyAuditFields } = require("./schemaHelpers");
 
 const ledgerSchema = new mongoose.Schema(
   {
@@ -16,6 +17,11 @@ const ledgerSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true
+    },
+    systemCode: {
+      type: String,
+      trim: true,
+      default: null
     },
     code: {
       type: String,
@@ -81,7 +87,17 @@ const ledgerSchema = new mongoose.Schema(
   }
 );
 
+applySoftDeleteFields(ledgerSchema);
+applyAuditFields(ledgerSchema);
+
 ledgerSchema.index({ companyId: 1, name: 1 }, { unique: true });
+ledgerSchema.index(
+  { companyId: 1, fiscalYearId: 1, systemCode: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { systemCode: { $type: "string" } }
+  }
+);
 
 module.exports = {
   Ledger: mongoose.model("Ledger", ledgerSchema)

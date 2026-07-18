@@ -3,6 +3,8 @@ const { Ledger } = require("../models/Ledger");
 const { Supplier } = require("../models/Supplier");
 const { ApiError } = require("../utils/apiError");
 const { createOpeningBalanceJournal } = require("./journalService");
+const { ACCOUNT_GROUPS } = require("../shared/constants/accounting");
+const { assertFiscalYearWritable } = require("./fiscalYearGuardService");
 
 function mapParty(record) {
   return {
@@ -17,6 +19,7 @@ function mapParty(record) {
     address: record.address,
     openingBalance: record.openingBalance,
     openingBalanceType: record.openingBalanceType,
+    deletedAt: record.deletedAt,
     isActive: record.isActive,
     createdAt: record.createdAt
   };
@@ -31,6 +34,7 @@ async function createParty({
   fiscalYearId,
   payload
 }) {
+  await assertFiscalYearWritable(companyId, fiscalYearId);
   const ledger = await Ledger.create({
     companyId,
     fiscalYearId,
@@ -41,7 +45,9 @@ async function createParty({
     description: payload.address ? payload.address.trim() : null,
     sourceType,
     isSystem: false,
-    isActive: true
+    isActive: true,
+    createdBy: payload.actorUserId || null,
+    updatedBy: payload.actorUserId || null
   });
 
   const record = await model.create({
@@ -55,7 +61,9 @@ async function createParty({
     address: payload.address ? payload.address.trim() : null,
     openingBalance: Number(payload.openingBalance || 0),
     openingBalanceType: payload.openingBalanceType || defaultOpeningBalanceType,
-    isActive: true
+    isActive: true,
+    createdBy: payload.actorUserId || null,
+    updatedBy: payload.actorUserId || null
   });
 
   ledger.sourceId = record._id;
@@ -67,13 +75,15 @@ async function createParty({
     ledgerId: ledger._id,
     amount: record.openingBalance,
     balanceType: record.openingBalanceType,
-    narration: `Opening balance for ${sourceType.toLowerCase()} ${record.name}`
+    narration: `Opening balance for ${sourceType.toLowerCase()} ${record.name}`,
+    userId: payload.actorUserId || null
   });
 
   return mapParty(record);
 }
 
 async function updateParty({ model, companyId, fiscalYearId, partyId, payload }) {
+  await assertFiscalYearWritable(companyId, fiscalYearId);
   const record = await model.findOne({ _id: partyId, companyId, fiscalYearId });
 
   if (!record) {
@@ -100,17 +110,20 @@ async function updateParty({ model, companyId, fiscalYearId, partyId, payload })
         ? payload.address.trim()
         : null
       : record.address;
+  record.updatedBy = payload.actorUserId || record.updatedBy || null;
   await record.save();
 
   await Ledger.findByIdAndUpdate(record.ledgerId, {
     name: record.name,
-    description: record.address
+    description: record.address,
+    updatedBy: payload.actorUserId || null
   });
 
   return mapParty(record);
 }
 
-async function archiveParty({ model, companyId, fiscalYearId, partyId }) {
+async function archiveParty({ model, companyId, fiscalYearId, partyId, actorUserId = null }) {
+  await assertFiscalYearWritable(companyId, fiscalYearId);
   const record = await model.findOne({ _id: partyId, companyId, fiscalYearId });
 
   if (!record) {
@@ -118,8 +131,16 @@ async function archiveParty({ model, companyId, fiscalYearId, partyId }) {
   }
 
   record.isActive = false;
+  record.deletedAt = new Date();
+  record.deletedBy = actorUserId;
+  record.updatedBy = actorUserId || record.updatedBy || null;
   await record.save();
-  await Ledger.findByIdAndUpdate(record.ledgerId, { isActive: false });
+  await Ledger.findByIdAndUpdate(record.ledgerId, {
+    isActive: false,
+    deletedAt: new Date(),
+    deletedBy: actorUserId,
+    updatedBy: actorUserId
+  });
 
   return mapParty(record);
 }
@@ -144,5 +165,6 @@ module.exports = {
   updateParty,
   archiveParty,
   listParties,
-  mapParty
+  mapParty,
+  ACCOUNT_GROUPS
 };

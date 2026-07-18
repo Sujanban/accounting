@@ -67,8 +67,10 @@ test("bootstrapAccountingForCompany creates default fiscal year, groups, ledgers
       "2025-07-17T00:00:00.000Z"
     );
     assert.equal(calls.groups.length, 11);
+    assert.equal(calls.groups[0].systemCode, "CURRENT_ASSETS");
     assert.equal(calls.ledgers.length, 13);
     assert.equal(calls.ledgers[0].fiscalYearId, "fy-1");
+    assert.equal(calls.ledgers[0].systemCode, "CASH");
     assert.equal(calls.sequences.length, 6);
     assert.deepEqual(calls.sequences.map((item) => item.type), [
       "JV",
@@ -78,6 +80,64 @@ test("bootstrapAccountingForCompany creates default fiscal year, groups, ledgers
       "PMV",
       "CV"
     ]);
+  } finally {
+    restore();
+  }
+});
+
+test("initializeAccountingForCompany seeds defaults against an existing fiscal year", async () => {
+  const calls = {
+    groups: null,
+    ledgers: null,
+    sequences: null
+  };
+
+  const { module: bootstrapService, restore } = loadWithMocks(
+    "../../src/services/accountingBootstrapService",
+    {
+      "../models/FiscalYear": {
+        FiscalYear: {
+          create: async () => {
+            throw new Error("should not create fiscal year");
+          }
+        }
+      },
+      "../models/AccountGroup": {
+        AccountGroup: {
+          insertMany: async (payload) => {
+            calls.groups = payload;
+          }
+        }
+      },
+      "../models/Ledger": {
+        Ledger: {
+          insertMany: async (payload) => {
+            calls.ledgers = payload;
+          }
+        }
+      },
+      "../models/VoucherSequence": {
+        VoucherSequence: {
+          insertMany: async (payload) => {
+            calls.sequences = payload;
+          }
+        }
+      }
+    }
+  );
+
+  try {
+    await bootstrapService.initializeAccountingForCompany(
+      { _id: "company-1" },
+      { _id: "fy-existing" },
+      "user-1"
+    );
+
+    assert.equal(calls.groups.length, 11);
+    assert.equal(calls.groups[0].createdBy, "user-1");
+    assert.equal(calls.ledgers[0].fiscalYearId, "fy-existing");
+    assert.equal(calls.ledgers[0].systemCode, "CASH");
+    assert.equal(calls.sequences[0].createdBy, "user-1");
   } finally {
     restore();
   }

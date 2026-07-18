@@ -3,14 +3,16 @@ const { JournalLine } = require("../models/JournalLine");
 const { Ledger } = require("../models/Ledger");
 const { VoucherSequence } = require("../models/VoucherSequence");
 const { ApiError } = require("../utils/apiError");
+const { LEDGERS, VOUCHER_TYPES } = require("../shared/constants/accounting");
+const { assertFiscalYearWritable } = require("./fiscalYearGuardService");
 
 function formatVoucherNumber(number) {
-  return `JV-${String(number).padStart(6, "0")}`;
+  return `${VOUCHER_TYPES.JOURNAL}-${String(number).padStart(6, "0")}`;
 }
 
 async function getNextVoucherNumber(companyId) {
   const sequence = await VoucherSequence.findOneAndUpdate(
-    { companyId, type: "JV" },
+    { companyId, type: VOUCHER_TYPES.JOURNAL },
     { $inc: { currentNumber: 1 } },
     { new: true }
   );
@@ -63,8 +65,10 @@ async function createJournalEntry({
   narration,
   rows,
   sourceType = "MANUAL",
-  isSystem = false
+  isSystem = false,
+  userId = null
 }) {
+  await assertFiscalYearWritable(companyId, fiscalYearId);
   validateRows(rows);
 
   const ledgers = await Ledger.find({
@@ -87,7 +91,9 @@ async function createJournalEntry({
     narration: narration ? narration.trim() : null,
     sourceType,
     isSystem,
-    isPosted: true
+    isPosted: true,
+    createdBy: userId,
+    updatedBy: userId
   });
 
   const lines = await JournalLine.insertMany(
@@ -98,7 +104,9 @@ async function createJournalEntry({
       ledgerId: row.ledgerId,
       debit: Number(row.debit || 0),
       credit: Number(row.credit || 0),
-      remarks: row.remarks ? row.remarks.trim() : null
+      remarks: row.remarks ? row.remarks.trim() : null,
+      createdBy: userId,
+      updatedBy: userId
     }))
   );
 
@@ -114,7 +122,8 @@ async function createOpeningBalanceJournal({
   ledgerId,
   amount,
   balanceType,
-  narration
+  narration,
+  userId = null
 }) {
   if (!amount || Number(amount) <= 0) {
     return null;
@@ -123,7 +132,7 @@ async function createOpeningBalanceJournal({
   const capitalLedger = await Ledger.findOne({
     companyId,
     fiscalYearId,
-    name: "Capital"
+    systemCode: LEDGERS.CAPITAL.systemCode
   });
 
   if (!capitalLedger) {
@@ -139,6 +148,7 @@ async function createOpeningBalanceJournal({
     narration,
     sourceType: "OPENING_BALANCE",
     isSystem: true,
+    userId,
     rows: [
       {
         ledgerId,

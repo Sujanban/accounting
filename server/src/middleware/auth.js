@@ -6,13 +6,14 @@ const { User } = require("../models/User");
 const { ApiError } = require("../utils/apiError");
 const { asyncHandler } = require("../utils/asyncHandler");
 const { verifyAccessToken } = require("../utils/token");
+const { ERROR_CODES } = require("../shared/constants/errors");
 
 const requireAuth = asyncHandler(async (request, _response, next) => {
   const authorizationHeader = request.headers.authorization || "";
   const [scheme, token] = authorizationHeader.split(" ");
 
   if (scheme !== "Bearer" || !token) {
-    throw new ApiError(401, "Authorization token is required.");
+    throw new ApiError(401, "Authorization token is required.", ERROR_CODES.UNAUTHORIZED);
   }
 
   let payload;
@@ -20,13 +21,13 @@ const requireAuth = asyncHandler(async (request, _response, next) => {
   try {
     payload = verifyAccessToken(token);
   } catch (_error) {
-    throw new ApiError(401, "Invalid or expired access token.");
+    throw new ApiError(401, "Invalid or expired access token.", ERROR_CODES.INVALID_TOKEN);
   }
 
   const user = await User.findById(payload.sub);
 
   if (!user || !user.isActive) {
-    throw new ApiError(401, "User session is no longer valid.");
+    throw new ApiError(401, "User session is no longer valid.", ERROR_CODES.UNAUTHORIZED);
   }
 
   request.auth = {
@@ -68,6 +69,8 @@ const resolveActiveCompany = asyncHandler(async (request, _response, next) => {
   request.auth.membership = activeMembership || null;
   request.auth.activeCompanyId = activeMembership ? activeMembership.companyId : null;
   request.context.membership = activeMembership || null;
+  request.company = null;
+  request.membership = activeMembership || null;
 
   next();
 });
@@ -85,6 +88,7 @@ const resolveActiveFiscalYear = asyncHandler(async (request, _response, next) =>
   }
 
   request.context.company = company;
+  request.company = company;
 
   const fiscalYearIdHeader = request.get("x-fiscal-year-id");
 
@@ -109,6 +113,8 @@ const resolveActiveFiscalYear = asyncHandler(async (request, _response, next) =>
 
   request.context.fiscalYear = fiscalYear;
   request.context.settings = settings;
+  request.fiscalYear = fiscalYear;
+  request.settings = settings;
   next();
 });
 
