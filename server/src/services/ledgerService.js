@@ -1,69 +1,49 @@
 const { AccountGroup } = require("../models/AccountGroup");
-const { JournalLine } = require("../models/JournalLine");
 const { Ledger } = require("../models/Ledger");
 const { ApiError } = require("../utils/apiError");
-const { createOpeningBalanceJournal } = require("./journalService");
 const { assertFiscalYearWritable } = require("./fiscalYearGuardService");
-
-function normalizeSignedBalance(openingBalance, openingBalanceType) {
-  return openingBalanceType === "DEBIT" ? openingBalance : -openingBalance;
-}
-
-function balanceTypeFromSignedAmount(amount) {
-  return amount >= 0 ? "DEBIT" : "CREDIT";
-}
 
 function mapLedger(ledger) {
   return {
     id: ledger._id,
     companyId: ledger.companyId,
+    groupId: ledger.groupId,
     fiscalYearId: ledger.fiscalYearId,
-    name: ledger.name,
     systemCode: ledger.systemCode,
-    code: ledger.code,
-    accountGroup: ledger.accountGroup,
-    parentLedgerId: ledger.parentLedgerId,
+    name: ledger.name,
     openingBalance: ledger.openingBalance,
     openingBalanceType: ledger.openingBalanceType,
     description: ledger.description,
-    sourceType: ledger.sourceType,
-    sourceId: ledger.sourceId,
+    allowManualEntry: ledger.allowManualEntry,
     isSystem: ledger.isSystem,
     isActive: ledger.isActive,
     createdAt: ledger.createdAt
   };
 }
 
-async function listAccountGroups(companyId) {
-  const groups = await AccountGroup.find({ companyId, isActive: true }).sort({
-    category: 1,
-    name: 1
-  });
+async function resolveGroup(companyId, groupId) {
+  const group = await AccountGroup.findOne({
+    _id: groupId,
+    companyId,
+    isActive: true
+  }).lean();
 
-  return groups.map((group) => ({
-    id: group._id,
-    companyId: group.companyId,
-    name: group.name,
-    category: group.category,
-    parentGroupId: group.parentGroupId,
-    isSystem: group.isSystem,
-    isActive: group.isActive,
-    createdAt: group.createdAt
-  }));
+  if (!group) {
+    throw new ApiError(400, "A valid account group is required.");
+  }
+
+  return group;
 }
 
 async function listLedgers(companyId, fiscalYearId, query = {}) {
-  const filters = {
-    companyId,
-    fiscalYearId
-  };
+  const filters = { companyId, fiscalYearId };
 
   if (query.search) {
     filters.name = { $regex: query.search, $options: "i" };
   }
 
-  if (query.accountGroup) {
-    filters.accountGroup = query.accountGroup;
+  if (query.groupId) {
+    filters.groupId = query.groupId;
   }
 
   if (query.isActive !== undefined) {
@@ -76,32 +56,23 @@ async function listLedgers(companyId, fiscalYearId, query = {}) {
 
 async function createLedger(companyId, fiscalYearId, payload) {
   await assertFiscalYearWritable(companyId, fiscalYearId);
+  const group = await resolveGroup(companyId, payload.groupId);
 
   const ledger = await Ledger.create({
     companyId,
+    groupId: group._id,
     fiscalYearId,
-    name: payload.name.trim(),
     systemCode: payload.systemCode ? payload.systemCode.trim() : null,
-    code: payload.code ? payload.code.trim() : null,
-    accountGroup: payload.accountGroup,
-    parentLedgerId: payload.parentLedgerId || null,
+    name: payload.name.trim(),
     openingBalance: Number(payload.openingBalance || 0),
     openingBalanceType: payload.openingBalanceType || "DEBIT",
     description: payload.description ? payload.description.trim() : null,
+    allowManualEntry:
+      payload.allowManualEntry !== undefined ? payload.allowManualEntry : true,
     isSystem: false,
     isActive: true,
     createdBy: payload.actorUserId || null,
     updatedBy: payload.actorUserId || null
-  });
-
-  await createOpeningBalanceJournal({
-    companyId,
-    fiscalYearId,
-    ledgerId: ledger._id,
-    amount: ledger.openingBalance,
-    balanceType: ledger.openingBalanceType,
-    narration: `Opening balance for ledger ${ledger.name}`,
-    userId: payload.actorUserId || null
   });
 
   return mapLedger(ledger);
@@ -109,7 +80,12 @@ async function createLedger(companyId, fiscalYearId, payload) {
 
 async function updateLedger(companyId, fiscalYearId, ledgerId, payload) {
   await assertFiscalYearWritable(companyId, fiscalYearId);
-  const ledger = await Ledger.findOne({ _id: ledgerId, companyId, fiscalYearId });
+
+  const ledger = await Ledger.findOne({
+    _id: ledgerId,
+    companyId,
+    fiscalYearId
+  });
 
   if (!ledger) {
     throw new ApiError(404, "Ledger was not found.");
@@ -119,15 +95,31 @@ async function updateLedger(companyId, fiscalYearId, ledgerId, payload) {
     throw new ApiError(403, "System ledgers cannot be edited.");
   }
 
-  ledger.name = payload.name ? payload.name.trim() : ledger.name;
-  ledger.code = payload.code !== undefined ? (payload.code ? payload.code.trim() : null) : ledger.code;
-  ledger.accountGroup = payload.accountGroup || ledger.accountGroup;
-  ledger.description =
-    payload.description !== undefined
-      ? payload.description
-        ? payload.description.trim()
-        : null
-      : ledger.description;
+  if (payload.name) {
+    ledger.name = payload.name.trim();
+  }
+
+  if (payload.groupId) {
+    const group = await resolveGroup(companyId, payload.groupId);
+    ledger.groupId = group._id;
+  }
+
+  if (payload.openingBalance !== undefined) {
+    ledger.openingBalance = Number(payload.openingBalance);
+  }
+
+  if (payload.openingBalanceType !== undefined) {
+    ledger.openingBalanceType = payload.openingBalanceType;
+  }
+
+  if (payload.description !== undefined) {
+    ledger.description = payload.description ? payload.description.trim() : null;
+  }
+
+  if (payload.allowManualEntry !== undefined) {
+    ledger.allowManualEntry = payload.allowManualEntry;
+  }
+
   ledger.updatedBy = payload.actorUserId || ledger.updatedBy || null;
   await ledger.save();
 
@@ -136,7 +128,12 @@ async function updateLedger(companyId, fiscalYearId, ledgerId, payload) {
 
 async function archiveLedger(companyId, fiscalYearId, ledgerId, actorUserId = null) {
   await assertFiscalYearWritable(companyId, fiscalYearId);
-  const ledger = await Ledger.findOne({ _id: ledgerId, companyId, fiscalYearId });
+
+  const ledger = await Ledger.findOne({
+    _id: ledgerId,
+    companyId,
+    fiscalYearId
+  });
 
   if (!ledger) {
     throw new ApiError(404, "Ledger was not found.");
@@ -155,143 +152,10 @@ async function archiveLedger(companyId, fiscalYearId, ledgerId, actorUserId = nu
   return mapLedger(ledger);
 }
 
-async function getGeneralLedger(companyId, fiscalYearId, ledgerId, query = {}) {
-  const ledger = await Ledger.findOne({ _id: ledgerId, companyId, fiscalYearId }).lean();
-
-  if (!ledger) {
-    throw new ApiError(404, "Ledger was not found.");
-  }
-
-  const lineFilters = {
-    companyId,
-    fiscalYearId,
-    ledgerId
-  };
-
-  const lines = await JournalLine.find(lineFilters)
-    .populate("journalEntryId")
-    .sort({ createdAt: 1 })
-    .lean();
-
-  const openingSignedBalance = normalizeSignedBalance(
-    ledger.openingBalance,
-    ledger.openingBalanceType
-  );
-
-  let runningBalance = openingSignedBalance;
-
-  const entries = lines
-    .filter((line) => {
-      const entry = line.journalEntryId;
-
-      if (!entry) {
-        return false;
-      }
-
-      if (entry.sourceType === "OPENING_BALANCE") {
-        return false;
-      }
-
-      if (query.dateFrom && new Date(entry.date) < new Date(query.dateFrom)) {
-        return false;
-      }
-
-      if (query.dateTo && new Date(entry.date) > new Date(query.dateTo)) {
-        return false;
-      }
-
-      return true;
-    })
-    .map((line) => {
-      runningBalance += line.debit - line.credit;
-
-      return {
-        id: line._id,
-        voucherNumber: line.journalEntryId.voucherNumber,
-        voucherDate: line.journalEntryId.date,
-        narration: line.journalEntryId.narration,
-        debit: line.debit,
-        credit: line.credit,
-        remarks: line.remarks,
-        runningBalance: Math.abs(runningBalance),
-        runningBalanceType: balanceTypeFromSignedAmount(runningBalance)
-      };
-    });
-
-  return {
-    ledger: mapLedger(ledger),
-    openingBalance: ledger.openingBalance,
-    openingBalanceType: ledger.openingBalanceType,
-    entries,
-    closingBalance: Math.abs(runningBalance),
-    closingBalanceType: balanceTypeFromSignedAmount(runningBalance)
-  };
-}
-
-async function getTrialBalance(companyId, fiscalYearId) {
-  const ledgers = await Ledger.find({ companyId, fiscalYearId, isActive: true }).lean();
-  const ledgerIds = ledgers.map((ledger) => ledger._id);
-  const nonOpeningEntries = await require("../models/JournalEntry").JournalEntry.find({
-    companyId,
-    fiscalYearId,
-    sourceType: { $ne: "OPENING_BALANCE" }
-  }).lean();
-  const lines = await JournalLine.find({
-    companyId,
-    fiscalYearId,
-    ledgerId: { $in: ledgerIds },
-    journalEntryId: { $in: nonOpeningEntries.map((entry) => entry._id) }
-  }).lean();
-
-  const rows = ledgers.map((ledger) => {
-    const journalTotal = lines
-      .filter((line) => String(line.ledgerId) === String(ledger._id))
-      .reduce(
-        (totals, line) => {
-          totals.debit += line.debit;
-          totals.credit += line.credit;
-          return totals;
-        },
-        { debit: 0, credit: 0 }
-      );
-
-    const signedOpening = normalizeSignedBalance(
-      ledger.openingBalance,
-      ledger.openingBalanceType
-    );
-    const signedClosing = signedOpening + journalTotal.debit - journalTotal.credit;
-
-    return {
-      ledgerId: ledger._id,
-      ledgerName: ledger.name,
-      debit: signedClosing > 0 ? signedClosing : 0,
-      credit: signedClosing < 0 ? Math.abs(signedClosing) : 0
-    };
-  });
-
-  const totals = rows.reduce(
-    (accumulator, row) => {
-      accumulator.debit += row.debit;
-      accumulator.credit += row.credit;
-      return accumulator;
-    },
-    { debit: 0, credit: 0 }
-  );
-
-  return {
-    rows,
-    totals,
-    isBalanced: totals.debit === totals.credit
-  };
-}
-
 module.exports = {
-  listAccountGroups,
   listLedgers,
   createLedger,
   updateLedger,
   archiveLedger,
-  getGeneralLedger,
-  getTrialBalance,
   mapLedger
 };

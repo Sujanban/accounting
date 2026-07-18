@@ -1,6 +1,7 @@
 const { Company } = require("../models/Company");
 const { FiscalYear } = require("../models/FiscalYear");
 const { ApiError } = require("../utils/apiError");
+const { initializeAccountingForFiscalYear } = require("./accountingBootstrapService");
 
 function mapFiscalYear(fiscalYear) {
   return {
@@ -51,6 +52,9 @@ async function createFiscalYear(companyId, payload) {
       endDateAD: fiscalYear.endDateAD
     }
   });
+
+  const company = await Company.findById(companyId).lean();
+  await initializeAccountingForFiscalYear(company, fiscalYear);
 
   return mapFiscalYear(fiscalYear);
 }

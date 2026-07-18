@@ -56,6 +56,46 @@ const settingSchema = new mongoose.Schema(
     allowNegativeStock: {
       type: Boolean,
       default: false
+    },
+    accounting: {
+      voucherNumbering: {
+        type: String,
+        enum: ["AUTO", "MANUAL"],
+        default: "AUTO"
+      },
+      decimalPlaces: {
+        type: Number,
+        default: 2,
+        min: 0,
+        max: 6
+      },
+      allowJournalEditing: {
+        type: Boolean,
+        default: false
+      },
+      lockAfterClosing: {
+        type: Boolean,
+        default: true
+      },
+      defaultVoucherView: {
+        type: String,
+        enum: ["STANDARD", "COMPACT"],
+        default: "STANDARD"
+      }
+    },
+    fiscalLock: {
+      lockBeforeDate: {
+        type: Date,
+        default: null
+      },
+      lockClosedFiscalYear: {
+        type: Boolean,
+        default: true
+      },
+      allowAdminOverride: {
+        type: Boolean,
+        default: false
+      }
     }
   },
   {

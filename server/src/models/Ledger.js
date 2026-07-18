@@ -8,6 +8,11 @@ const ledgerSchema = new mongoose.Schema(
       ref: "Company",
       required: true
     },
+    groupId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "AccountGroup",
+      required: true
+    },
     fiscalYearId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "FiscalYear",
@@ -59,6 +64,10 @@ const ledgerSchema = new mongoose.Schema(
       enum: ["DEBIT", "CREDIT"],
       default: "DEBIT"
     },
+    allowManualEntry: {
+      type: Boolean,
+      default: true
+    },
     description: {
       type: String,
       trim: true,
@@ -91,6 +100,7 @@ applySoftDeleteFields(ledgerSchema);
 applyAuditFields(ledgerSchema);
 
 ledgerSchema.index({ companyId: 1, name: 1 }, { unique: true });
+ledgerSchema.index({ companyId: 1, fiscalYearId: 1, groupId: 1 });
 ledgerSchema.index(
   { companyId: 1, fiscalYearId: 1, systemCode: 1 },
   {

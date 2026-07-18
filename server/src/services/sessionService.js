@@ -37,7 +37,9 @@ function mapSettings(settings) {
     dateFormat: settings.dateFormat,
     timezone: settings.timezone,
     decimalPlaces: settings.decimalPlaces,
-    allowNegativeStock: settings.allowNegativeStock
+    allowNegativeStock: settings.allowNegativeStock,
+    accounting: settings.accounting,
+    fiscalLock: settings.fiscalLock
   };
 }
 

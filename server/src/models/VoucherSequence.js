@@ -8,14 +8,35 @@ const voucherSequenceSchema = new mongoose.Schema(
       ref: "Company",
       required: true
     },
-    type: {
+    fiscalYearId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "FiscalYear",
+      required: true
+    },
+    voucherType: {
       type: String,
       enum: ["JV", "SV", "PV", "RV", "PMV", "CV"],
       required: true
     },
-    currentNumber: {
+    prefix: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    nextNumber: {
       type: Number,
-      default: 0
+      default: 1,
+      min: 1
+    },
+    padding: {
+      type: Number,
+      default: 6,
+      min: 1,
+      max: 12
+    },
+    resetEveryFiscalYear: {
+      type: Boolean,
+      default: true
     }
   },
   {
@@ -26,7 +47,10 @@ const voucherSequenceSchema = new mongoose.Schema(
 applySoftDeleteFields(voucherSequenceSchema);
 applyAuditFields(voucherSequenceSchema);
 
-voucherSequenceSchema.index({ companyId: 1, type: 1 }, { unique: true });
+voucherSequenceSchema.index(
+  { companyId: 1, fiscalYearId: 1, voucherType: 1 },
+  { unique: true }
+);
 
 module.exports = {
   VoucherSequence: mongoose.model("VoucherSequence", voucherSequenceSchema)

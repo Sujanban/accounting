@@ -1,38 +1,22 @@
 const express = require("express");
 
-const { getAccountingOverview } = require("../controllers/accountingController");
-const {
-  getFiscalYears,
-  postFiscalYear,
-  activateFiscalYear,
-  postLockFiscalYear
-} = require("../controllers/fiscalYearController");
 const {
   getAccountGroups,
+  postAccountGroup,
+  patchAccountGroup,
+  archiveAccountGroupRecord,
+  getChartOfAccountsTree
+} = require("../controllers/accountGroupController");
+const {
   getLedgers,
   postLedger,
   patchLedger,
-  archiveLedgerRecord,
-  getGeneralLedgerReport,
-  getTrialBalanceReport
+  archiveLedgerRecord
 } = require("../controllers/ledgerController");
 const {
-  getCustomers,
-  postCustomer,
-  patchCustomer,
-  archiveCustomer,
-  getSuppliers,
-  postSupplier,
-  patchSupplier,
-  archiveSupplier
-} = require("../controllers/partyController");
-const {
-  getProducts,
-  postProduct,
-  patchProduct,
-  archiveProductRecord
-} = require("../controllers/productController");
-const { getJournalEntries, postJournalEntry } = require("../controllers/journalController");
+  getVoucherSequences,
+  patchVoucherSequence
+} = require("../controllers/voucherSequenceController");
 const {
   requireAuth,
   resolveActiveCompany,
@@ -41,11 +25,9 @@ const {
 const { requireCompletedOnboarding } = require("../middleware/onboarding");
 const { validate } = require("../middleware/validate");
 const {
-  validateFiscalYear,
+  validateAccountGroup,
   validateLedger,
-  validateParty,
-  validateProduct,
-  validateJournalEntry
+  validateVoucherSequence
 } = require("../validators/accountingValidators");
 
 const accountingRouter = express.Router();
@@ -57,40 +39,20 @@ accountingRouter.use(
   requireCompletedOnboarding
 );
 
-accountingRouter.get("/dashboard", getAccountingOverview);
-
-accountingRouter.get("/fiscal-years", getFiscalYears);
-accountingRouter.post("/fiscal-years", validate(validateFiscalYear), postFiscalYear);
-accountingRouter.post("/fiscal-years/:fiscalYearId/switch", activateFiscalYear);
-accountingRouter.post("/fiscal-years/:fiscalYearId/lock", postLockFiscalYear);
-
 accountingRouter.get("/account-groups", getAccountGroups);
+accountingRouter.post("/account-groups", validate(validateAccountGroup), postAccountGroup);
+accountingRouter.patch("/account-groups/:id", patchAccountGroup);
+accountingRouter.delete("/account-groups/:id", archiveAccountGroupRecord);
+
+accountingRouter.get("/chart-of-accounts", getChartOfAccountsTree);
 
 accountingRouter.get("/ledgers", getLedgers);
 accountingRouter.post("/ledgers", validate(validateLedger), postLedger);
-accountingRouter.patch("/ledgers/:ledgerId", patchLedger);
-accountingRouter.post("/ledgers/:ledgerId/archive", archiveLedgerRecord);
-accountingRouter.get("/ledgers/:ledgerId/general-ledger", getGeneralLedgerReport);
+accountingRouter.patch("/ledgers/:id", patchLedger);
+accountingRouter.delete("/ledgers/:id", archiveLedgerRecord);
 
-accountingRouter.get("/trial-balance", getTrialBalanceReport);
-
-accountingRouter.get("/customers", getCustomers);
-accountingRouter.post("/customers", validate(validateParty), postCustomer);
-accountingRouter.patch("/customers/:customerId", patchCustomer);
-accountingRouter.post("/customers/:customerId/archive", archiveCustomer);
-
-accountingRouter.get("/suppliers", getSuppliers);
-accountingRouter.post("/suppliers", validate(validateParty), postSupplier);
-accountingRouter.patch("/suppliers/:supplierId", patchSupplier);
-accountingRouter.post("/suppliers/:supplierId/archive", archiveSupplier);
-
-accountingRouter.get("/products", getProducts);
-accountingRouter.post("/products", validate(validateProduct), postProduct);
-accountingRouter.patch("/products/:productId", patchProduct);
-accountingRouter.post("/products/:productId/archive", archiveProductRecord);
-
-accountingRouter.get("/journal-entries", getJournalEntries);
-accountingRouter.post("/journal-entries", validate(validateJournalEntry), postJournalEntry);
+accountingRouter.get("/voucher-sequences", getVoucherSequences);
+accountingRouter.patch("/voucher-sequences/:id", validate(validateVoucherSequence), patchVoucherSequence);
 
 module.exports = {
   accountingRouter

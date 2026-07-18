@@ -26,7 +26,11 @@ test("bootstrapAccountingForCompany creates default fiscal year, groups, ledgers
         AccountGroup: {
           insertMany: async (payload) => {
             calls.groups = payload;
-          }
+            return payload.map((item, index) => ({ _id: `group-${index + 1}`, ...item }));
+          },
+          find: () => ({
+            lean: async () => []
+          })
         }
       },
       "../models/Ledger": {
@@ -71,8 +75,9 @@ test("bootstrapAccountingForCompany creates default fiscal year, groups, ledgers
     assert.equal(calls.ledgers.length, 13);
     assert.equal(calls.ledgers[0].fiscalYearId, "fy-1");
     assert.equal(calls.ledgers[0].systemCode, "CASH");
+    assert.equal(calls.ledgers[0].groupId, "group-1");
     assert.equal(calls.sequences.length, 6);
-    assert.deepEqual(calls.sequences.map((item) => item.type), [
+    assert.deepEqual(calls.sequences.map((item) => item.voucherType), [
       "JV",
       "SV",
       "PV",
@@ -80,6 +85,7 @@ test("bootstrapAccountingForCompany creates default fiscal year, groups, ledgers
       "PMV",
       "CV"
     ]);
+    assert.equal(calls.sequences[0].prefix, "JV-2082/83-");
   } finally {
     restore();
   }
@@ -106,7 +112,11 @@ test("initializeAccountingForCompany seeds defaults against an existing fiscal y
         AccountGroup: {
           insertMany: async (payload) => {
             calls.groups = payload;
-          }
+            return payload.map((item, index) => ({ _id: `group-${index + 1}`, ...item }));
+          },
+          find: () => ({
+            lean: async () => []
+          })
         }
       },
       "../models/Ledger": {
@@ -137,6 +147,7 @@ test("initializeAccountingForCompany seeds defaults against an existing fiscal y
     assert.equal(calls.groups[0].createdBy, "user-1");
     assert.equal(calls.ledgers[0].fiscalYearId, "fy-existing");
     assert.equal(calls.ledgers[0].systemCode, "CASH");
+    assert.equal(calls.ledgers[0].groupId, "group-1");
     assert.equal(calls.sequences[0].createdBy, "user-1");
   } finally {
     restore();
@@ -172,8 +183,14 @@ test("createFiscalYear deactivates the current year and updates company active f
         Company: {
           findByIdAndUpdate: async (_companyId, payload) => {
             companyUpdate = payload;
-          }
+          },
+          findById: () => ({
+            lean: async () => ({ _id: "company-1" })
+          })
         }
+      },
+      "./accountingBootstrapService": {
+        initializeAccountingForFiscalYear: async () => {}
       }
     }
   );

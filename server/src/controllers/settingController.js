@@ -1,4 +1,7 @@
-const { createSettingsForCompany } = require("../services/settingService");
+const {
+  createSettingsForCompany,
+  updateAccountingPreferences
+} = require("../services/settingService");
 const { asyncHandler } = require("../utils/asyncHandler");
 const { sendSuccess } = require("../utils/apiResponse");
 
@@ -18,5 +21,19 @@ const createSettings = asyncHandler(async (request, response) => {
 });
 
 module.exports = {
-  createSettings
+  createSettings,
+  patchAccountingPreferences: asyncHandler(async (request, response) => {
+    const result = await updateAccountingPreferences(
+      request.auth.user._id,
+      request.auth.activeCompanyId,
+      request.body
+    );
+
+    return sendSuccess(
+      response,
+      200,
+      "Accounting preferences updated successfully.",
+      result
+    );
+  })
 };

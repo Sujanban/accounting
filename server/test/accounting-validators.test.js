@@ -4,9 +4,8 @@ const assert = require("node:assert/strict");
 const {
   validateFiscalYear,
   validateLedger,
-  validateParty,
-  validateProduct,
-  validateJournalEntry
+  validateVoucherSequence,
+  validateAccountingPreferences
 } = require("../src/validators/accountingValidators");
 
 test("validateFiscalYear accepts a complete payload", () => {
@@ -22,40 +21,39 @@ test("validateFiscalYear accepts a complete payload", () => {
 test("validateLedger rejects invalid account groups and balance types", () => {
   const errors = validateLedger({
     name: "Cash",
-    accountGroup: "Invalid Group",
     openingBalanceType: "SIDEWAYS"
   });
 
   assert.equal(errors.length, 2);
-  assert.equal(errors[0].field, "accountGroup");
+  assert.equal(errors[0].field, "groupId");
   assert.equal(errors[1].field, "openingBalanceType");
 });
 
-test("validateParty requires a valid email and balance type", () => {
-  const errors = validateParty({
-    name: "AB",
-    email: "not-an-email",
-    openingBalanceType: "BAD"
+test("validateVoucherSequence rejects invalid sequence settings", () => {
+  const errors = validateVoucherSequence({
+    voucherType: "BAD",
+    nextNumber: 0,
+    openingBalanceType: "SIDEWAYS"
   });
 
   assert.equal(errors.length, 2);
+  assert.equal(errors[0].field, "voucherType");
+  assert.equal(errors[1].field, "nextNumber");
 });
 
-test("validateProduct requires name and unit", () => {
-  const errors = validateProduct({
-    name: " ",
-    unit: ""
+test("validateAccountingPreferences rejects invalid accounting and lock settings", () => {
+  const errors = validateAccountingPreferences({
+    accounting: {
+      voucherNumbering: "BAD",
+      decimalPlaces: 9
+    },
+    fiscalLock: {
+      lockBeforeDate: "not-a-date"
+    }
   });
 
-  assert.equal(errors.length, 2);
-});
-
-test("validateJournalEntry requires date and at least two rows", () => {
-  const errors = validateJournalEntry({
-    rows: [{ ledgerId: "l1", debit: 100 }]
-  });
-
-  assert.equal(errors.length, 2);
-  assert.equal(errors[0].field, "date");
-  assert.equal(errors[1].field, "rows");
+  assert.equal(errors.length, 3);
+  assert.equal(errors[0].field, "accounting.voucherNumbering");
+  assert.equal(errors[1].field, "accounting.decimalPlaces");
+  assert.equal(errors[2].field, "fiscalLock.lockBeforeDate");
 });

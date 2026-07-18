@@ -23,7 +23,12 @@ const accountGroupSchema = new mongoose.Schema(
       enum: ["Assets", "Liabilities", "Equity", "Income", "Expenses"],
       required: true
     },
-    parentGroupId: {
+    type: {
+      type: String,
+      enum: ["Assets", "Liabilities", "Equity", "Income", "Expenses"],
+      default: null
+    },
+    parentId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "AccountGroup",
       default: null
@@ -51,6 +56,7 @@ applySoftDeleteFields(accountGroupSchema);
 applyAuditFields(accountGroupSchema);
 
 accountGroupSchema.index({ companyId: 1, name: 1 }, { unique: true });
+accountGroupSchema.index({ companyId: 1, parentId: 1 });
 accountGroupSchema.index(
   { companyId: 1, systemCode: 1 },
   {
