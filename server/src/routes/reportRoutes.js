@@ -1,0 +1,11 @@
+const express = require("express");
+const { requireAuth, resolveActiveCompany, resolveActiveFiscalYear, requireRoles } = require("../middleware/auth");
+const { requireCompletedOnboarding } = require("../middleware/onboarding");
+const controller = require("../controllers/reportController");
+const reportRouter = express.Router();
+reportRouter.use(requireAuth, resolveActiveCompany, resolveActiveFiscalYear, requireCompletedOnboarding, requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "STAFF"));
+reportRouter.get("/general-ledger", controller.getGeneralLedger);
+reportRouter.get("/trial-balance", controller.getTrialBalance);
+reportRouter.get("/journal-register", controller.getJournalRegister);
+reportRouter.get("/day-book", controller.getDayBook);
+module.exports = { reportRouter };

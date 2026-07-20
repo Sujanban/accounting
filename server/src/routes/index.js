@@ -7,6 +7,7 @@ const { settingRouter } = require("./settingRoutes");
 const { businessMasterRouter } = require("./businessMasterRoutes");
 const { transactionRouter } = require("./transactionRoutes");
 const { voucherRouter } = require("./voucherRoutes");
+const { reportRouter } = require("./reportRoutes");
 
 const apiRouter = express.Router();
 
@@ -17,6 +18,7 @@ apiRouter.use("/settings", settingRouter);
 apiRouter.use("/", businessMasterRouter);
 apiRouter.use("/transactions", transactionRouter);
 apiRouter.use("/", voucherRouter);
+apiRouter.use("/reports", reportRouter);
 
 module.exports = {
   apiRouter
