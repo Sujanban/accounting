@@ -1,4 +1,4 @@
-const TRANSACTION_TYPES = new Set(["JOURNAL", "RECEIPT", "PAYMENT", "CONTRA", "SALE", "PURCHASE", "EXPENSE", "OPENING_BALANCE", "INVENTORY_ADJUSTMENT", "STOCK_TRANSFER"]);
+const TRANSACTION_TYPES = new Set(["JOURNAL", "RECEIPT", "PAYMENT", "CONTRA", "SALE", "PURCHASE", "EXPENSE", "OPENING_BALANCE", "INVENTORY_ADJUSTMENT", "STOCK_TRANSFER", "SALES_RETURN", "PURCHASE_RETURN", "DEBIT_NOTE", "CREDIT_NOTE"]);
 const VOUCHER_TYPES = new Set(["JV", "RV", "PMV", "CV", "SV", "PV"]);
 const FIELDS = new Set(["transactionType", "voucherType", "transactionDate", "referenceNo", "narration", "items", "accountingEntries", "inventoryEntries"]);
 function validateTransaction(body, partial = false) {

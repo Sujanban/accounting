@@ -26,7 +26,7 @@ const transactionSchema = new mongoose.Schema(
   {
     companyId: { type: mongoose.Schema.Types.ObjectId, ref: "Company", required: true },
     fiscalYearId: { type: mongoose.Schema.Types.ObjectId, ref: "FiscalYear", required: true },
-    transactionType: { type: String, enum: ["JOURNAL", "RECEIPT", "PAYMENT", "CONTRA", "SALE", "PURCHASE", "EXPENSE", "OPENING_BALANCE", "INVENTORY_ADJUSTMENT", "STOCK_TRANSFER"], required: true },
+    transactionType: { type: String, enum: ["JOURNAL", "RECEIPT", "PAYMENT", "CONTRA", "SALE", "PURCHASE", "EXPENSE", "OPENING_BALANCE", "INVENTORY_ADJUSTMENT", "STOCK_TRANSFER", "SALES_RETURN", "PURCHASE_RETURN", "DEBIT_NOTE", "CREDIT_NOTE"], required: true },
     voucherType: { type: String, enum: ["JV", "RV", "PMV", "CV", "SV", "PV"], required: true },
     voucherNumber: { type: String, default: null },
     transactionDate: { type: Date, required: true },

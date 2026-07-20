@@ -5,7 +5,9 @@ const DOMAIN_EVENTS = Object.freeze({
   JOURNAL_CREATED: "journal.created",
   VOUCHER_POSTED: "voucher.posted",
   INVENTORY_UPDATED: "inventory.updated",
-  TRANSACTION_POSTED: "transaction.posted"
+  TRANSACTION_POSTED: "transaction.posted",
+  VOUCHER_CREATED: "voucher.created",
+  VOUCHER_POSTED: "voucher.posted"
 });
 
 module.exports = {
