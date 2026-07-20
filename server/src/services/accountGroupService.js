@@ -13,7 +13,10 @@ function mapAccountGroup(group) {
     description: group.description,
     isSystem: group.isSystem,
     isActive: group.isActive,
-    createdAt: group.createdAt
+    createdAt: group.createdAt,
+    updatedAt: group.updatedAt,
+    deletedAt: group.deletedAt,
+    deletedBy: group.deletedBy
   };
 }
 
@@ -112,10 +115,6 @@ async function createAccountGroup(companyId, payload) {
 async function updateAccountGroup(companyId, groupId, payload) {
   const group = await getAccountGroupById(companyId, groupId);
 
-  if (group.isSystem) {
-    throw new ApiError(403, "System account groups cannot be edited.");
-  }
-
   const nextParentGroupId =
     payload.parentId !== undefined ? payload.parentId : group.parentId;
   await assertValidParent(companyId, nextParentGroupId || null, group._id);
@@ -176,6 +175,32 @@ async function archiveAccountGroup(companyId, groupId, actorUserId = null) {
   group.updatedBy = actorUserId || group.updatedBy || null;
   await group.save();
 
+  return mapAccountGroup(group);
+}
+
+async function restoreAccountGroup(companyId, groupId, actorUserId = null) {
+  const group = await getAccountGroupById(companyId, groupId);
+
+  if (group.isActive) {
+    throw new ApiError(409, "Account group is already active.");
+  }
+
+  if (group.parentId) {
+    const parent = await AccountGroup.findOne({
+      _id: group.parentId,
+      companyId,
+      isActive: true
+    }).lean();
+    if (!parent) {
+      throw new ApiError(409, "Restore the parent account group first.");
+    }
+  }
+
+  group.isActive = true;
+  group.deletedAt = null;
+  group.deletedBy = null;
+  group.updatedBy = actorUserId || group.updatedBy || null;
+  await group.save();
   return mapAccountGroup(group);
 }
 
@@ -240,6 +265,7 @@ module.exports = {
   createAccountGroup,
   updateAccountGroup,
   archiveAccountGroup,
+  restoreAccountGroup,
   getChartOfAccounts,
   getAccountGroupBySystemCode,
   getAccountGroupById

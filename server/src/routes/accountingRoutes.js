@@ -5,13 +5,15 @@ const {
   postAccountGroup,
   patchAccountGroup,
   archiveAccountGroupRecord,
+  restoreAccountGroupRecord,
   getChartOfAccountsTree
 } = require("../controllers/accountGroupController");
 const {
   getLedgers,
   postLedger,
   patchLedger,
-  archiveLedgerRecord
+  archiveLedgerRecord,
+  restoreLedgerRecord
 } = require("../controllers/ledgerController");
 const {
   getVoucherSequences,
@@ -20,13 +22,16 @@ const {
 const {
   requireAuth,
   resolveActiveCompany,
-  resolveActiveFiscalYear
+  resolveActiveFiscalYear,
+  requireRoles
 } = require("../middleware/auth");
 const { requireCompletedOnboarding } = require("../middleware/onboarding");
 const { validate } = require("../middleware/validate");
 const {
   validateAccountGroup,
+  validateAccountGroupUpdate,
   validateLedger,
+  validateLedgerUpdate,
   validateVoucherSequence
 } = require("../validators/accountingValidators");
 
@@ -39,20 +44,22 @@ accountingRouter.use(
   requireCompletedOnboarding
 );
 
-accountingRouter.get("/account-groups", getAccountGroups);
-accountingRouter.post("/account-groups", validate(validateAccountGroup), postAccountGroup);
-accountingRouter.patch("/account-groups/:id", patchAccountGroup);
-accountingRouter.delete("/account-groups/:id", archiveAccountGroupRecord);
+accountingRouter.get("/account-groups", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "STAFF"), getAccountGroups);
+accountingRouter.post("/account-groups", requireRoles("OWNER", "ADMIN", "ACCOUNTANT"), validate(validateAccountGroup), postAccountGroup);
+accountingRouter.patch("/account-groups/:id", requireRoles("OWNER", "ADMIN", "ACCOUNTANT"), validate(validateAccountGroupUpdate), patchAccountGroup);
+accountingRouter.patch("/account-groups/:id/restore", requireRoles("OWNER", "ADMIN"), restoreAccountGroupRecord);
+accountingRouter.delete("/account-groups/:id", requireRoles("OWNER", "ADMIN"), archiveAccountGroupRecord);
 
-accountingRouter.get("/chart-of-accounts", getChartOfAccountsTree);
+accountingRouter.get("/chart-of-accounts", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "STAFF"), getChartOfAccountsTree);
 
-accountingRouter.get("/ledgers", getLedgers);
-accountingRouter.post("/ledgers", validate(validateLedger), postLedger);
-accountingRouter.patch("/ledgers/:id", patchLedger);
-accountingRouter.delete("/ledgers/:id", archiveLedgerRecord);
+accountingRouter.get("/ledgers", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "STAFF"), getLedgers);
+accountingRouter.post("/ledgers", requireRoles("OWNER", "ADMIN", "ACCOUNTANT"), validate(validateLedger), postLedger);
+accountingRouter.patch("/ledgers/:id", requireRoles("OWNER", "ADMIN", "ACCOUNTANT"), validate(validateLedgerUpdate), patchLedger);
+accountingRouter.patch("/ledgers/:id/restore", requireRoles("OWNER", "ADMIN"), restoreLedgerRecord);
+accountingRouter.delete("/ledgers/:id", requireRoles("OWNER", "ADMIN"), archiveLedgerRecord);
 
-accountingRouter.get("/voucher-sequences", getVoucherSequences);
-accountingRouter.patch("/voucher-sequences/:id", validate(validateVoucherSequence), patchVoucherSequence);
+accountingRouter.get("/voucher-sequences", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "STAFF"), getVoucherSequences);
+accountingRouter.patch("/voucher-sequences/:id", requireRoles("OWNER", "ADMIN"), validate(validateVoucherSequence), patchVoucherSequence);
 
 module.exports = {
   accountingRouter

@@ -1,5 +1,6 @@
 const {
   archiveLedger,
+  restoreLedger,
   createLedger,
   listLedgers,
   updateLedger
@@ -51,9 +52,20 @@ const archiveLedgerRecord = asyncHandler(async (request, response) => {
   return sendSuccess(response, 200, "Ledger deleted successfully.", data);
 });
 
+const restoreLedgerRecord = asyncHandler(async (request, response) => {
+  const data = await restoreLedger(
+    request.auth.activeCompanyId,
+    request.auth.activeFiscalYearId,
+    request.params.id,
+    request.auth.user._id
+  );
+  return sendSuccess(response, 200, "Ledger restored successfully.", data);
+});
+
 module.exports = {
   getLedgers,
   postLedger,
   patchLedger,
-  archiveLedgerRecord
+  archiveLedgerRecord,
+  restoreLedgerRecord
 };

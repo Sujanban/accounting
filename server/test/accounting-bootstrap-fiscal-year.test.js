@@ -30,7 +30,8 @@ test("bootstrapAccountingForCompany creates default fiscal year, groups, ledgers
           },
           find: () => ({
             lean: async () => []
-          })
+          }),
+          updateOne: async () => {}
         }
       },
       "../models/Ledger": {
@@ -45,6 +46,11 @@ test("bootstrapAccountingForCompany creates default fiscal year, groups, ledgers
           insertMany: async (payload) => {
             calls.sequences = payload;
           }
+        }
+      },
+      "../models/Setting": {
+        Setting: {
+          updateOne: async () => {}
         }
       }
     }
@@ -70,12 +76,12 @@ test("bootstrapAccountingForCompany creates default fiscal year, groups, ledgers
       calls.fiscalYear.startDateAD.toISOString(),
       "2025-07-17T00:00:00.000Z"
     );
-    assert.equal(calls.groups.length, 11);
-    assert.equal(calls.groups[0].systemCode, "CURRENT_ASSETS");
+    assert.equal(calls.groups.length, 16);
+    assert.equal(calls.groups[0].systemCode, "ASSETS");
     assert.equal(calls.ledgers.length, 13);
     assert.equal(calls.ledgers[0].fiscalYearId, "fy-1");
     assert.equal(calls.ledgers[0].systemCode, "CASH");
-    assert.equal(calls.ledgers[0].groupId, "group-1");
+    assert.equal(calls.ledgers[0].groupId, "group-2");
     assert.equal(calls.sequences.length, 6);
     assert.deepEqual(calls.sequences.map((item) => item.voucherType), [
       "JV",
@@ -116,7 +122,8 @@ test("initializeAccountingForCompany seeds defaults against an existing fiscal y
           },
           find: () => ({
             lean: async () => []
-          })
+          }),
+          updateOne: async () => {}
         }
       },
       "../models/Ledger": {
@@ -132,6 +139,11 @@ test("initializeAccountingForCompany seeds defaults against an existing fiscal y
             calls.sequences = payload;
           }
         }
+      },
+      "../models/Setting": {
+        Setting: {
+          updateOne: async () => {}
+        }
       }
     }
   );
@@ -143,11 +155,11 @@ test("initializeAccountingForCompany seeds defaults against an existing fiscal y
       "user-1"
     );
 
-    assert.equal(calls.groups.length, 11);
+    assert.equal(calls.groups.length, 16);
     assert.equal(calls.groups[0].createdBy, "user-1");
     assert.equal(calls.ledgers[0].fiscalYearId, "fy-existing");
     assert.equal(calls.ledgers[0].systemCode, "CASH");
-    assert.equal(calls.ledgers[0].groupId, "group-1");
+    assert.equal(calls.ledgers[0].groupId, "group-2");
     assert.equal(calls.sequences[0].createdBy, "user-1");
   } finally {
     restore();

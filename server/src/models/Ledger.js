@@ -35,19 +35,6 @@ const ledgerSchema = new mongoose.Schema(
     },
     accountGroup: {
       type: String,
-      enum: [
-        "Current Assets",
-        "Fixed Assets",
-        "Investments",
-        "Current Liabilities",
-        "Long-term Liabilities",
-        "Capital Account",
-        "Retained Earnings",
-        "Direct Income",
-        "Indirect Income",
-        "Direct Expenses",
-        "Indirect Expenses"
-      ],
       required: true
     },
     parentLedgerId: {

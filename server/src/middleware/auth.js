@@ -8,6 +8,15 @@ const { asyncHandler } = require("../utils/asyncHandler");
 const { verifyAccessToken } = require("../utils/token");
 const { ERROR_CODES } = require("../shared/constants/errors");
 
+function requireRoles(...allowedRoles) {
+  return function roleMiddleware(request, _response, next) {
+    if (!request.auth.membership || !allowedRoles.includes(request.auth.membership.role)) {
+      return next(new ApiError(403, "You do not have permission to perform this action."));
+    }
+    return next();
+  };
+}
+
 const requireAuth = asyncHandler(async (request, _response, next) => {
   const authorizationHeader = request.headers.authorization || "";
   const [scheme, token] = authorizationHeader.split(" ");
@@ -121,5 +130,6 @@ const resolveActiveFiscalYear = asyncHandler(async (request, _response, next) =>
 module.exports = {
   requireAuth,
   resolveActiveCompany,
-  resolveActiveFiscalYear
+  resolveActiveFiscalYear,
+  requireRoles
 };

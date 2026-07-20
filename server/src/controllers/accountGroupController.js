@@ -3,6 +3,7 @@ const {
   createAccountGroup,
   updateAccountGroup,
   archiveAccountGroup,
+  restoreAccountGroup,
   getChartOfAccounts
 } = require("../services/accountGroupService");
 const { asyncHandler } = require("../utils/asyncHandler");
@@ -42,6 +43,15 @@ const archiveAccountGroupRecord = asyncHandler(async (request, response) => {
   return sendSuccess(response, 200, "Account group deleted successfully.", data);
 });
 
+const restoreAccountGroupRecord = asyncHandler(async (request, response) => {
+  const data = await restoreAccountGroup(
+    request.auth.activeCompanyId,
+    request.params.id,
+    request.auth.user._id
+  );
+  return sendSuccess(response, 200, "Account group restored successfully.", data);
+});
+
 const getChartOfAccountsTree = asyncHandler(async (request, response) => {
   const data = await getChartOfAccounts(
     request.auth.activeCompanyId,
@@ -55,5 +65,6 @@ module.exports = {
   postAccountGroup,
   patchAccountGroup,
   archiveAccountGroupRecord,
+  restoreAccountGroupRecord,
   getChartOfAccountsTree
 };

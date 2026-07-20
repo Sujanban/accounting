@@ -3,6 +3,10 @@ const { Ledger } = require("../models/Ledger");
 const { ApiError } = require("../utils/apiError");
 const { assertFiscalYearWritable } = require("./fiscalYearGuardService");
 
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function mapLedger(ledger) {
   return {
     id: ledger._id,
@@ -17,7 +21,10 @@ function mapLedger(ledger) {
     allowManualEntry: ledger.allowManualEntry,
     isSystem: ledger.isSystem,
     isActive: ledger.isActive,
-    createdAt: ledger.createdAt
+    createdAt: ledger.createdAt,
+    updatedAt: ledger.updatedAt,
+    deletedAt: ledger.deletedAt,
+    deletedBy: ledger.deletedBy
   };
 }
 
@@ -39,7 +46,7 @@ async function listLedgers(companyId, fiscalYearId, query = {}) {
   const filters = { companyId, fiscalYearId };
 
   if (query.search) {
-    filters.name = { $regex: query.search, $options: "i" };
+    filters.name = { $regex: escapeRegex(String(query.search).slice(0, 100)), $options: "i" };
   }
 
   if (query.groupId) {
@@ -62,6 +69,7 @@ async function createLedger(companyId, fiscalYearId, payload) {
     companyId,
     groupId: group._id,
     fiscalYearId,
+    accountGroup: group.name,
     systemCode: payload.systemCode ? payload.systemCode.trim() : null,
     name: payload.name.trim(),
     openingBalance: Number(payload.openingBalance || 0),
@@ -91,10 +99,6 @@ async function updateLedger(companyId, fiscalYearId, ledgerId, payload) {
     throw new ApiError(404, "Ledger was not found.");
   }
 
-  if (ledger.isSystem) {
-    throw new ApiError(403, "System ledgers cannot be edited.");
-  }
-
   if (payload.name) {
     ledger.name = payload.name.trim();
   }
@@ -102,6 +106,7 @@ async function updateLedger(companyId, fiscalYearId, ledgerId, payload) {
   if (payload.groupId) {
     const group = await resolveGroup(companyId, payload.groupId);
     ledger.groupId = group._id;
+    ledger.accountGroup = group.name;
   }
 
   if (payload.openingBalance !== undefined) {
@@ -123,6 +128,26 @@ async function updateLedger(companyId, fiscalYearId, ledgerId, payload) {
   ledger.updatedBy = payload.actorUserId || ledger.updatedBy || null;
   await ledger.save();
 
+  return mapLedger(ledger);
+}
+
+async function restoreLedger(companyId, fiscalYearId, ledgerId, actorUserId = null) {
+  await assertFiscalYearWritable(companyId, fiscalYearId);
+  const ledger = await Ledger.findOne({ _id: ledgerId, companyId, fiscalYearId });
+
+  if (!ledger) {
+    throw new ApiError(404, "Ledger was not found.");
+  }
+  if (ledger.isActive) {
+    throw new ApiError(409, "Ledger is already active.");
+  }
+
+  await resolveGroup(companyId, ledger.groupId);
+  ledger.isActive = true;
+  ledger.deletedAt = null;
+  ledger.deletedBy = null;
+  ledger.updatedBy = actorUserId || ledger.updatedBy || null;
+  await ledger.save();
   return mapLedger(ledger);
 }
 
@@ -157,5 +182,6 @@ module.exports = {
   createLedger,
   updateLedger,
   archiveLedger,
+  restoreLedger,
   mapLedger
 };

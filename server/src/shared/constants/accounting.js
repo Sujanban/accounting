@@ -1,58 +1,74 @@
 const ACCOUNT_GROUPS = Object.freeze({
+  ASSETS: Object.freeze({ systemCode: "ASSETS", category: "Assets", name: "Assets", parentSystemCode: null }),
   CURRENT_ASSETS: Object.freeze({
     systemCode: "CURRENT_ASSETS",
     category: "Assets",
-    name: "Current Assets"
+    name: "Current Assets",
+    parentSystemCode: "ASSETS"
   }),
   FIXED_ASSETS: Object.freeze({
     systemCode: "FIXED_ASSETS",
     category: "Assets",
-    name: "Fixed Assets"
+    name: "Fixed Assets",
+    parentSystemCode: "ASSETS"
   }),
   INVESTMENTS: Object.freeze({
     systemCode: "INVESTMENTS",
     category: "Assets",
-    name: "Investments"
+    name: "Investments",
+    parentSystemCode: "ASSETS"
   }),
+  LIABILITIES: Object.freeze({ systemCode: "LIABILITIES", category: "Liabilities", name: "Liabilities", parentSystemCode: null }),
   CURRENT_LIABILITIES: Object.freeze({
     systemCode: "CURRENT_LIABILITIES",
     category: "Liabilities",
-    name: "Current Liabilities"
+    name: "Current Liabilities",
+    parentSystemCode: "LIABILITIES"
   }),
   LONG_TERM_LIABILITIES: Object.freeze({
     systemCode: "LONG_TERM_LIABILITIES",
     category: "Liabilities",
-    name: "Long-term Liabilities"
+    name: "Long-Term Liabilities",
+    parentSystemCode: "LIABILITIES"
   }),
+  EQUITY: Object.freeze({ systemCode: "EQUITY", category: "Equity", name: "Equity", parentSystemCode: null }),
   CAPITAL_ACCOUNT: Object.freeze({
     systemCode: "CAPITAL_ACCOUNT",
     category: "Equity",
-    name: "Capital Account"
+    name: "Capital",
+    parentSystemCode: "EQUITY"
   }),
   RETAINED_EARNINGS: Object.freeze({
     systemCode: "RETAINED_EARNINGS",
     category: "Equity",
-    name: "Retained Earnings"
+    name: "Retained Earnings",
+    parentSystemCode: "EQUITY"
   }),
+  INCOME: Object.freeze({ systemCode: "INCOME", category: "Income", name: "Income", parentSystemCode: null }),
   DIRECT_INCOME: Object.freeze({
     systemCode: "DIRECT_INCOME",
     category: "Income",
-    name: "Direct Income"
+    name: "Direct Income",
+    parentSystemCode: "INCOME"
   }),
   INDIRECT_INCOME: Object.freeze({
     systemCode: "INDIRECT_INCOME",
     category: "Income",
-    name: "Indirect Income"
+    name: "Indirect Income",
+    parentSystemCode: "INCOME"
   }),
+  EXPENSES: Object.freeze({ systemCode: "EXPENSES", category: "Expenses", name: "Expenses", parentSystemCode: null }),
   DIRECT_EXPENSES: Object.freeze({
     systemCode: "DIRECT_EXPENSES",
     category: "Expenses",
-    name: "Direct Expenses"
+    name: "Direct Expenses",
+    parentSystemCode: "EXPENSES"
   }),
   INDIRECT_EXPENSES: Object.freeze({
     systemCode: "INDIRECT_EXPENSES",
     category: "Expenses",
-    name: "Indirect Expenses"
+    name: "Indirect Expenses",
+    parentSystemCode: "EXPENSES"
   })
 });
 

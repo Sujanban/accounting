@@ -77,20 +77,13 @@ async function assertCompanyAccess(userId, companyId) {
 async function createSettingsForCompany(userId, companyId, payload) {
   await assertCompanyAccess(userId, companyId);
 
-  const existingSettings = await Setting.findOne({ companyId }).lean();
-
-  if (existingSettings) {
-    throw new ApiError(409, "Company settings have already been configured.");
-  }
-
   const company = await Company.findById(companyId);
 
   if (!company) {
     throw new ApiError(404, "Company was not found.");
   }
 
-  const setting = await Setting.create({
-    companyId,
+  const settingPayload = {
     businessType: payload.businessType,
     currency: payload.currency || "NPR",
     currencySymbol: payload.currencySymbol || "Rs.",
@@ -107,7 +100,13 @@ async function createSettingsForCompany(userId, companyId, payload) {
     fiscalLock: buildFiscalLockPreferences(payload),
     createdBy: userId,
     updatedBy: userId
-  });
+  };
+
+  const setting = await Setting.findOneAndUpdate(
+    { companyId },
+    { $set: settingPayload },
+    { new: true, upsert: true, runValidators: true }
+  );
 
   company.onboardingCompleted = true;
   company.updatedBy = userId;

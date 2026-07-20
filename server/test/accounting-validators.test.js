@@ -29,16 +29,17 @@ test("validateLedger rejects invalid account groups and balance types", () => {
   assert.equal(errors[1].field, "openingBalanceType");
 });
 
-test("validateVoucherSequence rejects invalid sequence settings", () => {
+test("validateVoucherSequence rejects invalid and non-writable sequence fields", () => {
   const errors = validateVoucherSequence({
     voucherType: "BAD",
     nextNumber: 0,
     openingBalanceType: "SIDEWAYS"
   });
 
-  assert.equal(errors.length, 2);
-  assert.equal(errors[0].field, "voucherType");
-  assert.equal(errors[1].field, "nextNumber");
+  assert.equal(errors.length, 3);
+  assert.ok(errors.some((error) => error.field === "voucherType"));
+  assert.ok(errors.some((error) => error.field === "nextNumber"));
+  assert.ok(errors.some((error) => error.field === "openingBalanceType"));
 });
 
 test("validateAccountingPreferences rejects invalid accounting and lock settings", () => {

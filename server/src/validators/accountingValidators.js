@@ -7,7 +7,13 @@ const ACCOUNT_GROUP_TYPES = new Set([
 ]);
 
 const BALANCE_TYPES = new Set(["DEBIT", "CREDIT"]);
-const VOUCHER_TYPES = new Set(["JV", "SV", "PV", "RV", "PMV", "CV"]);
+function rejectUnknownFields(body, allowedFields, errors) {
+  for (const field of Object.keys(body)) {
+    if (!allowedFields.has(field)) {
+      errors.push({ field, message: "This field cannot be modified." });
+    }
+  }
+}
 
 function validateFiscalYear(body) {
   const errors = [];
@@ -28,6 +34,7 @@ function validateFiscalYear(body) {
 
 function validateAccountGroup(body) {
   const errors = [];
+  rejectUnknownFields(body, new Set(["name", "type", "parentId", "description"]), errors);
 
   if (!body.name || body.name.trim().length < 2) {
     errors.push({ field: "name", message: "Account group name is required." });
@@ -40,8 +47,28 @@ function validateAccountGroup(body) {
   return errors;
 }
 
+function validateAccountGroupUpdate(body) {
+  const errors = [];
+  rejectUnknownFields(body, new Set(["name", "type", "parentId", "description"]), errors);
+  if (!Object.keys(body).length) {
+    errors.push({ field: "body", message: "At least one field must be provided." });
+  }
+  if (body.name !== undefined && (!body.name || body.name.trim().length < 2)) {
+    errors.push({ field: "name", message: "Account group name must be at least 2 characters." });
+  }
+  if (body.type !== undefined && !ACCOUNT_GROUP_TYPES.has(body.type)) {
+    errors.push({ field: "type", message: "A valid account group type is required." });
+  }
+  return errors;
+}
+
 function validateLedger(body) {
   const errors = [];
+  rejectUnknownFields(
+    body,
+    new Set(["name", "groupId", "systemCode", "openingBalance", "openingBalanceType", "description", "allowManualEntry"]),
+    errors
+  );
 
   if (!body.name || body.name.trim().length < 2) {
     errors.push({ field: "name", message: "Ledger name is required." });
@@ -74,18 +101,45 @@ function validateLedger(body) {
     });
   }
 
+  if (body.openingBalance !== undefined && !Number.isFinite(Number(body.openingBalance))) {
+    errors.push({ field: "openingBalance", message: "Opening balance must be a valid number." });
+  }
+
+  return errors;
+}
+
+function validateLedgerUpdate(body) {
+  const errors = [];
+  rejectUnknownFields(
+    body,
+    new Set(["name", "groupId", "openingBalance", "openingBalanceType", "description", "allowManualEntry"]),
+    errors
+  );
+  if (!Object.keys(body).length) {
+    errors.push({ field: "body", message: "At least one field must be provided." });
+  }
+  if (body.name !== undefined && (!body.name || body.name.trim().length < 2)) {
+    errors.push({ field: "name", message: "Ledger name must be at least 2 characters." });
+  }
+  if (body.openingBalance !== undefined && !Number.isFinite(Number(body.openingBalance))) {
+    errors.push({ field: "openingBalance", message: "Opening balance must be a valid number." });
+  }
+  if (body.openingBalanceType !== undefined && !BALANCE_TYPES.has(body.openingBalanceType)) {
+    errors.push({ field: "openingBalanceType", message: "Opening balance type must be DEBIT or CREDIT." });
+  }
+  if (body.allowManualEntry !== undefined && typeof body.allowManualEntry !== "boolean") {
+    errors.push({ field: "allowManualEntry", message: "Allow manual entry must be true or false." });
+  }
   return errors;
 }
 
 function validateVoucherSequence(body) {
   const errors = [];
-
-  if (body.voucherType !== undefined && !VOUCHER_TYPES.has(body.voucherType)) {
-    errors.push({
-      field: "voucherType",
-      message: "A valid voucher type is required."
-    });
-  }
+  rejectUnknownFields(
+    body,
+    new Set(["prefix", "nextNumber", "padding", "resetEveryFiscalYear"]),
+    errors
+  );
 
   if (body.prefix !== undefined && String(body.prefix).trim().length < 2) {
     errors.push({
@@ -173,7 +227,9 @@ function validateAccountingPreferences(body) {
 module.exports = {
   validateFiscalYear,
   validateAccountGroup,
+  validateAccountGroupUpdate,
   validateLedger,
+  validateLedgerUpdate,
   validateVoucherSequence,
   validateAccountingPreferences
 };
