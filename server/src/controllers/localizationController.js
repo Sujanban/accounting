@@ -1,0 +1,15 @@
+const localizationService = require("../services/localizationService");
+const nepalDateService = require("../services/nepalDateService");
+const { asyncHandler } = require("../utils/asyncHandler");
+const { sendSuccess } = require("../utils/apiResponse");
+const getPan = asyncHandler(async (request, response) => sendSuccess(response, 200, "PAN details fetched successfully.", await localizationService.getPan(request.auth.activeCompanyId)));
+const patchPan = asyncHandler(async (request, response) => sendSuccess(response, 200, "PAN details updated successfully.", await localizationService.updatePan(request.auth.activeCompanyId, request.auth.user._id, request.body)));
+const getVat = asyncHandler(async (request, response) => sendSuccess(response, 200, "VAT settings fetched successfully.", await localizationService.getVat(request.auth.activeCompanyId)));
+const patchVat = asyncHandler(async (request, response) => sendSuccess(response, 200, "VAT settings updated successfully.", await localizationService.updateVat(request.auth.activeCompanyId, request.auth.user._id, request.body)));
+const calculateVat = asyncHandler(async (request, response) => sendSuccess(response, 200, "VAT calculated successfully.", localizationService.calculateVat(request.query.amount, request.query.rate, request.query.mode)));
+const closeFiscalYear = asyncHandler(async (request, response) => sendSuccess(response, 200, "Fiscal year closed successfully.", await localizationService.closeFiscalYear(request.auth.activeCompanyId, request.params.id, request.auth.user._id)));
+const adToBs = asyncHandler(async (request, response) => sendSuccess(response, 200, "AD date converted successfully.", nepalDateService.adToBs(request.query.date)));
+const bsToAd = asyncHandler(async (request, response) => sendSuccess(response, 200, "BS date converted successfully.", nepalDateService.bsToAd(request.query.date)));
+const todayBs = asyncHandler(async (_request, response) => sendSuccess(response, 200, "Current BS date fetched successfully.", nepalDateService.todayBs()));
+const getBsMonthName = asyncHandler(async (request, response) => sendSuccess(response, 200, "BS month name fetched successfully.", { month: Number(request.query.month), name: nepalDateService.monthName(request.query.month, request.query.language) }));
+module.exports = { getPan, patchPan, getVat, patchVat, calculateVat, closeFiscalYear, adToBs, bsToAd, todayBs, getBsMonthName };

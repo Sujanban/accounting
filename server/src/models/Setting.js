@@ -96,6 +96,13 @@ const settingSchema = new mongoose.Schema(
         type: Boolean,
         default: false
       }
+    },
+    localization: {
+      calendar: { type: String, enum: ["BS", "AD", "BOTH"], default: "BS" },
+      numberFormat: { type: String, enum: ["NEPALI", "INTERNATIONAL"], default: "NEPALI" },
+      language: { type: String, enum: ["en", "ne"], default: "en" },
+      defaultVatRate: { type: Number, min: 0, max: 100, default: 13 },
+      vatMode: { type: String, enum: ["EXCLUSIVE", "INCLUSIVE"], default: "EXCLUSIVE" }
     }
   },
   {

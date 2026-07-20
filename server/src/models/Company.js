@@ -13,6 +13,9 @@ const companySchema = new mongoose.Schema(
       required: true,
       trim: true
     },
+    panRegistrationDate: { type: Date, default: null },
+    panRegistrationOffice: { type: String, trim: true, default: null },
+    panValidationStatus: { type: String, enum: ["UNVERIFIED", "VALIDATED"], default: "UNVERIFIED" },
     vatRegistered: {
       type: Boolean,
       default: false

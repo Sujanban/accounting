@@ -21,6 +21,14 @@ async function assertFiscalYearWritable(companyId, fiscalYearId, options = {}) {
     );
   }
 
+  if (!fiscalYear.isActive && !options.allowInactive) {
+    throw new ApiError(
+      403,
+      "Transactions can only be created in the active fiscal year.",
+      ERROR_CODES.FISCAL_YEAR_LOCKED
+    );
+  }
+
   if (options.transactionDate) {
     const settings = await Setting.findOne({ companyId }).lean();
 
