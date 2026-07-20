@@ -8,6 +8,7 @@ const { assertFiscalYearWritable } = require("./fiscalYearGuardService");
 const { getNextVoucherNumber } = require("./voucherSequenceService");
 const { eventBus } = require("../events/eventBus");
 const { DOMAIN_EVENTS } = require("../shared/constants/events");
+const { resolveDefaultBranch } = require("./branchService");
 
 const MAX_LIMIT = 100;
 
@@ -31,12 +32,13 @@ async function assertActiveLedgers(companyId, fiscalYearId, entries, session) {
 }
 
 function mapTransaction(transaction) {
-  return { id: transaction._id, companyId: transaction.companyId, fiscalYearId: transaction.fiscalYearId, transactionType: transaction.transactionType, voucherType: transaction.voucherType, voucherNumber: transaction.voucherNumber, transactionDate: transaction.transactionDate, referenceNo: transaction.referenceNo, narration: transaction.narration, items: transaction.items, accountingEntries: transaction.accountingEntries, inventoryEntries: transaction.inventoryEntries, status: transaction.status, journalId: transaction.journalId, reversalOfId: transaction.reversalOfId, reversedById: transaction.reversedById, postedAt: transaction.postedAt, postedBy: transaction.postedBy, createdAt: transaction.createdAt, updatedAt: transaction.updatedAt };
+  return { id: transaction._id, companyId: transaction.companyId, branchId: transaction.branchId, fiscalYearId: transaction.fiscalYearId, transactionType: transaction.transactionType, voucherType: transaction.voucherType, voucherNumber: transaction.voucherNumber, transactionDate: transaction.transactionDate, referenceNo: transaction.referenceNo, narration: transaction.narration, items: transaction.items, accountingEntries: transaction.accountingEntries, inventoryEntries: transaction.inventoryEntries, status: transaction.status, journalId: transaction.journalId, reversalOfId: transaction.reversalOfId, reversedById: transaction.reversedById, postedAt: transaction.postedAt, postedBy: transaction.postedBy, createdAt: transaction.createdAt, updatedAt: transaction.updatedAt };
 }
 
 async function createDraft(companyId, fiscalYearId, payload) {
   await assertFiscalYearWritable(companyId, fiscalYearId, { transactionDate: payload.transactionDate });
-  const draft = await Transaction.create({ ...payload, companyId, fiscalYearId, status: "DRAFT", voucherNumber: null, createdBy: payload.actorUserId, updatedBy: payload.actorUserId });
+  const branch = await resolveDefaultBranch(companyId);
+  const draft = await Transaction.create({ ...payload, companyId, fiscalYearId, branchId: payload.branchId || branch._id, status: "DRAFT", voucherNumber: null, createdBy: payload.actorUserId, updatedBy: payload.actorUserId });
   return mapTransaction(draft);
 }
 

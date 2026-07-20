@@ -1,0 +1,13 @@
+const express = require("express");
+const { requireAuth, resolveActiveCompany, resolveActiveFiscalYear, requireRoles } = require("../middleware/auth");
+const { requireCompletedOnboarding } = require("../middleware/onboarding");
+const { validate } = require("../middleware/validate");
+const { validateBranch, validateWarehouse } = require("../validators/enterpriseValidators");
+const controller = require("../controllers/branchController");
+const enterpriseRouter = express.Router();
+enterpriseRouter.use(requireAuth, resolveActiveCompany, resolveActiveFiscalYear, requireCompletedOnboarding);
+enterpriseRouter.get("/branches", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "INVENTORY_MANAGER", "STAFF"), controller.getBranches);
+enterpriseRouter.post("/branches", requireRoles("OWNER", "ADMIN"), validate(validateBranch), controller.postBranch);
+enterpriseRouter.get("/warehouses", requireRoles("OWNER", "ADMIN", "INVENTORY_MANAGER", "STAFF"), controller.getWarehouses);
+enterpriseRouter.post("/warehouses", requireRoles("OWNER", "ADMIN", "INVENTORY_MANAGER"), validate(validateWarehouse), controller.postWarehouse);
+module.exports = { enterpriseRouter };
