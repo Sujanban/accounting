@@ -4,6 +4,7 @@ const { applyAuditFields } = require("./schemaHelpers");
 const inventoryMovementSchema = new mongoose.Schema(
   {
     companyId: { type: mongoose.Schema.Types.ObjectId, ref: "Company", required: true },
+    branchId: { type: mongoose.Schema.Types.ObjectId, ref: "Branch", required: true },
     fiscalYearId: { type: mongoose.Schema.Types.ObjectId, ref: "FiscalYear", required: true },
     transactionId: { type: mongoose.Schema.Types.ObjectId, ref: "Transaction", required: true },
     productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },

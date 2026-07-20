@@ -9,6 +9,6 @@ const patchTransactionDraft = asyncHandler(async (request, response) => sendSucc
 const postTransactionDraft = asyncHandler(async (request, response) => sendSuccess(response, 200, "Transaction posted successfully.", await transactionService.postTransaction(request.auth.activeCompanyId, request.auth.activeFiscalYearId, request.params.id, request.auth.user._id)));
 const reverseTransactionRecord = asyncHandler(async (request, response) => sendSuccess(response, 201, "Transaction reversed successfully.", await transactionService.reverseTransaction(request.auth.activeCompanyId, request.auth.activeFiscalYearId, request.params.id, request.auth.user._id)));
 const getTransactionRecord = asyncHandler(async (request, response) => sendSuccess(response, 200, "Transaction fetched successfully.", await transactionService.getTransaction(request.auth.activeCompanyId, request.params.id)));
-const getTransactions = asyncHandler(async (request, response) => sendSuccess(response, 200, "Transactions fetched successfully.", await transactionService.listTransactions(request.auth.activeCompanyId, request.query)));
+const getTransactions = asyncHandler(async (request, response) => sendSuccess(response, 200, "Transactions fetched successfully.", await transactionService.listTransactions(request.auth.activeCompanyId, request.auth.activeFiscalYearId, request.query)));
 
 module.exports = { createTransactionDraft, patchTransactionDraft, postTransactionDraft, reverseTransactionRecord, getTransactionRecord, getTransactions };

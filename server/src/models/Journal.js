@@ -4,6 +4,7 @@ const { applyAuditFields } = require("./schemaHelpers");
 const journalSchema = new mongoose.Schema(
   {
     companyId: { type: mongoose.Schema.Types.ObjectId, ref: "Company", required: true },
+    branchId: { type: mongoose.Schema.Types.ObjectId, ref: "Branch", required: true },
     fiscalYearId: { type: mongoose.Schema.Types.ObjectId, ref: "FiscalYear", required: true },
     transactionId: { type: mongoose.Schema.Types.ObjectId, ref: "Transaction", required: true, unique: true },
     voucherNumber: { type: String, required: true, trim: true },
@@ -16,7 +17,7 @@ const journalSchema = new mongoose.Schema(
   { timestamps: true }
 );
 applyAuditFields(journalSchema);
-journalSchema.index({ companyId: 1, fiscalYearId: 1, transactionDate: -1 });
+journalSchema.index({ companyId: 1, branchId: 1, fiscalYearId: 1, transactionDate: -1 });
 
 const journalLineSchema = new mongoose.Schema(
   {

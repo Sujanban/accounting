@@ -3,6 +3,8 @@ const { Transaction } = require("../models/Transaction");
 const { Journal, JournalLine } = require("../models/Journal");
 const { InventoryMovement } = require("../models/InventoryMovement");
 const { Ledger } = require("../models/Ledger");
+const { Product } = require("../models/Product");
+const { Warehouse } = require("../models/Warehouse");
 const { ApiError } = require("../utils/apiError");
 const { assertFiscalYearWritable } = require("./fiscalYearGuardService");
 const { getNextVoucherNumber } = require("./voucherSequenceService");
@@ -29,6 +31,14 @@ async function assertActiveLedgers(companyId, fiscalYearId, entries, session) {
   const ledgerIds = [...new Set(entries.map((entry) => String(entry.ledgerId)))];
   const count = await Ledger.countDocuments({ _id: { $in: ledgerIds }, companyId, fiscalYearId, isActive: true }).session(session);
   if (count !== ledgerIds.length) throw new ApiError(422, "One or more accounting ledgers are invalid or inactive.");
+}
+
+async function validateInventoryEntries(companyId, branchId, entries, session) {
+  for (const entry of entries) {
+    if (!entry.productId || !entry.warehouseId || !["IN", "OUT"].includes(entry.direction) || !Number.isFinite(Number(entry.quantity)) || Number(entry.quantity) <= 0 || !Number.isFinite(Number(entry.unitCost || 0)) || Number(entry.unitCost || 0) < 0) throw new ApiError(422, "Inventory entries require product, warehouse, direction, and positive quantity.");
+    const [product, warehouse] = await Promise.all([Product.findOne({ _id: entry.productId, companyId, isActive: true }).session(session), Warehouse.findOne({ _id: entry.warehouseId, companyId, branchId, isActive: true }).session(session)]);
+    if (!product || product.isService || !warehouse) throw new ApiError(422, "Inventory entries require active stock products and warehouses in the transaction branch.");
+  }
 }
 
 function mapTransaction(transaction) {
@@ -64,10 +74,11 @@ async function postTransaction(companyId, fiscalYearId, transactionId, actorUser
       await assertFiscalYearWritable(companyId, fiscalYearId, { transactionDate: transaction.transactionDate });
       const result = assertBalanced(transaction.accountingEntries);
       await assertActiveLedgers(companyId, fiscalYearId, transaction.accountingEntries, session);
-      if (transaction.inventoryEntries.length) throw new ApiError(422, "Inventory posting requires the Phase 3 product and warehouse masters.");
+      await validateInventoryEntries(companyId, transaction.branchId, transaction.inventoryEntries, session);
       const voucherNumber = await getNextVoucherNumber(companyId, fiscalYearId, transaction.voucherType, session);
-      const journal = await Journal.create([{ companyId, fiscalYearId, transactionId: transaction._id, voucherNumber, transactionDate: transaction.transactionDate, narration: transaction.narration, totalDebit: result.debit, totalCredit: result.credit, createdBy: actorUserId, updatedBy: actorUserId }], { session });
+      const journal = await Journal.create([{ companyId, branchId: transaction.branchId, fiscalYearId, transactionId: transaction._id, voucherNumber, transactionDate: transaction.transactionDate, narration: transaction.narration, totalDebit: result.debit, totalCredit: result.credit, createdBy: actorUserId, updatedBy: actorUserId }], { session });
       await JournalLine.insertMany(transaction.accountingEntries.map((entry) => ({ companyId, journalId: journal[0]._id, ledgerId: entry.ledgerId, debit: Number(entry.debit || 0), credit: Number(entry.credit || 0), narration: entry.narration, createdBy: actorUserId, updatedBy: actorUserId })), { session });
+      if (transaction.inventoryEntries.length) await InventoryMovement.insertMany(transaction.inventoryEntries.map((entry) => ({ companyId, branchId: transaction.branchId, fiscalYearId, transactionId: transaction._id, productId: entry.productId, warehouseId: entry.warehouseId, movementType: transaction.transactionType, direction: entry.direction, quantity: Number(entry.quantity), unitCost: Number(entry.unitCost || 0), transactionDate: transaction.transactionDate, createdBy: actorUserId, updatedBy: actorUserId })), { session });
       transaction.voucherNumber = voucherNumber; transaction.journalId = journal[0]._id; transaction.status = "POSTED"; transaction.postedAt = new Date(); transaction.postedBy = actorUserId; transaction.updatedBy = actorUserId;
       await transaction.save({ session });
       posted = transaction;
@@ -82,7 +93,7 @@ async function reverseTransaction(companyId, fiscalYearId, transactionId, actorU
   const original = await Transaction.findOne({ _id: transactionId, companyId, fiscalYearId }).lean();
   if (!original) throw new ApiError(404, "Transaction was not found.");
   if (original.status !== "POSTED" || original.reversedById) throw new ApiError(409, "Only unreversed posted transactions can be reversed.");
-  const reversal = await Transaction.create({ companyId, fiscalYearId, transactionType: "JOURNAL", voucherType: "JV", transactionDate: original.transactionDate, referenceNo: original.voucherNumber, narration: `Reversal of ${original.voucherNumber}`, accountingEntries: original.accountingEntries.map((entry) => ({ ledgerId: entry.ledgerId, debit: entry.credit, credit: entry.debit, narration: entry.narration })), reversalOfId: original._id, status: "DRAFT", createdBy: actorUserId, updatedBy: actorUserId });
+  const reversal = await Transaction.create({ companyId, branchId: original.branchId, fiscalYearId, transactionType: "JOURNAL", voucherType: "JV", transactionDate: original.transactionDate, referenceNo: original.voucherNumber, narration: `Reversal of ${original.voucherNumber}`, accountingEntries: original.accountingEntries.map((entry) => ({ ledgerId: entry.ledgerId, debit: entry.credit, credit: entry.debit, narration: entry.narration })), inventoryEntries: original.inventoryEntries.map((entry) => ({ productId: entry.productId, warehouseId: entry.warehouseId, quantity: entry.quantity, unitCost: entry.unitCost, direction: entry.direction === "IN" ? "OUT" : "IN" })), reversalOfId: original._id, status: "DRAFT", createdBy: actorUserId, updatedBy: actorUserId });
   const posted = await postTransaction(companyId, fiscalYearId, reversal._id, actorUserId);
   await Transaction.updateOne({ _id: original._id, companyId }, { $set: { status: "REVERSED", reversedById: posted.id, updatedBy: actorUserId } });
   return posted;
@@ -94,9 +105,9 @@ async function getTransaction(companyId, transactionId) {
   return mapTransaction(transaction);
 }
 
-async function listTransactions(companyId, query = {}) {
+async function listTransactions(companyId, fiscalYearId, query = {}) {
   const page = Math.max(1, Number.parseInt(query.page, 10) || 1); const limit = Math.min(MAX_LIMIT, Math.max(1, Number.parseInt(query.limit, 10) || 20));
-  const filters = { companyId }; if (query.status) filters.status = query.status; if (query.transactionType) filters.transactionType = query.transactionType;
+  const filters = { companyId, fiscalYearId }; if (query.status) filters.status = query.status; if (query.transactionType) filters.transactionType = query.transactionType; if (query.branchId) filters.branchId = query.branchId;
   const [transactions, total] = await Promise.all([Transaction.find(filters).sort({ transactionDate: -1, _id: -1 }).skip((page - 1) * limit).limit(limit).lean(), Transaction.countDocuments(filters)]);
   return { items: transactions.map(mapTransaction), meta: { page, limit, total, totalPages: Math.ceil(total / limit), hasNextPage: page * limit < total } };
 }
