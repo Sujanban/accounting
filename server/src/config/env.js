@@ -20,7 +20,10 @@ const env = {
   jwtAccessSecret: readEnv("JWT_ACCESS_SECRET"),
   jwtRefreshSecret: readEnv("JWT_REFRESH_SECRET"),
   accessTokenTtl: readEnv("ACCESS_TOKEN_TTL", "15m"),
-  refreshTokenTtl: readEnv("REFRESH_TOKEN_TTL", "30d")
+  refreshTokenTtl: readEnv("REFRESH_TOKEN_TTL", "30d"),
+  requestBodyLimit: process.env.REQUEST_BODY_LIMIT || "1mb",
+  rateLimitWindowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),
+  rateLimitMax: Number(process.env.RATE_LIMIT_MAX || 300)
 };
 
 module.exports = {

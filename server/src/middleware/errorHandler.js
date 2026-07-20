@@ -5,13 +5,14 @@ function notFoundHandler(request, _response, next) {
   next(new ApiError(404, `Route not found: ${request.method} ${request.originalUrl}`));
 }
 
-function errorHandler(error, _request, response, _next) {
+function errorHandler(error, request, response, _next) {
   if (error && error.code === 11000) {
     return response.status(409).json({
       success: false,
       message: "A unique field already exists.",
       errorCode: ERROR_CODES.DUPLICATE_RESOURCE,
-      errors: error.keyValue
+      errors: error.keyValue,
+      requestId: request.requestId
     });
   }
 
@@ -32,7 +33,8 @@ function errorHandler(error, _request, response, _next) {
     success: false,
     message,
     errorCode,
-    ...(errors ? { errors } : {})
+    ...(errors ? { errors } : {}),
+    requestId: request.requestId
   });
 }
 
