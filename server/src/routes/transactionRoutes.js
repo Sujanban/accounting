@@ -1,0 +1,15 @@
+const express = require("express");
+const { requireAuth, resolveActiveCompany, resolveActiveFiscalYear, requireRoles } = require("../middleware/auth");
+const { requireCompletedOnboarding } = require("../middleware/onboarding");
+const { validate } = require("../middleware/validate");
+const { validateCreateTransaction, validateUpdateTransaction } = require("../validators/transactionValidators");
+const controller = require("../controllers/transactionController");
+const transactionRouter = express.Router();
+transactionRouter.use(requireAuth, resolveActiveCompany, resolveActiveFiscalYear, requireCompletedOnboarding);
+transactionRouter.get("/", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES", "INVENTORY_MANAGER", "STAFF"), controller.getTransactions);
+transactionRouter.post("/draft", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES", "INVENTORY_MANAGER"), validate(validateCreateTransaction), controller.createTransactionDraft);
+transactionRouter.get("/:id", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES", "INVENTORY_MANAGER", "STAFF"), controller.getTransactionRecord);
+transactionRouter.patch("/:id", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES", "INVENTORY_MANAGER"), validate(validateUpdateTransaction), controller.patchTransactionDraft);
+transactionRouter.post("/:id/post", requireRoles("OWNER", "ADMIN", "ACCOUNTANT"), controller.postTransactionDraft);
+transactionRouter.post("/:id/reverse", requireRoles("OWNER", "ADMIN", "ACCOUNTANT"), controller.reverseTransactionRecord);
+module.exports = { transactionRouter };

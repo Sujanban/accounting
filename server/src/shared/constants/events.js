@@ -4,7 +4,8 @@ const DOMAIN_EVENTS = Object.freeze({
   FISCAL_YEAR_CREATED: "fiscalYear.created",
   JOURNAL_CREATED: "journal.created",
   VOUCHER_POSTED: "voucher.posted",
-  INVENTORY_UPDATED: "inventory.updated"
+  INVENTORY_UPDATED: "inventory.updated",
+  TRANSACTION_POSTED: "transaction.posted"
 });
 
 module.exports = {

@@ -64,11 +64,11 @@ async function updateVoucherSequence(companyId, fiscalYearId, voucherSequenceId,
   return mapVoucherSequence(sequence);
 }
 
-async function getNextVoucherNumber(companyId, fiscalYearId, voucherType) {
+async function getNextVoucherNumber(companyId, fiscalYearId, voucherType, session = null) {
   const sequence = await VoucherSequence.findOneAndUpdate(
     { companyId, fiscalYearId, voucherType },
     { $inc: { nextNumber: 1 } },
-    { new: false }
+    { new: false, session }
   );
 
   if (!sequence) {
