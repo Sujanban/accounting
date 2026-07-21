@@ -10,6 +10,7 @@ type AuthContextValue = {
   session: Session | null;
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
+  updateSession: (session: Session) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -77,7 +78,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await logoutMutation.mutateAsync();
   }, [logoutMutation]);
 
-  const value = useMemo(() => ({ status, session, login: signIn, logout: signOut }), [session, signIn, signOut, status]);
+  const updateSession = useCallback((nextSession: Session) => {
+    setSession(nextSession);
+    setStatus("authenticated");
+  }, []);
+
+  const value = useMemo(() => ({ status, session, login: signIn, logout: signOut, updateSession }), [session, signIn, signOut, status, updateSession]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

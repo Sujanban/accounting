@@ -1,11 +1,8 @@
 const CONTACT_ROLES = new Set(["CUSTOMER", "SUPPLIER", "EMPLOYEE", "VENDOR", "TRANSPORTER", "OTHER"]);
+const { isValidEmail } = require("../utils/email");
 
 function rejectUnknown(body, fields, errors) {
   for (const key of Object.keys(body)) if (!fields.has(key)) errors.push({ field: key, message: "This field cannot be modified." });
-}
-
-function isValidEmail(value) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 const contactFields = new Set([

@@ -1,7 +1,10 @@
-import { Button, Card, Flex, Heading, Text, TextField } from "@radix-ui/themes";
+import { Button, Card, Flex, Heading, Text } from "@radix-ui/themes";
+import { LockClosedIcon, PersonIcon } from "@radix-ui/react-icons";
 import { useState, type FormEvent } from "react";
+import isEmail from "validator/lib/isEmail";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { ApiClientError } from "../../lib/query-client";
+import { FormTextField } from "../../components/forms/form-fields";
 import { useAuth } from "./auth-provider";
 import { useRegister } from "./use-register";
 
@@ -35,6 +38,10 @@ export function LoginPage() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    if (!isEmail(email.trim(), { allow_utf8_local_part: false, allow_underscores: false, require_tld: true })) {
+      setError("Enter a valid email address.");
+      return;
+    }
     setIsPending(true);
     try {
       await login({ email, password });
@@ -46,7 +53,7 @@ export function LoginPage() {
     }
   }
 
-  return <AuthLayout><Card size="4"><form onSubmit={submit}><Flex direction="column" gap="4"><div><Heading size="6">Sign in</Heading><Text as="p" color="gray" mt="2">Access your accounting workspace.</Text></div>{registeredEmail ? <Text color="green" size="2" role="status">Account created. Sign in to continue.</Text> : null}<label><Text as="div" size="2" weight="medium" mb="1">Email</Text><TextField.Root type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required /></label><label><Text as="div" size="2" weight="medium" mb="1">Password</Text><TextField.Root type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required /></label>{error ? <Text color="red" size="2" role="alert">{error}</Text> : null}<Button type="submit" size="3" loading={isPending}>Sign in</Button><Text align="center" size="2" color="gray">New here? <Link className="font-medium text-indigo-700" to="/register">Create an account</Link></Text></Flex></form></Card></AuthLayout>;
+  return <AuthLayout><Card size="4"><form onSubmit={submit} noValidate><Flex direction="column" gap="4"><div><Heading size="6">Sign in</Heading><Text as="p" color="gray" mt="2">Access your accounting workspace.</Text></div>{registeredEmail ? <Text color="green" size="2" role="status">Account created. Sign in to continue.</Text> : null}<FormTextField label="Email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required startAdornment={<PersonIcon />} error={error?.includes("email") ? error : undefined} /><FormTextField label="Password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required error={error && !error.includes("email") ? error : undefined} startAdornment={<LockClosedIcon />} showPasswordToggle /><Button type="submit" size="3" loading={isPending}>Sign in</Button><Text align="center" size="2" color="gray">New here? <Link className="font-medium text-indigo-700" to="/register">Create an account</Link></Text></Flex></form></Card></AuthLayout>;
 }
 
 export function RegisterPage() {
@@ -70,6 +77,10 @@ export function RegisterPage() {
       setFieldErrors({ confirmPassword: "Passwords do not match." });
       return;
     }
+    if (!isEmail(email.trim(), { allow_utf8_local_part: false, allow_underscores: false, require_tld: true })) {
+      setFieldErrors({ email: "Enter a valid email address." });
+      return;
+    }
     if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/.test(password)) {
       setFieldErrors({ password: "Use 8+ characters with uppercase, lowercase, number, and special character." });
       return;
@@ -84,5 +95,5 @@ export function RegisterPage() {
     }
   }
 
-  return <AuthLayout><Card size="4"><form onSubmit={submit} noValidate><Flex direction="column" gap="4"><div><Heading size="6">Create account</Heading><Text as="p" color="gray" mt="2">Start by creating your secure workspace account.</Text></div><label><Text as="div" size="2" weight="medium" mb="1">Name</Text><TextField.Root value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" required minLength={2} aria-invalid={Boolean(fieldErrors.name)} />{fieldErrors.name ? <Text as="p" color="red" size="1" role="alert">{fieldErrors.name}</Text> : null}</label><label><Text as="div" size="2" weight="medium" mb="1">Email</Text><TextField.Root type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required aria-invalid={Boolean(fieldErrors.email)} />{fieldErrors.email ? <Text as="p" color="red" size="1" role="alert">{fieldErrors.email}</Text> : null}</label><label><Text as="div" size="2" weight="medium" mb="1">Password</Text><TextField.Root type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" required minLength={8} aria-invalid={Boolean(fieldErrors.password)} />{fieldErrors.password ? <Text as="p" color="red" size="1" role="alert">{fieldErrors.password}</Text> : <Text as="p" color="gray" size="1">Use 8+ characters with uppercase, lowercase, number, and special character.</Text>}</label><label><Text as="div" size="2" weight="medium" mb="1">Confirm password</Text><TextField.Root type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" required minLength={8} aria-invalid={Boolean(fieldErrors.confirmPassword)} />{fieldErrors.confirmPassword ? <Text as="p" color="red" size="1" role="alert">{fieldErrors.confirmPassword}</Text> : null}</label>{error ? <Text color="red" size="2" role="alert">{error}</Text> : null}<Button type="submit" size="3" loading={registerMutation.isPending}>Create account</Button><Text align="center" size="2" color="gray">Already have an account? <Link className="font-medium text-indigo-700" to="/login">Sign in</Link></Text></Flex></form></Card></AuthLayout>;
+  return <AuthLayout><Card size="4"><form onSubmit={submit} noValidate><Flex direction="column" gap="4"><div><Heading size="6">Create account</Heading><Text as="p" color="gray" mt="2">Start by creating your secure workspace account.</Text></div><FormTextField label="Name" value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" required minLength={2} error={fieldErrors.name} startAdornment={<PersonIcon />} /><FormTextField label="Email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required error={fieldErrors.email} startAdornment={<PersonIcon />} /><FormTextField label="Password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" required minLength={8} error={fieldErrors.password} description="Use 8+ characters with uppercase, lowercase, number, and special character." startAdornment={<LockClosedIcon />} showPasswordToggle /><FormTextField label="Confirm password" type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" required minLength={8} error={fieldErrors.confirmPassword} startAdornment={<LockClosedIcon />} showPasswordToggle />{error ? <Text color="red" size="2" role="alert">{error}</Text> : null}<Button type="submit" size="3" loading={registerMutation.isPending}>Create account</Button><Text align="center" size="2" color="gray">Already have an account? <Link className="font-medium text-indigo-700" to="/login">Sign in</Link></Text></Flex></form></Card></AuthLayout>;
 }

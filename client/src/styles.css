@@ -16,3 +16,18 @@ body {
 button, input {
   font: inherit;
 }
+
+.form-field {
+  min-width: 0;
+}
+
+.form-select-trigger {
+  width: 100%;
+  min-height: 44px;
+  justify-content: space-between;
+}
+
+.onboarding-container {
+  width: min(100%, 760px);
+  margin-inline: auto;
+}

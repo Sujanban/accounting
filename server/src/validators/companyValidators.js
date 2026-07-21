@@ -29,7 +29,7 @@ function validateCreateCompany(body) {
     });
   }
 
-  if (body.email && !/^\S+@\S+\.\S+$/.test(body.email)) {
+  if (body.email && !isValidEmail(body.email)) {
     errors.push({ field: "email", message: "A valid company email is required." });
   }
 
@@ -55,3 +55,4 @@ function validateCreateCompany(body) {
 module.exports = {
   validateCreateCompany
 };
+const { isValidEmail } = require("../utils/email");

@@ -9,7 +9,7 @@ function validateRegister(body) {
     errors.push({ field: "name", message: "Name must be at least 2 characters." });
   }
 
-  if (!body.email || !/^\S+@\S+\.\S+$/.test(body.email)) {
+  if (!isValidEmail(body.email)) {
     errors.push({ field: "email", message: "A valid email is required." });
   }
 
@@ -39,7 +39,7 @@ function validateRegister(body) {
 function validateLogin(body) {
   const errors = [];
 
-  if (!body.email || !/^\S+@\S+\.\S+$/.test(body.email)) {
+  if (!isValidEmail(body.email)) {
     errors.push({ field: "email", message: "A valid email is required." });
   }
 
@@ -68,3 +68,4 @@ module.exports = {
   validateLogin,
   validateRefresh
 };
+const { isValidEmail } = require("../utils/email");

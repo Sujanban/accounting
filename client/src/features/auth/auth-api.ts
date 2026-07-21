@@ -10,7 +10,7 @@ export type User = {
 
 export type Session = {
   user: User;
-  activeCompany: { id: string; name: string; activeFiscalYearId: string | null } | null;
+  activeCompany: { id: string; name: string; activeFiscalYearId: string | null; onboardingCompleted: boolean } | null;
   activeMembership: { id: string; role: string } | null;
   memberships: Array<{ id: string; role: string; company: { id: string; name: string } | null }>;
 };
