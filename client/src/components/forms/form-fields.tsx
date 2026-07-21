@@ -12,7 +12,7 @@ type FieldFrameProps = {
   children: (props: { id: string; describedBy?: string; invalid: boolean }) => ReactNode;
 };
 
-export function FieldFrame({ label, description, error, required = false, optionalLabel = "Optional", disabled = false, children }: FieldFrameProps) {
+export function FieldFrame({ label, description, error, required = false, optionalLabel, disabled = false, children }: FieldFrameProps) {
   const id = useId();
   const descriptionId = description ? `${id}-description` : undefined;
   const errorId = error ? `${id}-error` : undefined;
@@ -24,7 +24,7 @@ export function FieldFrame({ label, description, error, required = false, option
         <Text as="label" htmlFor={id} size="2" weight="medium">
           {label}{required ? <span aria-hidden="true" className="ml-1 text-red-600">*</span> : null}
         </Text>
-        {!required ? <Text size="1" color="gray">{optionalLabel}</Text> : null}
+        {!required && optionalLabel ? <Text size="1" color="gray">{optionalLabel}</Text> : null}
       </div>
       {children({ id, describedBy, invalid: Boolean(error) })}
       {description && !error ? <Text as="p" id={descriptionId} color="gray" size="1" mt="1">{description}</Text> : null}

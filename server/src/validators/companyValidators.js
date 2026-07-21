@@ -1,3 +1,11 @@
+const { isValidEmail } = require("../utils/email");
+
+function rejectUnknownFields(body, allowedFields, errors) {
+  for (const field of Object.keys(body)) {
+    if (!allowedFields.has(field)) errors.push({ field, message: "This field cannot be modified." });
+  }
+}
+
 function validateCreateCompany(body) {
   const errors = [];
 
@@ -52,7 +60,16 @@ function validateCreateCompany(body) {
   return errors;
 }
 
+function validateCompanyUpdate(body) {
+  const errors = [];
+  rejectUnknownFields(body, new Set(["name", "phone", "email", "address", "logo"]), errors);
+  if (!Object.keys(body).length) errors.push({ field: "body", message: "At least one field must be provided." });
+  if (body.name !== undefined && (!body.name || body.name.trim().length < 2)) errors.push({ field: "name", message: "Company name must be at least 2 characters." });
+  if (body.email !== undefined && body.email && !isValidEmail(body.email)) errors.push({ field: "email", message: "A valid company email is required." });
+  return errors;
+}
+
 module.exports = {
-  validateCreateCompany
+  validateCreateCompany,
+  validateCompanyUpdate
 };
-const { isValidEmail } = require("../utils/email");

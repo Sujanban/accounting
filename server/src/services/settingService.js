@@ -82,6 +82,9 @@ async function createSettingsForCompany(userId, companyId, payload) {
   if (!company) {
     throw new ApiError(404, "Company was not found.");
   }
+  if (company.onboardingCompleted) {
+    throw new ApiError(409, "Company onboarding is already complete. Use the settings update endpoint.");
+  }
 
   const settingPayload = {
     businessType: payload.businessType,
@@ -119,6 +122,28 @@ async function createSettingsForCompany(userId, companyId, payload) {
     settings: mapSetting(setting),
     session
   };
+}
+
+async function getSettingsForCompany(userId, companyId) {
+  await assertCompanyAccess(userId, companyId);
+  const setting = await Setting.findOne({ companyId }).lean();
+  if (!setting) throw new ApiError(404, "Company settings were not found.");
+  return mapSetting(setting);
+}
+
+async function updateGeneralSettings(userId, companyId, payload) {
+  await assertCompanyAccess(userId, companyId);
+  const setting = await Setting.findOne({ companyId });
+  if (!setting) throw new ApiError(404, "Company settings were not found.");
+  for (const field of ["businessType", "currency", "currencySymbol", "language", "dateFormat", "timezone", "decimalPlaces", "allowNegativeStock"]) {
+    if (payload[field] === undefined) continue;
+    setting[field] = ["currency", "currencySymbol", "language", "timezone"].includes(field) ? String(payload[field]).trim() : payload[field];
+  }
+  if (payload.currency !== undefined) setting.currency = setting.currency.toUpperCase();
+  if (payload.decimalPlaces !== undefined) setting.decimalPlaces = Number(payload.decimalPlaces);
+  setting.updatedBy = userId;
+  await setting.save();
+  return mapSetting(setting);
 }
 
 async function updateAccountingPreferences(userId, companyId, payload) {
@@ -164,6 +189,8 @@ async function updateAccountingPreferences(userId, companyId, payload) {
 
 module.exports = {
   createSettingsForCompany,
+  getSettingsForCompany,
+  updateGeneralSettings,
   updateAccountingPreferences,
   mapSetting
 };

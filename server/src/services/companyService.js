@@ -10,6 +10,43 @@ const { DOMAIN_EVENTS } = require("../shared/constants/events");
 
 registerCoreListeners();
 
+function mapCompanyProfile(company) {
+  return {
+    id: company._id,
+    name: company.name,
+    phone: company.phone,
+    email: company.email,
+    address: company.address,
+    logo: company.logo,
+    panNumber: company.panNumber,
+    vatRegistered: company.vatRegistered,
+    vatNumber: company.vatNumber,
+    activeFiscalYearId: company.activeFiscalYearId,
+    onboardingCompleted: company.onboardingCompleted,
+    updatedAt: company.updatedAt
+  };
+}
+
+async function getCompanyProfile(companyId) {
+  const company = await Company.findById(companyId).lean();
+  if (!company) throw new ApiError(404, "Company was not found.");
+  return mapCompanyProfile(company);
+}
+
+async function updateCompanyProfile(companyId, actorUserId, payload) {
+  const company = await Company.findById(companyId);
+  if (!company) throw new ApiError(404, "Company was not found.");
+  for (const field of ["name", "phone", "email", "address", "logo"]) {
+    if (payload[field] === undefined) continue;
+    company[field] = typeof payload[field] === "string" ? payload[field].trim() || null : payload[field];
+  }
+  if (payload.name !== undefined) company.name = payload.name.trim();
+  if (payload.email !== undefined && company.email) company.email = company.email.toLowerCase();
+  company.updatedBy = actorUserId;
+  await company.save();
+  return mapCompanyProfile(company);
+}
+
 async function createCompanyForUser(userId, payload) {
   const user = await User.findById(userId);
 
@@ -87,5 +124,7 @@ async function createCompanyForUser(userId, payload) {
 }
 
 module.exports = {
-  createCompanyForUser
+  createCompanyForUser,
+  getCompanyProfile,
+  updateCompanyProfile
 };

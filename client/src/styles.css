@@ -31,3 +31,47 @@ button, input {
   width: min(100%, 760px);
   margin-inline: auto;
 }
+
+.settings-page {
+  width: min(100%, 1080px);
+  margin-inline: auto;
+}
+
+.settings-section {
+  padding: 1.5rem;
+}
+
+.settings-form {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem !important;
+  align-items: end;
+}
+
+.settings-form > .form-field:first-child,
+.settings-form > form,
+.settings-form > .rt-SeparatorRoot,
+.settings-form > .rt-Flex,
+.settings-form > .rt-Button {
+  grid-column: 1 / -1;
+}
+
+.settings-form > .rt-Button {
+  justify-self: end;
+  min-width: 12.5rem;
+}
+
+@media (max-width: 700px) {
+  .settings-section {
+    padding: 1.125rem;
+  }
+
+  .settings-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .settings-form > .rt-Button {
+    justify-self: stretch;
+    width: 100%;
+  }
+}

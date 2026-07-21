@@ -172,6 +172,32 @@
           }
         },
         {
+          "name": "Get Active Company",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/companies/{{companyId}}" }
+        },
+        {
+          "name": "Update Active Company",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"name\": \"Acme Accounting Pvt Ltd\", \"phone\": \"+9779800000000\", \"address\": \"Kathmandu, Nepal\" }" },
+            "url": "{{baseUrl}}/api/companies/{{companyId}}"
+          }
+        },
+        {
+          "name": "Get General Settings",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/settings" }
+        },
+        {
+          "name": "Update General Settings",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"businessType\": \"RETAIL\", \"currency\": \"NPR\", \"currencySymbol\": \"Rs.\", \"dateFormat\": \"BS\", \"decimalPlaces\": 2, \"allowNegativeStock\": false }" },
+            "url": "{{baseUrl}}/api/settings"
+          }
+        },
+        {
           "name": "Update Accounting Preferences",
           "request": {
             "method": "PATCH",
@@ -183,6 +209,15 @@
             "url": "{{baseUrl}}/api/settings/accounting"
           }
         }
+      ]
+    },
+    {
+      "name": "Fiscal Years",
+      "item": [
+        { "name": "List Fiscal Years", "request": { "method": "GET", "url": "{{baseUrl}}/api/fiscal-years" } },
+        { "name": "Create Fiscal Year", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{ \"name\": \"2083/84\", \"startDateBS\": \"2083-04-01\", \"endDateBS\": \"2084-03-31\", \"startDateAD\": \"2026-07-16\", \"endDateAD\": \"2027-07-15\" }" }, "url": "{{baseUrl}}/api/fiscal-years" } },
+        { "name": "Activate Fiscal Year", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{ \"isActive\": true }" }, "url": "{{baseUrl}}/api/fiscal-years/{{fiscalYearId}}" } },
+        { "name": "Lock Fiscal Year", "request": { "method": "POST", "url": "{{baseUrl}}/api/fiscal-years/{{fiscalYearId}}/close" } }
       ]
     },
     {

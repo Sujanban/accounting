@@ -1,9 +1,9 @@
 const express = require("express");
 
-const { createCompany } = require("../controllers/companyController");
-const { requireAuth, resolveActiveCompany } = require("../middleware/auth");
+const { createCompany, getCompany, patchCompany } = require("../controllers/companyController");
+const { requireAuth, resolveActiveCompany, requireRoles } = require("../middleware/auth");
 const { validate } = require("../middleware/validate");
-const { validateCreateCompany } = require("../validators/companyValidators");
+const { validateCreateCompany, validateCompanyUpdate } = require("../validators/companyValidators");
 
 const companyRouter = express.Router();
 
@@ -14,6 +14,9 @@ companyRouter.post(
   validate(validateCreateCompany),
   createCompany
 );
+
+companyRouter.get("/:companyId", requireAuth, resolveActiveCompany, requireRoles("OWNER", "ADMIN"), getCompany);
+companyRouter.patch("/:companyId", requireAuth, resolveActiveCompany, requireRoles("OWNER", "ADMIN"), validate(validateCompanyUpdate), patchCompany);
 
 module.exports = {
   companyRouter

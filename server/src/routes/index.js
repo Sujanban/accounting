@@ -10,6 +10,7 @@ const { voucherRouter } = require("./voucherRoutes");
 const { reportRouter } = require("./reportRoutes");
 const { localizationRouter } = require("./localizationRoutes");
 const { enterpriseRouter } = require("./enterpriseRoutes");
+const { fiscalYearRouter } = require("./fiscalYearRoutes");
 
 const apiRouter = express.Router();
 
@@ -17,6 +18,7 @@ apiRouter.use("/auth", authRouter);
 apiRouter.use("/accounting", accountingRouter);
 apiRouter.use("/companies", companyRouter);
 apiRouter.use("/settings", settingRouter);
+apiRouter.use("/fiscal-years", fiscalYearRouter);
 apiRouter.use("/", businessMasterRouter);
 apiRouter.use("/transactions", transactionRouter);
 apiRouter.use("/", voucherRouter);

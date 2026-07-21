@@ -6,6 +6,7 @@ import { OnboardingPage } from "./features/onboarding/onboarding-page";
 import { RequireOnboarding } from "./features/onboarding/require-onboarding";
 import { DashboardPage } from "./pages/dashboard-page";
 import { PlaceholderPage } from "./pages/placeholder-page";
+import { SettingsPage } from "./pages/settings-page";
 
 export function App() {
   return (
@@ -19,7 +20,7 @@ export function App() {
             <Route index element={<DashboardPage />} />
             <Route path="transactions" element={<PlaceholderPage title="Transactions" />} />
             <Route path="reports" element={<PlaceholderPage title="Reports" />} />
-            <Route path="settings" element={<PlaceholderPage title="Settings" />} />
+            <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Route>
       </Route>
