@@ -2,533 +2,865 @@
   "info": {
     "_postman_id": "4f67f6f1-5b34-47b8-9bf3-c1b6176b7d90",
     "name": "Accounting Software API",
-    "description": "Postman collection for authentication, onboarding, and dashboard bootstrap endpoints.",
+    "description": "Current API routes. Run Register or Login first. Set companyId and fiscalYearId after creating a company; authenticated requests inherit these values.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5001" },
+    { "key": "accessToken", "value": "" },
+    { "key": "companyId", "value": "" },
+    { "key": "fiscalYearId", "value": "" },
+    { "key": "accountGroupId", "value": "" },
+    { "key": "ledgerId", "value": "" },
+    { "key": "voucherSequenceId", "value": "" },
+    { "key": "contactId", "value": "" },
+    { "key": "unitId", "value": "" },
+    { "key": "branchId", "value": "" },
+    { "key": "warehouseId", "value": "" },
+    { "key": "transactionId", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "event": [
     {
-      "key": "baseUrl",
-      "value": "http://localhost:5001"
-    },
-    {
-      "key": "accessToken",
-      "value": ""
-    },
-    {
-      "key": "refreshToken",
-      "value": ""
-    },
-    {
-      "key": "companyId",
-      "value": ""
-    },
-    {
-      "key": "fiscalYearId",
-      "value": ""
-    },
-    {
-      "key": "refreshCookie",
-      "value": ""
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!(pm.request.auth && pm.request.auth.type === 'noauth')) {",
+          "  pm.request.headers.upsert({ key: 'x-company-id', value: pm.collectionVariables.get('companyId') || '' });",
+          "  pm.request.headers.upsert({ key: 'x-fiscal-year-id', value: pm.collectionVariables.get('fiscalYearId') || '' });",
+          "}"
+        ]
+      }
     }
   ],
   "item": [
     {
-      "name": "Health",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/health",
-          "host": ["{{baseUrl}}"],
-          "path": ["health"]
-        }
-      }
-    },
-    {
-      "name": "Register",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
+      "name": "System & Documentation",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/health"
           }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"name\": \"Sujan Ban\",\n  \"email\": \"sujan@example.com\",\n  \"password\": \"StrongPass123!\",\n  \"confirmPassword\": \"StrongPass123!\"\n}"
         },
-        "url": {
-          "raw": "{{baseUrl}}/api/auth/register",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "auth", "register"]
-        }
-      }
-    },
-    {
-      "name": "Login",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
+        {
+          "name": "System Health",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/api/system/health"
           }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"email\": \"sujan@example.com\",\n  \"password\": \"StrongPass123!\"\n}"
         },
-        "url": {
-          "raw": "{{baseUrl}}/api/auth/login",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "auth", "login"]
-        }
-      }
-    },
-    {
-      "name": "Refresh Token",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Cookie",
-            "value": "refreshToken={{refreshCookie}}"
+        {
+          "name": "System Metrics",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/system/metrics"
           }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/auth/refresh",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "auth", "refresh"]
-        }
-      }
-    },
-    {
-      "name": "Logout",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Cookie",
-            "value": "refreshToken={{refreshCookie}}"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/auth/logout",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "auth", "logout"]
-        }
-      }
-    },
-    {
-      "name": "Get Current Session",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{accessToken}}"
-          },
-          {
-            "key": "x-company-id",
-            "value": "{{companyId}}",
-            "disabled": true
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/auth/me",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "auth", "me"]
-        }
-      }
-    },
-    {
-      "name": "Create First Company",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          },
-          {
-            "key": "Authorization",
-            "value": "Bearer {{accessToken}}"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"name\": \"Acme Accounting Pvt Ltd\",\n  \"panNumber\": \"123456789\",\n  \"vatRegistered\": true,\n  \"vatNumber\": \"VAT-123456\",\n  \"phone\": \"+9779800000000\",\n  \"email\": \"info@acme.com\",\n  \"address\": \"Kathmandu, Nepal\",\n  \"logo\": \"https://cdn.example.com/logo.png\",\n  \"fiscalYear\": {\n    \"name\": \"2082/83\",\n    \"startDateBS\": \"2082-04-01\",\n    \"endDateBS\": \"2083-03-31\",\n    \"startDateAD\": \"2025-07-17\",\n    \"endDateAD\": \"2026-07-16\"\n  }\n}"
         },
-        "url": {
-          "raw": "{{baseUrl}}/api/companies",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "companies"]
-        }
-      }
-    },
-    {
-      "name": "Create Company Settings",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          },
-          {
-            "key": "Authorization",
-            "value": "Bearer {{accessToken}}"
-          },
-          {
-            "key": "x-company-id",
-            "value": "{{companyId}}"
+        {
+          "name": "OpenAPI JSON",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/api/docs/openapi.json"
           }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"businessType\": \"RETAIL\",\n  \"currency\": \"NPR\",\n  \"currencySymbol\": \"Rs.\",\n  \"language\": \"en\",\n  \"dateFormat\": \"BS\",\n  \"timezone\": \"Asia/Kathmandu\",\n  \"decimalPlaces\": 2,\n  \"allowNegativeStock\": false\n}"
         },
-        "url": {
-          "raw": "{{baseUrl}}/api/settings",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "settings"]
-        }
-      }
-    },
-    {
-      "name": "Dashboard Bootstrap",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{accessToken}}"
-          },
-          {
-            "key": "x-company-id",
-            "value": "{{companyId}}",
-            "disabled": true
+        {
+          "name": "Swagger UI",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/api/docs/"
           }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/dashboard/bootstrap",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "dashboard", "bootstrap"]
         }
-      }
+      ]
     },
     {
-      "name": "Swagger OpenAPI JSON",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/docs/openapi.json",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "docs", "openapi.json"]
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sujan Ban\",\n  \"email\": \"sujan@example.com\",\n  \"password\": \"StrongPass123!\",\n  \"confirmPassword\": \"StrongPass123!\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/register"
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) { pm.collectionVariables.set('accessToken', pm.response.json().data.accessToken); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"sujan@example.com\",\n  \"password\": \"StrongPass123!\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "Refresh",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/api/auth/refresh"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/api/auth/logout"
+          }
+        },
+        {
+          "name": "Current Session",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/auth/me" }
         }
-      }
+      ]
+    },
+    {
+      "name": "Company & Settings",
+      "item": [
+        {
+          "name": "Create Company",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acme Accounting Pvt Ltd\",\n  \"panNumber\": \"123456789\",\n  \"vatRegistered\": true,\n  \"vatNumber\": \"123456789\",\n  \"fiscalYear\": { \"name\": \"2082/83\", \"startDateBS\": \"2082-04-01\", \"endDateBS\": \"2083-03-31\", \"startDateAD\": \"2025-07-17\", \"endDateAD\": \"2026-07-16\" }\n}"
+            },
+            "url": "{{baseUrl}}/api/companies"
+          }
+        },
+        {
+          "name": "Create Settings",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessType\": \"RETAIL\",\n  \"currency\": \"NPR\",\n  \"dateFormat\": \"BS\",\n  \"timezone\": \"Asia/Kathmandu\",\n  \"decimalPlaces\": 2\n}"
+            },
+            "url": "{{baseUrl}}/api/settings"
+          }
+        },
+        {
+          "name": "Update Accounting Preferences",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"accounting\": { \"voucherNumbering\": \"AUTO\", \"decimalPlaces\": 2 } }"
+            },
+            "url": "{{baseUrl}}/api/settings/accounting"
+          }
+        }
+      ]
     },
     {
       "name": "Accounting",
       "item": [
         {
-          "name": "Accounting Dashboard",
+          "name": "List Account Groups",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              },
-              {
-                "key": "x-company-id",
-                "value": "{{companyId}}"
-              },
-              {
-                "key": "x-fiscal-year-id",
-                "value": "{{fiscalYearId}}",
-                "disabled": true
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/accounting/dashboard",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounting", "dashboard"]
-            }
+            "url": "{{baseUrl}}/api/accounting/account-groups"
           }
         },
         {
-          "name": "List Fiscal Years",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              },
-              {
-                "key": "x-company-id",
-                "value": "{{companyId}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/accounting/fiscal-years",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounting", "fiscal-years"]
-            }
-          }
-        },
-        {
-          "name": "Create Fiscal Year",
+          "name": "Create Account Group",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              },
-              {
-                "key": "x-company-id",
-                "value": "{{companyId}}"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"2081/82\",\n  \"startDateBS\": \"2081-04-01\",\n  \"endDateBS\": \"2082-03-31\"\n}"
+              "raw": "{ \"name\": \"Cash Accounts\", \"type\": \"Assets\", \"description\": \"Cash account group\" }"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/accounting/fiscal-years",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounting", "fiscal-years"]
-            }
+            "url": "{{baseUrl}}/api/accounting/account-groups"
+          }
+        },
+        {
+          "name": "Update Account Group",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"description\": \"Updated description\" }"
+            },
+            "url": "{{baseUrl}}/api/accounting/account-groups/{{accountGroupId}}"
+          }
+        },
+        {
+          "name": "Restore Account Group",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/accounting/account-groups/{{accountGroupId}}/restore"
+          }
+        },
+        {
+          "name": "Archive Account Group",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/accounting/account-groups/{{accountGroupId}}"
+          }
+        },
+        {
+          "name": "Chart of Accounts",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/accounting/chart-of-accounts"
           }
         },
         {
           "name": "List Ledgers",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              },
-              {
-                "key": "x-company-id",
-                "value": "{{companyId}}"
-              },
-              {
-                "key": "x-fiscal-year-id",
-                "value": "{{fiscalYearId}}",
-                "disabled": true
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/accounting/ledgers",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounting", "ledgers"]
-            }
+            "url": "{{baseUrl}}/api/accounting/ledgers"
           }
         },
         {
           "name": "Create Ledger",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              },
-              {
-                "key": "x-company-id",
-                "value": "{{companyId}}"
-              },
-              {
-                "key": "x-fiscal-year-id",
-                "value": "{{fiscalYearId}}",
-                "disabled": true
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Office Expense\",\n  \"accountGroup\": \"Indirect Expenses\",\n  \"openingBalance\": 0,\n  \"openingBalanceType\": \"DEBIT\",\n  \"description\": \"Manual expense ledger\"\n}"
+              "raw": "{ \"name\": \"Petty Cash\", \"groupId\": \"{{accountGroupId}}\", \"openingBalance\": 0, \"openingBalanceType\": \"DEBIT\", \"allowManualEntry\": true }"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/accounting/ledgers",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounting", "ledgers"]
-            }
+            "url": "{{baseUrl}}/api/accounting/ledgers"
           }
         },
         {
-          "name": "Create Customer",
+          "name": "Update Ledger",
           "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              },
-              {
-                "key": "x-company-id",
-                "value": "{{companyId}}"
-              },
-              {
-                "key": "x-fiscal-year-id",
-                "value": "{{fiscalYearId}}",
-                "disabled": true
-              }
-            ],
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"ABC Customer\",\n  \"phone\": \"+9779811111111\",\n  \"email\": \"customer@example.com\",\n  \"openingBalance\": 5000,\n  \"openingBalanceType\": \"DEBIT\"\n}"
+              "raw": "{ \"description\": \"Updated ledger description\" }"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/accounting/customers",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounting", "customers"]
-            }
+            "url": "{{baseUrl}}/api/accounting/ledgers/{{ledgerId}}"
           }
         },
         {
-          "name": "Create Supplier",
+          "name": "Restore Ledger",
           "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              },
-              {
-                "key": "x-company-id",
-                "value": "{{companyId}}"
-              },
-              {
-                "key": "x-fiscal-year-id",
-                "value": "{{fiscalYearId}}",
-                "disabled": true
-              }
-            ],
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/accounting/ledgers/{{ledgerId}}/restore"
+          }
+        },
+        {
+          "name": "Archive Ledger",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/accounting/ledgers/{{ledgerId}}"
+          }
+        },
+        {
+          "name": "List Voucher Sequences",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/accounting/voucher-sequences"
+          }
+        },
+        {
+          "name": "Update Voucher Sequence",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"XYZ Supplier\",\n  \"phone\": \"+9779822222222\",\n  \"email\": \"supplier@example.com\",\n  \"openingBalance\": 3500,\n  \"openingBalanceType\": \"CREDIT\"\n}"
+              "raw": "{ \"prefix\": \"JV-2082-\", \"nextNumber\": 1, \"padding\": 6 }"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/accounting/suppliers",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounting", "suppliers"]
-            }
+            "url": "{{baseUrl}}/api/accounting/voucher-sequences/{{voucherSequenceId}}"
           }
+        }
+      ]
+    },
+    {
+      "name": "Business Masters",
+      "item": [
+        {
+          "name": "List Contacts",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/contacts?page=1&limit=20"
+          }
+        },
+        {
+          "name": "Create Contact",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"contactCode\": \"CUS-001\", \"name\": \"Example Customer\", \"roles\": [\"CUSTOMER\"], \"mobile\": \"9800000000\" }"
+            },
+            "url": "{{baseUrl}}/api/contacts"
+          }
+        },
+        {
+          "name": "Update Contact",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"phone\": \"014000000\" }" },
+            "url": "{{baseUrl}}/api/contacts/{{contactId}}"
+          }
+        },
+        {
+          "name": "Archive Contact",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/contacts/{{contactId}}"
+          }
+        },
+        {
+          "name": "List Units",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/units" }
+        },
+        {
+          "name": "Create Unit",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"name\": \"Piece\", \"symbol\": \"pcs\" }"
+            },
+            "url": "{{baseUrl}}/api/units"
+          }
+        },
+        {
+          "name": "List Categories",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/categories" }
+        },
+        {
+          "name": "Create Category",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"categoryCode\": \"GEN\", \"name\": \"General\" }"
+            },
+            "url": "{{baseUrl}}/api/categories"
+          }
+        },
+        {
+          "name": "List Tax Rates",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/tax-rates" }
+        },
+        {
+          "name": "Create Tax Rate",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"taxCode\": \"VAT13\", \"name\": \"VAT 13%\", \"percentage\": 13, \"effectiveDate\": \"2025-07-17\" }"
+            },
+            "url": "{{baseUrl}}/api/tax-rates"
+          }
+        },
+        {
+          "name": "List Payment Terms",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/payment-terms" }
+        },
+        {
+          "name": "Create Payment Term",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"name\": \"Net 30\", \"dueDays\": 30 }"
+            },
+            "url": "{{baseUrl}}/api/payment-terms"
+          }
+        },
+        {
+          "name": "List Products",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/products" }
         },
         {
           "name": "Create Product",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              },
-              {
-                "key": "x-company-id",
-                "value": "{{companyId}}"
-              },
-              {
-                "key": "x-fiscal-year-id",
-                "value": "{{fiscalYearId}}",
-                "disabled": true
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Demo Product\",\n  \"unit\": \"Piece\",\n  \"purchasePrice\": 100,\n  \"sellingPrice\": 150,\n  \"openingQuantity\": 10,\n  \"openingRate\": 100,\n  \"minimumStock\": 2\n}"
+              "raw": "{ \"sku\": \"SKU-001\", \"name\": \"Example Product\", \"unitId\": \"{{unitId}}\", \"sellingPrice\": 100 }"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/accounting/products",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounting", "products"]
-            }
+            "url": "{{baseUrl}}/api/products"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Enterprise & Localization",
+      "item": [
+        {
+          "name": "List Branches",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/branches" }
+        },
+        {
+          "name": "Create Branch",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"branchCode\": \"HQ\", \"name\": \"Head Office\", \"isDefault\": true }"
+            },
+            "url": "{{baseUrl}}/api/branches"
           }
         },
         {
-          "name": "Create Journal Entry",
+          "name": "List Warehouses",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/warehouses?branchId={{branchId}}"
+          }
+        },
+        {
+          "name": "Create Warehouse",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              },
-              {
-                "key": "x-company-id",
-                "value": "{{companyId}}"
-              },
-              {
-                "key": "x-fiscal-year-id",
-                "value": "{{fiscalYearId}}",
-                "disabled": true
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"date\": \"2026-07-17\",\n  \"narration\": \"Initial capital entry\",\n  \"rows\": [\n    {\n      \"ledgerId\": \"LEDGER_ID_CASH\",\n      \"debit\": 10000,\n      \"credit\": 0,\n      \"remarks\": \"Cash introduced\"\n    },\n    {\n      \"ledgerId\": \"LEDGER_ID_CAPITAL\",\n      \"debit\": 0,\n      \"credit\": 10000,\n      \"remarks\": \"Owner capital\"\n    }\n  ]\n}"
+              "raw": "{ \"branchId\": \"{{branchId}}\", \"warehouseCode\": \"MAIN\", \"name\": \"Main Warehouse\", \"isDefault\": true }"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/accounting/journal-entries",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounting", "journal-entries"]
-            }
+            "url": "{{baseUrl}}/api/warehouses"
+          }
+        },
+        {
+          "name": "Get PAN",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/localization/pan"
+          }
+        },
+        {
+          "name": "Update PAN",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"panNumber\": \"123456789\", \"registrationOffice\": \"Kathmandu\" }"
+            },
+            "url": "{{baseUrl}}/api/localization/pan"
+          }
+        },
+        {
+          "name": "Get VAT",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/localization/vat"
+          }
+        },
+        {
+          "name": "Update VAT",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"vatRegistered\": true, \"vatNumber\": \"123456789\", \"defaultVatRate\": 13, \"vatMode\": \"EXCLUSIVE\" }"
+            },
+            "url": "{{baseUrl}}/api/localization/vat"
+          }
+        },
+        {
+          "name": "Calculate VAT",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/localization/vat/calculate?amount=1000&rate=13&mode=EXCLUSIVE"
+          }
+        },
+        {
+          "name": "AD to BS",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/localization/calendar/ad-to-bs?date=2025-07-17"
+          }
+        },
+        {
+          "name": "BS to AD",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/localization/calendar/bs-to-ad?date=2082-04-01"
+          }
+        },
+        {
+          "name": "BS Today",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/localization/calendar/today"
+          }
+        },
+        {
+          "name": "BS Month Name",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/localization/calendar/month-name?month=4&language=en"
+          }
+        },
+        {
+          "name": "Close Fiscal Year",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/localization/fiscal-years/{{fiscalYearId}}/close"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transactions & Reports",
+      "item": [
+        {
+          "name": "List Transactions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/transactions?page=1&limit=20"
+          }
+        },
+        {
+          "name": "Create Transaction Draft",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"transactionType\": \"JOURNAL\", \"voucherType\": \"JV\", \"transactionDate\": \"2025-07-17\", \"narration\": \"Example draft\", \"accountingEntries\": [] }"
+            },
+            "url": "{{baseUrl}}/api/transactions/draft"
+          }
+        },
+        {
+          "name": "Get Transaction",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/transactions/{{transactionId}}"
+          }
+        },
+        {
+          "name": "Update Transaction Draft",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"narration\": \"Updated draft\" }"
+            },
+            "url": "{{baseUrl}}/api/transactions/{{transactionId}}"
+          }
+        },
+        {
+          "name": "Post Transaction Draft",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/transactions/{{transactionId}}/post"
+          }
+        },
+        {
+          "name": "Reverse Transaction",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/transactions/{{transactionId}}/reverse"
+          }
+        },
+        {
+          "name": "General Ledger",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/reports/general-ledger"
           }
         },
         {
           "name": "Trial Balance",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              },
-              {
-                "key": "x-company-id",
-                "value": "{{companyId}}"
-              },
-              {
-                "key": "x-fiscal-year-id",
-                "value": "{{fiscalYearId}}",
-                "disabled": true
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/accounting/trial-balance",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounting", "trial-balance"]
-            }
+            "url": "{{baseUrl}}/api/reports/trial-balance"
+          }
+        },
+        {
+          "name": "Journal Register",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/reports/journal-register"
+          }
+        },
+        {
+          "name": "Day Book",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/reports/day-book"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Voucher Drafts",
+      "description": "Set transactionId to the ID returned by a create request before calling its matching post endpoint.",
+      "item": [
+        {
+          "name": "Create Sales Voucher",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"transactionDate\": \"2025-07-17\", \"narration\": \"Example voucher\", \"accountingEntries\": [] }"
+            },
+            "url": "{{baseUrl}}/api/sales"
+          }
+        },
+        {
+          "name": "Post Sales Voucher",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/sales/{{transactionId}}/post"
+          }
+        },
+        {
+          "name": "Create Purchase Voucher",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"transactionDate\": \"2025-07-17\", \"narration\": \"Example voucher\", \"accountingEntries\": [] }"
+            },
+            "url": "{{baseUrl}}/api/purchase"
+          }
+        },
+        {
+          "name": "Post Purchase Voucher",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/purchase/{{transactionId}}/post"
+          }
+        },
+        {
+          "name": "Create Receipt Voucher",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"transactionDate\": \"2025-07-17\", \"accountingEntries\": [] }"
+            },
+            "url": "{{baseUrl}}/api/receipt"
+          }
+        },
+        {
+          "name": "Post Receipt Voucher",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/receipt/{{transactionId}}/post"
+          }
+        },
+        {
+          "name": "Create Payment Voucher",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"transactionDate\": \"2025-07-17\", \"accountingEntries\": [] }"
+            },
+            "url": "{{baseUrl}}/api/payment"
+          }
+        },
+        {
+          "name": "Post Payment Voucher",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/payment/{{transactionId}}/post"
+          }
+        },
+        {
+          "name": "Create Contra Voucher",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"transactionDate\": \"2025-07-17\", \"accountingEntries\": [] }"
+            },
+            "url": "{{baseUrl}}/api/contra"
+          }
+        },
+        {
+          "name": "Post Contra Voucher",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/contra/{{transactionId}}/post"
+          }
+        },
+        {
+          "name": "Create Journal Voucher",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"transactionDate\": \"2025-07-17\", \"accountingEntries\": [] }"
+            },
+            "url": "{{baseUrl}}/api/journal"
+          }
+        },
+        {
+          "name": "Post Journal Voucher",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/journal/{{transactionId}}/post"
+          }
+        },
+        {
+          "name": "Create Expense Voucher",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"transactionDate\": \"2025-07-17\", \"accountingEntries\": [] }"
+            },
+            "url": "{{baseUrl}}/api/expense"
+          }
+        },
+        {
+          "name": "Post Expense Voucher",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/expense/{{transactionId}}/post"
+          }
+        },
+        {
+          "name": "Create Sales Return Voucher",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"transactionDate\": \"2025-07-17\", \"accountingEntries\": [] }"
+            },
+            "url": "{{baseUrl}}/api/sales-return"
+          }
+        },
+        {
+          "name": "Post Sales Return Voucher",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/sales-return/{{transactionId}}/post"
+          }
+        },
+        {
+          "name": "Create Purchase Return Voucher",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"transactionDate\": \"2025-07-17\", \"accountingEntries\": [] }"
+            },
+            "url": "{{baseUrl}}/api/purchase-return"
+          }
+        },
+        {
+          "name": "Post Purchase Return Voucher",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/purchase-return/{{transactionId}}/post"
+          }
+        },
+        {
+          "name": "Create Debit Note",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"transactionDate\": \"2025-07-17\", \"accountingEntries\": [] }"
+            },
+            "url": "{{baseUrl}}/api/debit-note"
+          }
+        },
+        {
+          "name": "Post Debit Note",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/debit-note/{{transactionId}}/post"
+          }
+        },
+        {
+          "name": "Create Credit Note",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"transactionDate\": \"2025-07-17\", \"accountingEntries\": [] }"
+            },
+            "url": "{{baseUrl}}/api/credit-note"
+          }
+        },
+        {
+          "name": "Post Credit Note",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/credit-note/{{transactionId}}/post"
+          }
+        },
+        {
+          "name": "Create Opening Balance Voucher",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"transactionDate\": \"2025-07-17\", \"accountingEntries\": [] }"
+            },
+            "url": "{{baseUrl}}/api/opening-balance"
+          }
+        },
+        {
+          "name": "Post Opening Balance Voucher",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/opening-balance/{{transactionId}}/post"
           }
         }
       ]
