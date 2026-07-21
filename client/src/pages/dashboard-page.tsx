@@ -1,5 +1,6 @@
-import { Badge, Button, Card, Flex, Heading, Text } from "@radix-ui/themes";
+import { Badge, Card, Flex, Heading, Text } from "@radix-ui/themes";
 import { ReloadIcon } from "@radix-ui/react-icons";
+import { Button } from "../components/ui/button";
 import { useSystemHealth } from "../features/system/use-system-health";
 
 export function DashboardPage() {
@@ -20,7 +21,7 @@ export function DashboardPage() {
           </div>
           <Flex align="center" gap="3">
             <Badge color={databaseReady ? "green" : "amber"} size="2">{health.isFetching ? "Checking" : databaseReady ? "Connected" : "Unavailable"}</Badge>
-            <Button variant="soft" onClick={() => void health.refetch()} disabled={health.isFetching}><ReloadIcon /> Refresh</Button>
+            <Button variant="secondary" onClick={() => void health.refetch()} disabled={health.isFetching}><ReloadIcon /> Refresh</Button>
           </Flex>
         </Flex>
         {health.isError ? <Text as="p" color="red" size="2" mt="3">{health.error.message}</Text> : null}

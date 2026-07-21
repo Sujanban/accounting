@@ -1,5 +1,5 @@
 import { BarChartIcon, DashboardIcon, FileTextIcon, GearIcon } from "@radix-ui/react-icons";
-import { Button } from "@radix-ui/themes";
+import { Button } from "./ui/button";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../features/auth/auth-provider";
 
@@ -24,7 +24,7 @@ export function AppShell() {
       <header className="border-b border-slate-200 bg-white px-6 py-4">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <Link className="text-lg font-bold tracking-tight text-slate-950" to="/">Ledgerly</Link>
-          <div className="flex items-center gap-3"><span className="hidden text-sm text-slate-500 sm:inline">{session?.user.name}</span><Button variant="soft" size="1" onClick={() => void signOut()}>Sign out</Button></div>
+          <div className="flex items-center gap-3"><span className="hidden text-sm text-slate-500 sm:inline">{session?.user.name}</span><Button variant="secondary" size="1" onClick={() => void signOut()}>Sign out</Button></div>
         </div>
       </header>
       <div className="mx-auto grid max-w-7xl gap-6 p-6 md:grid-cols-[210px_1fr]">

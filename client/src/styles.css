@@ -17,6 +17,32 @@ button, input {
   font: inherit;
 }
 
+.app-button {
+  min-height: 2.4rem;
+  border-radius: 0.625rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
+  transition: transform 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+
+.app-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 12px rgb(15 23 42 / 0.12);
+}
+
+.app-button:focus-visible {
+  outline: 3px solid rgb(99 102 241 / 0.32);
+  outline-offset: 2px;
+}
+
+.app-button-ghost,
+.app-button-outline,
+.app-button-secondary,
+.app-button-danger-outline {
+  box-shadow: none;
+}
+
 .form-field {
   min-width: 0;
 }
@@ -41,6 +67,20 @@ button, input {
   padding: 1.5rem;
 }
 
+.settings-tabs > .rt-TabsList {
+  gap: 0.25rem;
+  margin-bottom: 1.25rem;
+  padding: 0.25rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.875rem;
+  background: #fff;
+}
+
+.settings-tabs > .rt-TabsList > .rt-TabsTrigger {
+  border-radius: 0.625rem;
+  font-weight: 600;
+}
+
 .settings-form {
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -61,9 +101,17 @@ button, input {
   min-width: 12.5rem;
 }
 
+.fiscal-year-actions > .app-button {
+  min-width: 14rem;
+}
+
 @media (max-width: 700px) {
   .settings-section {
     padding: 1.125rem;
+  }
+
+  .settings-tabs > .rt-TabsList {
+    overflow-x: auto;
   }
 
   .settings-form {
@@ -72,6 +120,10 @@ button, input {
 
   .settings-form > .rt-Button {
     justify-self: stretch;
+    width: 100%;
+  }
+
+  .fiscal-year-actions > .app-button {
     width: 100%;
   }
 }

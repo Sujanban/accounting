@@ -1,10 +1,11 @@
-import { Button, Card, Flex, Heading, Text } from "@radix-ui/themes";
+import { Card, Flex, Heading, Text } from "@radix-ui/themes";
 import { LockClosedIcon, PersonIcon } from "@radix-ui/react-icons";
 import { useState, type FormEvent } from "react";
 import isEmail from "validator/lib/isEmail";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { ApiClientError } from "../../lib/query-client";
 import { FormTextField } from "../../components/forms/form-fields";
+import { Button } from "../../components/ui/button";
 import { useAuth } from "./auth-provider";
 import { useRegister } from "./use-register";
 
