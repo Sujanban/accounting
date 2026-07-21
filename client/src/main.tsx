@@ -5,6 +5,7 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Theme } from "@radix-ui/themes";
 import { BrowserRouter } from "react-router-dom";
 import { App } from "./app";
+import { AuthProvider } from "./features/auth/auth-provider";
 import { queryClient } from "./lib/query-client";
 import "./styles.css";
 
@@ -12,7 +13,7 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <Theme accentColor="indigo" grayColor="slate" radius="large">
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter><App /></BrowserRouter>
+        <BrowserRouter><AuthProvider><App /></AuthProvider></BrowserRouter>
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
     </Theme>
