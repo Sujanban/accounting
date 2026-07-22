@@ -4,6 +4,12 @@ Version: 1.0
 
 Status: Planned
 
+## Frontend delivery
+
+Status: Planned
+
+Implement read-only general-ledger, trial-balance, journal-register, and day-book routes with validated filters, totals, loading/empty/error states, and print-friendly layouts.
+
 Prerequisites
 
 - ✅ Phase 0 — Architecture Improvements

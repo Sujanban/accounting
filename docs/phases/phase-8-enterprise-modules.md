@@ -4,6 +4,12 @@ Version: 1.0
 
 Status: Planned
 
+## Frontend delivery
+
+Status: Planned
+
+Implement company branch and warehouse routes, including warehouse filtering by branch and the selectors required by subsequent product and voucher forms.
+
 Prerequisites
 
 - ✅ Phase 0 — Architecture Improvements

@@ -21,7 +21,7 @@ export function DashboardPage() {
           </div>
           <Flex align="center" gap="3">
             <Badge color={databaseReady ? "green" : "amber"} size="2">{health.isFetching ? "Checking" : databaseReady ? "Connected" : "Unavailable"}</Badge>
-            <Button variant="secondary" onClick={() => void health.refetch()} disabled={health.isFetching}><ReloadIcon /> Refresh</Button>
+            <Button variant="outline" onClick={() => void health.refetch()} disabled={health.isFetching}><ReloadIcon /> Refresh</Button>
           </Flex>
         </Flex>
         {health.isError ? <Text as="p" color="red" size="2" mt="3">{health.error.message}</Text> : null}

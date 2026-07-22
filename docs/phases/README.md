@@ -1,6 +1,6 @@
 # ERP Implementation Phases
 
-This directory is the canonical, version-controlled roadmap for the ERP implementation. Keep future phase updates here and reference the documents during planning, reviews, and release preparation.
+This directory is the canonical, version-controlled roadmap for the ERP implementation. Keep future phase updates here and reference the documents during planning, reviews, and release preparation. Each delivery phase includes its frontend route/API coverage and completion criteria; implement and verify one phase before starting the next.
 
 | Phase | Focus |
 | --- | --- |

@@ -4,6 +4,19 @@ Version: 1.0
 
 Status: Planned
 
+## Frontend delivery
+
+Status: Complete
+
+Routes and APIs:
+
+- `/accounting/chart-of-accounts` — active chart tree from `GET /api/accounting/chart-of-accounts`
+- `/accounting/account-groups` — list, create, edit, archive, and restore account groups
+- `/accounting/ledgers` — filtered list, create, edit, archive, and restore ledgers
+- `/accounting/voucher-numbering` — list and owner/admin update of voucher sequences
+
+Completion criteria: typed API contracts, TanStack Query hooks, loading/empty/error states, safe archive confirmation, server validation messaging, API contract tests, and a passing frontend production build.
+
 Prerequisite:
 - Phase 0 — Architecture Improvements
 - Phase 1 — Foundation

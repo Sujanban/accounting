@@ -4,6 +4,12 @@ Version: 1.0
 
 Status: Planned
 
+## Frontend delivery
+
+Status: Planned
+
+Extend company settings with PAN/VAT compliance panels, VAT calculation, AD↔BS conversion, current BS date, and Nepali month-name utilities without duplicating settings routes.
+
 Prerequisites
 
 - ✅ Phase 0 — Architecture Improvements

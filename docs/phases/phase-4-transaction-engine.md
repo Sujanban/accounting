@@ -4,6 +4,12 @@ Version: 1.0
 
 Status: Planned
 
+## Frontend delivery
+
+Status: Planned
+
+Implement paginated all-voucher and draft lists plus transaction detail, draft edit, post, and reverse flows using `/api/transactions`. Posted and reversed records remain read-only and destructive actions require confirmation.
+
 Prerequisites
 
 - ✅ Phase 0 — Architecture Improvements

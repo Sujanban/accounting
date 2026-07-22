@@ -4,6 +4,12 @@ Version: 1.0
 
 Status: Planned
 
+## Frontend delivery
+
+Status: Planned
+
+Implement `/masters/parties`, `/masters/products`, `/masters/categories`, `/masters/units`, `/masters/tax-rates`, and `/masters/payment-terms` with typed feature APIs, query hooks, create forms, contacts update/archive behavior, and list loading/empty/error states.
+
 Prerequisites
 
 - Phase 0 — Architecture Improvements

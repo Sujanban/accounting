@@ -4,6 +4,12 @@ Version: 1.0
 
 Status: Planned
 
+## Frontend delivery
+
+Status: Planned
+
+Replace voucher-create placeholders with typed, shared form flows for sales, purchase, receipt, payment, contra, journal, expense, returns, notes, and opening balance; each uses its dedicated create/post API and protects against duplicate submission.
+
 Prerequisites
 
 - ✅ Phase 0 — Architecture Improvements

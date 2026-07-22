@@ -648,7 +648,7 @@ function FiscalYears({ years }: { years: FiscalYear[] }) {
             ) : (
               <Button
                 size="1"
-                variant="secondary"
+                variant="outline"
                 disabled={activate.isPending}
                 onClick={() => void activate.mutateAsync(year.id)}
               >
@@ -658,7 +658,7 @@ function FiscalYears({ years }: { years: FiscalYear[] }) {
             {!year.isLocked ? (
               <Button
                 size="1"
-                variant="danger-outline"
+                variant="outline"
                 disabled={close.isPending}
                 onClick={() => {
                   if (

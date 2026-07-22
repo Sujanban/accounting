@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/app-shell";
 import { LoginPage, RegisterPage } from "./features/auth/auth-page";
+import { AccountGroupCreatePage, AccountGroupEditPage, AccountingPage, LedgerCreatePage, LedgerEditPage, VoucherSequenceEditPage } from "./features/accounting/accounting-page";
 import { RequireAuth } from "./features/auth/require-auth";
 import { OnboardingPage } from "./features/onboarding/onboarding-page";
 import { RequireOnboarding } from "./features/onboarding/require-onboarding";
@@ -23,7 +24,12 @@ export function App() {
             <Route path="vouchers/:voucherType" element={<PlaceholderPage title="Vouchers" />} />
             <Route path="vouchers/:voucherType/new" element={<PlaceholderPage title="Create voucher" description="Enter a new voucher for the active company and fiscal year." />} />
             <Route path="masters/:masterType" element={<PlaceholderPage title="Masters" />} />
-            <Route path="accounting/:section" element={<PlaceholderPage title="Accounting" />} />
+            <Route path="accounting/voucher-numbering/:voucherSequenceId/edit" element={<VoucherSequenceEditPage />} />
+            <Route path="accounting/ledgers/new" element={<LedgerCreatePage />} />
+            <Route path="accounting/ledgers/:ledgerId/edit" element={<LedgerEditPage />} />
+            <Route path="accounting/account-groups/new" element={<AccountGroupCreatePage />} />
+            <Route path="accounting/account-groups/:accountGroupId/edit" element={<AccountGroupEditPage />} />
+            <Route path="accounting/:section" element={<AccountingPage />} />
             <Route path="reports/:report" element={<PlaceholderPage title="Reports" />} />
             <Route path="company/:section" element={<SettingsPage />} />
             <Route path="settings" element={<SettingsPage />} />
