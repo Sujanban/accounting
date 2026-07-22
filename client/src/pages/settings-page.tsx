@@ -1,47 +1,680 @@
-import { Card, Flex, Heading, Separator, Switch, Tabs, Text } from "@radix-ui/themes";
+import {
+  Card,
+  Flex,
+  Heading,
+  Separator,
+  Switch,
+  Tabs,
+  Text,
+} from "@radix-ui/themes";
 import { useEffect, useState } from "react";
 import { FormSelect, FormTextField } from "../components/forms/form-fields";
+import { LoadingScreen } from "../components/loading-screen";
 import { Button } from "../components/ui/button";
 import { useAuth } from "../features/auth/auth-provider";
-import { type CompanySettings, type FiscalYear, type PanSettings, type VatSettings } from "../features/settings/settings-api";
-import { useActivateFiscalYear, useCloseFiscalYear, useCompanyProfile, useFiscalYearMutation, useFiscalYears, usePan, useSettings, useUpdateAccounting, useUpdateCompany, useUpdatePan, useUpdateSettings, useUpdateVat, useVat } from "../features/settings/use-settings";
+import {
+  type CompanySettings,
+  type FiscalYear,
+  type PanSettings,
+  type VatSettings,
+} from "../features/settings/settings-api";
+import {
+  useActivateFiscalYear,
+  useCloseFiscalYear,
+  useCompanyProfile,
+  useFiscalYearMutation,
+  useFiscalYears,
+  usePan,
+  useSettings,
+  useUpdateAccounting,
+  useUpdateCompany,
+  useUpdatePan,
+  useUpdateSettings,
+  useUpdateVat,
+  useVat,
+} from "../features/settings/use-settings";
 import { getCurrentFiscalYearDefaults } from "../lib/fiscal-year";
 import { ApiClientError } from "../lib/query-client";
 
-const businessTypes = ["RETAIL", "WHOLESALE", "SERVICE", "MANUFACTURING", "PHARMACY", "RESTAURANT", "OTHER"];
-const currencies = [{ value: "NPR", label: "Nepalese Rupee (NPR)", symbol: "Rs." }, { value: "INR", label: "Indian Rupee (INR)", symbol: "₹" }, { value: "USD", label: "US Dollar (USD)", symbol: "$" }];
-const message = (error: unknown) => error instanceof ApiClientError ? error.message : "Unable to save changes.";
+const businessTypes = [
+  "RETAIL",
+  "WHOLESALE",
+  "SERVICE",
+  "MANUFACTURING",
+  "PHARMACY",
+  "RESTAURANT",
+  "OTHER",
+];
+const currencies = [
+  { value: "NPR", label: "Nepalese Rupee (NPR)", symbol: "Rs." },
+  { value: "INR", label: "Indian Rupee (INR)", symbol: "₹" },
+  { value: "USD", label: "US Dollar (USD)", symbol: "$" },
+];
+const message = (error: unknown) =>
+  error instanceof ApiClientError ? error.message : "Unable to save changes.";
 
 export function SettingsPage() {
   const { session } = useAuth();
   const companyId = session?.activeCompany?.id ?? null;
   const company = useCompanyProfile(companyId);
   const settings = useSettings(companyId);
-  const pan = usePan(); const vat = useVat(); const fiscalYears = useFiscalYears();
-  const updateCompany = useUpdateCompany(companyId ?? ""); const updateSettings = useUpdateSettings(); const updateAccounting = useUpdateAccounting(); const updatePan = useUpdatePan(); const updateVat = useUpdateVat();
+  const pan = usePan();
+  const vat = useVat();
+  const fiscalYears = useFiscalYears();
+  const updateCompany = useUpdateCompany(companyId ?? "");
+  const updateSettings = useUpdateSettings();
+  const updateAccounting = useUpdateAccounting();
+  const updatePan = useUpdatePan();
+  const updateVat = useUpdateVat();
   const [error, setError] = useState<string | null>(null);
-  const [profile, setProfile] = useState({ name: "", phone: "", email: "", address: "", logo: "" });
+  const [profile, setProfile] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    address: "",
+    logo: "",
+  });
   const [general, setGeneral] = useState<Partial<CompanySettings>>({});
-  const [vatForm, setVatForm] = useState<VatSettings>({ vatRegistered: false, vatNumber: null, defaultVatRate: 13, vatMode: "EXCLUSIVE" });
-  useEffect(() => { if (company.data) setProfile({ name: company.data.name, phone: company.data.phone ?? "", email: company.data.email ?? "", address: company.data.address ?? "", logo: company.data.logo ?? "" }); }, [company.data]);
-  useEffect(() => { if (settings.data) setGeneral(settings.data); }, [settings.data]);
-  useEffect(() => { if (vat.data) setVatForm(vat.data); }, [vat.data]);
+  const [vatForm, setVatForm] = useState<VatSettings>({
+    vatRegistered: false,
+    vatNumber: null,
+    defaultVatRate: 13,
+    vatMode: "EXCLUSIVE",
+  });
+  useEffect(() => {
+    if (company.data)
+      setProfile({
+        name: company.data.name,
+        phone: company.data.phone ?? "",
+        email: company.data.email ?? "",
+        address: company.data.address ?? "",
+        logo: company.data.logo ?? "",
+      });
+  }, [company.data]);
+  useEffect(() => {
+    if (settings.data) setGeneral(settings.data);
+  }, [settings.data]);
+  useEffect(() => {
+    if (vat.data) setVatForm(vat.data);
+  }, [vat.data]);
   if (!companyId) return null;
-  if (company.isLoading || settings.isLoading || pan.isLoading || vat.isLoading || fiscalYears.isLoading) return <Text>Loading settings…</Text>;
-  async function save(run: () => Promise<unknown>) { setError(null); try { await run(); } catch (requestError) { setError(message(requestError)); } }
-  return <Flex direction="column" gap="5" className="settings-page"><div><Heading size="7">Settings</Heading><Text as="p" color="gray" mt="2">Manage company details, financial preferences, and fiscal controls.</Text></div>{error ? <Text color="red" role="alert">{error}</Text> : null}
-    <Tabs.Root defaultValue="company" className="settings-tabs"><Tabs.List aria-label="Settings categories"><Tabs.Trigger value="company">Company</Tabs.Trigger><Tabs.Trigger value="preferences">Preferences</Tabs.Trigger><Tabs.Trigger value="tax">Tax</Tabs.Trigger><Tabs.Trigger value="fiscal">Fiscal years</Tabs.Trigger></Tabs.List><Tabs.Content value="company"><SettingsSection title="Company profile" description="Details shown on business documents and reports."><form onSubmit={(event) => { event.preventDefault(); void save(() => updateCompany.mutateAsync(profile)); }}><Flex direction="column" gap="3" className="settings-form"><FormTextField label="Company name" value={profile.name} onChange={(event) => setProfile({ ...profile, name: event.target.value })} required /><FormTextField label="Phone" value={profile.phone} onChange={(event) => setProfile({ ...profile, phone: event.target.value })} /><FormTextField label="Company email" type="email" value={profile.email} onChange={(event) => setProfile({ ...profile, email: event.target.value })} /><FormTextField label="Address" value={profile.address} onChange={(event) => setProfile({ ...profile, address: event.target.value })} /><FormTextField label="Logo URL" type="url" value={profile.logo} onChange={(event) => setProfile({ ...profile, logo: event.target.value })} /><Button type="submit" loading={updateCompany.isPending}>Save company profile</Button></Flex></form></SettingsSection></Tabs.Content><Tabs.Content value="preferences"><Flex direction="column" gap="4"><SettingsSection title="Business & display" description="Defaults applied to new documents and reports."><form onSubmit={(event) => { event.preventDefault(); void save(() => updateSettings.mutateAsync(general)); }}><Flex direction="column" gap="3" className="settings-form"><FormSelect label="Business type" required value={String(general.businessType ?? "RETAIL")} onValueChange={(businessType) => setGeneral({ ...general, businessType })} options={businessTypes.map((value) => ({ value, label: value.replaceAll("_", " ") }))} /><FormSelect label="Currency" required value={String(general.currency ?? "NPR")} onValueChange={(currency) => { const selected = currencies.find((item) => item.value === currency); setGeneral({ ...general, currency, currencySymbol: selected?.symbol ?? general.currencySymbol }); }} options={currencies.map(({ value, label }) => ({ value, label }))} /><FormSelect label="Currency symbol" required value={String(general.currencySymbol ?? "Rs.")} onValueChange={(currencySymbol) => setGeneral({ ...general, currencySymbol })} options={currencies.map(({ value, symbol }) => ({ value: symbol, label: `${symbol} (${value})` }))} /><FormSelect label="Date format" required value={String(general.dateFormat ?? "BS")} onValueChange={(dateFormat) => setGeneral({ ...general, dateFormat: dateFormat as "BS" | "AD" })} options={[{ value: "BS", label: "Bikram Sambat (BS)" }, { value: "AD", label: "Gregorian (AD)" }]} /><FormSelect label="Decimal places" required value={String(general.decimalPlaces ?? 2)} onValueChange={(decimalPlaces) => setGeneral({ ...general, decimalPlaces: Number(decimalPlaces) })} options={[0,1,2,3,4,5,6].map((value) => ({ value: String(value), label: String(value) }))} /><Flex justify="between" align="center"><Text>Allow negative stock</Text><Switch checked={Boolean(general.allowNegativeStock)} onCheckedChange={(allowNegativeStock) => setGeneral({ ...general, allowNegativeStock })} /></Flex><Button type="submit" loading={updateSettings.isPending}>Save business settings</Button></Flex></form></SettingsSection><SettingsSection title="Accounting & fiscal lock" description="Controls for voucher numbering and edit protection."><AccountingForm settings={settings.data!} onSave={(input) => save(() => updateAccounting.mutateAsync(input))} pending={updateAccounting.isPending} /></SettingsSection></Flex></Tabs.Content><Tabs.Content value="tax"><SettingsSection title="PAN & VAT" description="Nepal tax registration and default VAT treatment."><Flex direction="column" gap="3" className="settings-form"><PanForm pan={pan.data!} onSave={(input) => save(() => updatePan.mutateAsync(input))} pending={updatePan.isPending} /><Separator size="4" /><FormSelect label="VAT registration" required value={String(vatForm.vatRegistered)} onValueChange={(value) => setVatForm({ ...vatForm, vatRegistered: value === "true", vatNumber: value === "true" ? vatForm.vatNumber : null })} options={[{ value: "false", label: "Not VAT registered" }, { value: "true", label: "VAT registered" }]} />{vatForm.vatRegistered ? <FormTextField label="VAT number" value={vatForm.vatNumber ?? ""} onChange={(event) => setVatForm({ ...vatForm, vatNumber: event.target.value })} required /> : null}<FormTextField label="Default VAT rate" type="number" value={String(vatForm.defaultVatRate)} onChange={(event) => setVatForm({ ...vatForm, defaultVatRate: Number(event.target.value) })} required /><FormSelect label="VAT mode" value={vatForm.vatMode} onValueChange={(vatMode) => setVatForm({ ...vatForm, vatMode: vatMode as VatSettings["vatMode"] })} options={[{ value: "EXCLUSIVE", label: "Exclusive" }, { value: "INCLUSIVE", label: "Inclusive" }]} /><Button onClick={() => void save(() => updateVat.mutateAsync(vatForm))} loading={updateVat.isPending}>Save VAT settings</Button></Flex></SettingsSection></Tabs.Content><Tabs.Content value="fiscal"><SettingsSection title="Fiscal years" description="Create or activate fiscal years; existing date ranges are intentionally immutable."><FiscalYears years={fiscalYears.data ?? []} /></SettingsSection></Tabs.Content></Tabs.Root>
-  </Flex>;
+  if (
+    company.isLoading ||
+    settings.isLoading ||
+    pan.isLoading ||
+    vat.isLoading ||
+    fiscalYears.isLoading
+  )
+    return <LoadingScreen fullScreen={false} label="Loading settings" description="Retrieving your company and fiscal preferences…" />;
+  async function save(run: () => Promise<unknown>) {
+    setError(null);
+    try {
+      await run();
+    } catch (requestError) {
+      setError(message(requestError));
+    }
+  }
+  return (
+    <Flex direction="column" gap="5" className="settings-page">
+      <div>
+        <Heading size="7">Settings</Heading>
+        <Text as="p" color="gray" mt="2">
+          Manage company details, financial preferences, and fiscal controls.
+        </Text>
+      </div>
+      {error ? (
+        <Text color="red" role="alert">
+          {error}
+        </Text>
+      ) : null}
+      <Tabs.Root defaultValue="company" className="settings-tabs">
+        <Tabs.List aria-label="Settings categories">
+          <Tabs.Trigger value="company">Company</Tabs.Trigger>
+          <Tabs.Trigger value="preferences">Preferences</Tabs.Trigger>
+          <Tabs.Trigger value="tax">Tax</Tabs.Trigger>
+          <Tabs.Trigger value="fiscal">Fiscal years</Tabs.Trigger>
+        </Tabs.List>
+        <Tabs.Content value="company">
+          <SettingsSection
+            title="Company profile"
+            description="Details shown on business documents and reports."
+          >
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void save(() => updateCompany.mutateAsync(profile));
+              }}
+            >
+              <Flex direction="column" gap="3" className="settings-form">
+                <FormTextField
+                  label="Company name"
+                  value={profile.name}
+                  onChange={(event) =>
+                    setProfile({ ...profile, name: event.target.value })
+                  }
+                  required
+                />
+                <FormTextField
+                  label="Phone"
+                  value={profile.phone}
+                  onChange={(event) =>
+                    setProfile({ ...profile, phone: event.target.value })
+                  }
+                />
+                <FormTextField
+                  label="Company email"
+                  type="email"
+                  value={profile.email}
+                  onChange={(event) =>
+                    setProfile({ ...profile, email: event.target.value })
+                  }
+                />
+                <FormTextField
+                  label="Address"
+                  value={profile.address}
+                  onChange={(event) =>
+                    setProfile({ ...profile, address: event.target.value })
+                  }
+                />
+                <FormTextField
+                  label="Logo URL"
+                  type="url"
+                  value={profile.logo}
+                  onChange={(event) =>
+                    setProfile({ ...profile, logo: event.target.value })
+                  }
+                />
+                <Button type="submit" loading={updateCompany.isPending}>
+                  Save company profile
+                </Button>
+              </Flex>
+            </form>
+          </SettingsSection>
+        </Tabs.Content>
+        <Tabs.Content value="preferences">
+          <Flex direction="column" gap="4">
+            <SettingsSection
+              title="Business & display"
+              description="Defaults applied to new documents and reports."
+            >
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void save(() => updateSettings.mutateAsync(general));
+                }}
+              >
+                <Flex direction="column" gap="3" className="settings-form">
+                  <FormSelect
+                    label="Business type"
+                    required
+                    value={String(general.businessType ?? "RETAIL")}
+                    onValueChange={(businessType) =>
+                      setGeneral({ ...general, businessType })
+                    }
+                    options={businessTypes.map((value) => ({
+                      value,
+                      label: value.replaceAll("_", " "),
+                    }))}
+                  />
+                  <FormSelect
+                    label="Currency"
+                    required
+                    value={String(general.currency ?? "NPR")}
+                    onValueChange={(currency) => {
+                      const selected = currencies.find(
+                        (item) => item.value === currency,
+                      );
+                      setGeneral({
+                        ...general,
+                        currency,
+                        currencySymbol:
+                          selected?.symbol ?? general.currencySymbol,
+                      });
+                    }}
+                    options={currencies.map(({ value, label }) => ({
+                      value,
+                      label,
+                    }))}
+                  />
+                  <FormSelect
+                    label="Currency symbol"
+                    required
+                    value={String(general.currencySymbol ?? "Rs.")}
+                    onValueChange={(currencySymbol) =>
+                      setGeneral({ ...general, currencySymbol })
+                    }
+                    options={currencies.map(({ value, symbol }) => ({
+                      value: symbol,
+                      label: `${symbol} (${value})`,
+                    }))}
+                  />
+                  <FormSelect
+                    label="Date format"
+                    required
+                    value={String(general.dateFormat ?? "BS")}
+                    onValueChange={(dateFormat) =>
+                      setGeneral({
+                        ...general,
+                        dateFormat: dateFormat as "BS" | "AD",
+                      })
+                    }
+                    options={[
+                      { value: "BS", label: "Bikram Sambat (BS)" },
+                      { value: "AD", label: "Gregorian (AD)" },
+                    ]}
+                  />
+                  <FormSelect
+                    label="Decimal places"
+                    required
+                    value={String(general.decimalPlaces ?? 2)}
+                    onValueChange={(decimalPlaces) =>
+                      setGeneral({
+                        ...general,
+                        decimalPlaces: Number(decimalPlaces),
+                      })
+                    }
+                    options={[0, 1, 2, 3, 4, 5, 6].map((value) => ({
+                      value: String(value),
+                      label: String(value),
+                    }))}
+                  />
+                  <Flex justify="between" align="center">
+                    <Text>Allow negative stock</Text>
+                    <Switch
+                      checked={Boolean(general.allowNegativeStock)}
+                      onCheckedChange={(allowNegativeStock) =>
+                        setGeneral({ ...general, allowNegativeStock })
+                      }
+                    />
+                  </Flex>
+                  <Button type="submit" loading={updateSettings.isPending}>
+                    Save business settings
+                  </Button>
+                </Flex>
+              </form>
+            </SettingsSection>
+            <SettingsSection
+              title="Accounting & fiscal lock"
+              description="Controls for voucher numbering and edit protection."
+            >
+              <AccountingForm
+                settings={settings.data!}
+                onSave={(input) =>
+                  save(() => updateAccounting.mutateAsync(input))
+                }
+                pending={updateAccounting.isPending}
+              />
+            </SettingsSection>
+          </Flex>
+        </Tabs.Content>
+        <Tabs.Content value="tax">
+          <SettingsSection
+            title="PAN & VAT"
+            description="Nepal tax registration and default VAT treatment."
+          >
+            <Flex direction="column" gap="3" className="settings-form">
+              <PanForm
+                pan={pan.data!}
+                onSave={(input) => save(() => updatePan.mutateAsync(input))}
+                pending={updatePan.isPending}
+              />
+              <FormSelect
+                label="VAT registration"
+                required
+                value={String(vatForm.vatRegistered)}
+                onValueChange={(value) =>
+                  setVatForm({
+                    ...vatForm,
+                    vatRegistered: value === "true",
+                    vatNumber: value === "true" ? vatForm.vatNumber : null,
+                  })
+                }
+                options={[
+                  { value: "false", label: "Not VAT registered" },
+                  { value: "true", label: "VAT registered" },
+                ]}
+              />
+              {vatForm.vatRegistered ? (
+                <FormTextField
+                  label="VAT number"
+                  value={vatForm.vatNumber ?? ""}
+                  onChange={(event) =>
+                    setVatForm({ ...vatForm, vatNumber: event.target.value })
+                  }
+                  required
+                />
+              ) : null}
+              <FormTextField
+                label="Default VAT rate"
+                type="number"
+                value={String(vatForm.defaultVatRate)}
+                onChange={(event) =>
+                  setVatForm({
+                    ...vatForm,
+                    defaultVatRate: Number(event.target.value),
+                  })
+                }
+                required
+              />
+              <FormSelect
+                label="VAT mode"
+                value={vatForm.vatMode}
+                onValueChange={(vatMode) =>
+                  setVatForm({
+                    ...vatForm,
+                    vatMode: vatMode as VatSettings["vatMode"],
+                  })
+                }
+                options={[
+                  { value: "EXCLUSIVE", label: "Exclusive" },
+                  { value: "INCLUSIVE", label: "Inclusive" },
+                ]}
+              />
+              <Button
+                onClick={() => void save(() => updateVat.mutateAsync(vatForm))}
+                loading={updateVat.isPending}
+              >
+                Save VAT settings
+              </Button>
+            </Flex>
+          </SettingsSection>
+        </Tabs.Content>
+        <Tabs.Content value="fiscal">
+          <SettingsSection
+            title="Fiscal years"
+            description="Create or activate fiscal years; existing date ranges are intentionally immutable."
+          >
+            <FiscalYears years={fiscalYears.data ?? []} />
+          </SettingsSection>
+        </Tabs.Content>
+      </Tabs.Root>
+    </Flex>
+  );
 }
 
-function SettingsSection({ title, description, children }: { title: string; description: string; children: React.ReactNode }) { return <Card size="3" className="settings-section"><Heading size="4">{title}</Heading><Text as="p" color="gray" size="2" mt="1" mb="4">{description}</Text>{children}</Card>; }
-function PanForm({ pan, onSave, pending }: { pan: PanSettings; onSave: (input: Partial<Pick<PanSettings, "panNumber" | "registrationDate" | "registrationOffice">>) => Promise<unknown>; pending: boolean }) { const [form, setForm] = useState({ panNumber: pan.panNumber, registrationDate: pan.registrationDate?.slice(0, 10) ?? "", registrationOffice: pan.registrationOffice ?? "" }); useEffect(() => setForm({ panNumber: pan.panNumber, registrationDate: pan.registrationDate?.slice(0, 10) ?? "", registrationOffice: pan.registrationOffice ?? "" }), [pan]); return <form onSubmit={(event) => { event.preventDefault(); void onSave({ ...form, registrationDate: form.registrationDate || null, registrationOffice: form.registrationOffice || null }); }}><Flex direction="column" gap="2" className="settings-form"><FormTextField label="PAN number" value={form.panNumber} onChange={(event) => setForm({ ...form, panNumber: event.target.value })} required /><FormTextField label="PAN registration date" type="date" value={form.registrationDate} onChange={(event) => setForm({ ...form, registrationDate: event.target.value })} /><FormTextField label="PAN registration office" value={form.registrationOffice} onChange={(event) => setForm({ ...form, registrationOffice: event.target.value })} /><Button type="submit" loading={pending}>Save PAN details</Button></Flex></form>; }
-function AccountingForm({ settings, onSave, pending }: { settings: CompanySettings; onSave: (input: { accounting: CompanySettings["accounting"]; fiscalLock: CompanySettings["fiscalLock"] }) => Promise<unknown>; pending: boolean }) { const [accounting, setAccounting] = useState(settings.accounting); const [fiscalLock, setFiscalLock] = useState(settings.fiscalLock); useEffect(() => { setAccounting(settings.accounting); setFiscalLock(settings.fiscalLock); }, [settings]); return <form onSubmit={(event) => { event.preventDefault(); void onSave({ accounting, fiscalLock }); }}><Flex direction="column" gap="3" className="settings-form"><FormSelect label="Voucher numbering" value={accounting.voucherNumbering} onValueChange={(voucherNumbering) => setAccounting({ ...accounting, voucherNumbering: voucherNumbering as CompanySettings["accounting"]["voucherNumbering"] })} options={[{ value: "AUTO", label: "Automatic" }, { value: "MANUAL", label: "Manual" }]} /><FormTextField label="Lock entries before" type="date" value={fiscalLock.lockBeforeDate?.slice(0, 10) ?? ""} onChange={(event) => setFiscalLock({ ...fiscalLock, lockBeforeDate: event.target.value || null })} /><Flex justify="between" align="center"><Text>Lock closed fiscal years</Text><Switch checked={fiscalLock.lockClosedFiscalYear} onCheckedChange={(lockClosedFiscalYear) => setFiscalLock({ ...fiscalLock, lockClosedFiscalYear })} /></Flex><Flex justify="between" align="center"><Text>Allow administrator override</Text><Switch checked={fiscalLock.allowAdminOverride} onCheckedChange={(allowAdminOverride) => setFiscalLock({ ...fiscalLock, allowAdminOverride })} /></Flex><Button type="submit" loading={pending}>Save accounting preferences</Button></Flex></form>; }
+function SettingsSection({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card size="3" className="settings-section">
+      <Heading size="4">{title}</Heading>
+      <Text as="p" color="gray" size="2" mt="1" mb="4">
+        {description}
+      </Text>
+      {children}
+    </Card>
+  );
+}
+function PanForm({
+  pan,
+  onSave,
+  pending,
+}: {
+  pan: PanSettings;
+  onSave: (
+    input: Partial<
+      Pick<PanSettings, "panNumber" | "registrationDate" | "registrationOffice">
+    >,
+  ) => Promise<unknown>;
+  pending: boolean;
+}) {
+  const [form, setForm] = useState({
+    panNumber: pan.panNumber,
+    registrationDate: pan.registrationDate?.slice(0, 10) ?? "",
+    registrationOffice: pan.registrationOffice ?? "",
+  });
+  useEffect(
+    () =>
+      setForm({
+        panNumber: pan.panNumber,
+        registrationDate: pan.registrationDate?.slice(0, 10) ?? "",
+        registrationOffice: pan.registrationOffice ?? "",
+      }),
+    [pan],
+  );
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        void onSave({
+          ...form,
+          registrationDate: form.registrationDate || null,
+          registrationOffice: form.registrationOffice || null,
+        });
+      }}
+    >
+      <Flex direction="column" gap="2" className="settings-form">
+        <FormTextField
+          label="PAN number"
+          value={form.panNumber}
+          onChange={(event) =>
+            setForm({ ...form, panNumber: event.target.value })
+          }
+          required
+        />
+        <FormTextField
+          label="PAN registration date"
+          type="date"
+          value={form.registrationDate}
+          onChange={(event) =>
+            setForm({ ...form, registrationDate: event.target.value })
+          }
+        />
+        <FormTextField
+          label="PAN registration office"
+          value={form.registrationOffice}
+          onChange={(event) =>
+            setForm({ ...form, registrationOffice: event.target.value })
+          }
+        />
+        <Button type="submit" loading={pending}>
+          Save PAN details
+        </Button>
+      </Flex>
+    </form>
+  );
+}
+function AccountingForm({
+  settings,
+  onSave,
+  pending,
+}: {
+  settings: CompanySettings;
+  onSave: (input: {
+    accounting: CompanySettings["accounting"];
+    fiscalLock: CompanySettings["fiscalLock"];
+  }) => Promise<unknown>;
+  pending: boolean;
+}) {
+  const [accounting, setAccounting] = useState(settings.accounting);
+  const [fiscalLock, setFiscalLock] = useState(settings.fiscalLock);
+  useEffect(() => {
+    setAccounting(settings.accounting);
+    setFiscalLock(settings.fiscalLock);
+  }, [settings]);
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        void onSave({ accounting, fiscalLock });
+      }}
+    >
+      <Flex direction="column" gap="3" className="settings-form">
+        <FormSelect
+          label="Voucher numbering"
+          value={accounting.voucherNumbering}
+          onValueChange={(voucherNumbering) =>
+            setAccounting({
+              ...accounting,
+              voucherNumbering:
+                voucherNumbering as CompanySettings["accounting"]["voucherNumbering"],
+            })
+          }
+          options={[
+            { value: "AUTO", label: "Automatic" },
+            { value: "MANUAL", label: "Manual" },
+          ]}
+        />
+        <FormTextField
+          label="Lock entries before"
+          type="date"
+          value={fiscalLock.lockBeforeDate?.slice(0, 10) ?? ""}
+          onChange={(event) =>
+            setFiscalLock({
+              ...fiscalLock,
+              lockBeforeDate: event.target.value || null,
+            })
+          }
+        />
+        <Flex justify="between" align="center">
+          <Text>Lock closed fiscal years</Text>
+          <Switch
+            checked={fiscalLock.lockClosedFiscalYear}
+            onCheckedChange={(lockClosedFiscalYear) =>
+              setFiscalLock({ ...fiscalLock, lockClosedFiscalYear })
+            }
+          />
+        </Flex>
+        <Flex justify="between" align="center">
+          <Text>Allow administrator override</Text>
+          <Switch
+            checked={fiscalLock.allowAdminOverride}
+            onCheckedChange={(allowAdminOverride) =>
+              setFiscalLock({ ...fiscalLock, allowAdminOverride })
+            }
+          />
+        </Flex>
+        <Button type="submit" loading={pending}>
+          Save accounting preferences
+        </Button>
+      </Flex>
+    </form>
+  );
+}
 function FiscalYears({ years }: { years: FiscalYear[] }) {
   const defaults = getCurrentFiscalYearDefaults();
   const [form, setForm] = useState(defaults);
   const create = useFiscalYearMutation();
   const activate = useActivateFiscalYear();
   const close = useCloseFiscalYear();
-  return <Flex direction="column" gap="3"><form onSubmit={(event) => { event.preventDefault(); void create.mutateAsync(form); }}><Flex direction="column" gap="3"><Text weight="medium">Add fiscal year</Text><div className="grid gap-3 sm:grid-cols-2"><FormTextField label="Name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required /><FormTextField label="Start BS" value={form.startDateBS} onChange={(event) => setForm({ ...form, startDateBS: event.target.value })} required /><FormTextField label="End BS" value={form.endDateBS} onChange={(event) => setForm({ ...form, endDateBS: event.target.value })} required /><FormTextField label="Start AD" type="date" value={form.startDateAD} onChange={(event) => setForm({ ...form, startDateAD: event.target.value })} required /><FormTextField label="End AD" type="date" value={form.endDateAD} onChange={(event) => setForm({ ...form, endDateAD: event.target.value })} required /></div><Flex justify="end" className="fiscal-year-actions"><Button type="submit" loading={create.isPending}>Create and activate fiscal year</Button></Flex></Flex></form><Separator size="4" />{years.map((year) => <Flex key={year.id} justify="between" align="center" gap="3" className="rounded-lg border border-slate-200 p-3"><div><Text weight="bold">{year.name}</Text><Text as="p" size="1" color="gray">{year.startDateBS} – {year.endDateBS}{year.isLocked ? " · Closed" : ""}</Text></div><Flex gap="2" align="center">{year.isActive ? <Text size="2" color="green">Active</Text> : <Button size="1" variant="secondary" disabled={activate.isPending} onClick={() => void activate.mutateAsync(year.id)}>Make active</Button>}{!year.isLocked ? <Button size="1" variant="danger-outline" disabled={close.isPending} onClick={() => { if (window.confirm(`Close ${year.name}? This locks the fiscal year.`)) void close.mutateAsync(year.id); }}>Close</Button> : null}</Flex></Flex>)}</Flex>;
+  return (
+    <Flex direction="column" gap="3">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          void create.mutateAsync(form);
+        }}
+      >
+        <Flex direction="column" gap="3">
+          <Text weight="medium">Add fiscal year</Text>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <FormTextField
+              label="Name"
+              value={form.name}
+              onChange={(event) =>
+                setForm({ ...form, name: event.target.value })
+              }
+              required
+            />
+            <FormTextField
+              label="Start BS"
+              value={form.startDateBS}
+              onChange={(event) =>
+                setForm({ ...form, startDateBS: event.target.value })
+              }
+              required
+            />
+            <FormTextField
+              label="End BS"
+              value={form.endDateBS}
+              onChange={(event) =>
+                setForm({ ...form, endDateBS: event.target.value })
+              }
+              required
+            />
+            <FormTextField
+              label="Start AD"
+              type="date"
+              value={form.startDateAD}
+              onChange={(event) =>
+                setForm({ ...form, startDateAD: event.target.value })
+              }
+              required
+            />
+            <FormTextField
+              label="End AD"
+              type="date"
+              value={form.endDateAD}
+              onChange={(event) =>
+                setForm({ ...form, endDateAD: event.target.value })
+              }
+              required
+            />
+          </div>
+          <Flex justify="end" className="fiscal-year-actions">
+            <Button type="submit" loading={create.isPending}>
+              Create and activate fiscal year
+            </Button>
+          </Flex>
+        </Flex>
+      </form>
+      <Separator size="4" />
+      {years.map((year) => (
+        <Flex
+          key={year.id}
+          justify="between"
+          align="center"
+          gap="3"
+          className="rounded-lg border border-slate-200 p-3"
+        >
+          <div>
+            <Text weight="bold">{year.name}</Text>
+            <Text as="p" size="1" color="gray">
+              {year.startDateBS} – {year.endDateBS}
+              {year.isLocked ? " · Closed" : ""}
+            </Text>
+          </div>
+          <Flex gap="2" align="center">
+            {year.isActive ? (
+              <Text size="2" color="green">
+                Active
+              </Text>
+            ) : (
+              <Button
+                size="1"
+                variant="secondary"
+                disabled={activate.isPending}
+                onClick={() => void activate.mutateAsync(year.id)}
+              >
+                Make active
+              </Button>
+            )}
+            {!year.isLocked ? (
+              <Button
+                size="1"
+                variant="danger-outline"
+                disabled={close.isPending}
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      `Close ${year.name}? This locks the fiscal year.`,
+                    )
+                  )
+                    void close.mutateAsync(year.id);
+                }}
+              >
+                Close
+              </Button>
+            ) : null}
+          </Flex>
+        </Flex>
+      ))}
+    </Flex>
+  );
 }

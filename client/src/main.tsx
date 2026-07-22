@@ -11,7 +11,7 @@ import "./styles.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <Theme accentColor="indigo" grayColor="slate" radius="large">
+    <Theme accentColor="teal" grayColor="slate" radius="large">
       <QueryClientProvider client={queryClient}>
         <BrowserRouter><AuthProvider><App /></AuthProvider></BrowserRouter>
         <ReactQueryDevtools initialIsOpen={false} />
