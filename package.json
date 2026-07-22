@@ -17,7 +17,7 @@
     "check": "npm run check --workspace=accounting-software-server && npm run build"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22 <23"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
