@@ -7,8 +7,14 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      "/api": "http://localhost:5001",
-      "/health": "http://localhost:5001"
+      "/api": {
+        target: "http://localhost:5001",
+        changeOrigin: true
+      },
+      "/health": {
+        target: "http://localhost:5001",
+        changeOrigin: true
+      }
     }
   }
 });

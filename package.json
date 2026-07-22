@@ -1,0 +1,25 @@
+{
+  "name": "ledgerly",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Ledgerly accounting workspace",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently -n client,server -c cyan,green \"npm run dev --workspace=accounting-software-client\" \"npm run dev --workspace=accounting-software-server\"",
+    "dev:client": "npm run dev --workspace=accounting-software-client",
+    "dev:server": "npm run dev --workspace=accounting-software-server",
+    "build": "npm run build --workspace=accounting-software-client",
+    "start": "npm run start --workspace=accounting-software-server",
+    "test": "npm run test --workspace=accounting-software-server",
+    "check": "npm run check --workspace=accounting-software-server && npm run build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

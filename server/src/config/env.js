@@ -1,12 +1,19 @@
 const dotenv = require("dotenv");
+const path = require("path");
 
-dotenv.config();
+const rootEnvPath = path.resolve(__dirname, "../../../.env");
+const legacyEnvPath = path.resolve(__dirname, "../../.env");
+
+dotenv.config({ path: rootEnvPath, quiet: true });
+
+// Keep existing local setups working while root .env is the canonical deployment contract.
+if (!process.env.MONGODB_URI) dotenv.config({ path: legacyEnvPath, quiet: true });
 
 function readEnv(name, fallback) {
   const value = process.env[name] || fallback;
 
   if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
+    throw new Error(`Missing required environment variable: ${name}. Configure it in ${rootEnvPath} or your deployment environment.`);
   }
 
   return value;
@@ -15,7 +22,7 @@ function readEnv(name, fallback) {
 const env = {
   nodeEnv: process.env.NODE_ENV || "development",
   port: Number(process.env.PORT || 5000),
-  clientOrigin: readEnv("CLIENT_ORIGIN", "http://localhost:3000"),
+  clientOrigin: process.env.CLIENT_ORIGIN || null,
   mongoUri: readEnv("MONGODB_URI"),
   jwtAccessSecret: readEnv("JWT_ACCESS_SECRET"),
   jwtRefreshSecret: readEnv("JWT_REFRESH_SECRET"),

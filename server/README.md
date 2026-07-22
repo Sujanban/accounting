@@ -21,18 +21,17 @@ Interactive API docs are available at:
 
 ## Setup
 
-1. Install dependencies:
+1. Install dependencies from the repository root:
 
 ```bash
 npm install
 ```
 
-2. Create `.env` in `server/` and configure:
+2. Create `.env` at the repository root from `.env.example` and configure:
 
 ```env
 PORT=5000
 NODE_ENV=development
-CLIENT_ORIGIN=http://localhost:3000
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/accounting?appName=Cluster0
 JWT_ACCESS_SECRET=replace-with-a-long-random-secret
 JWT_REFRESH_SECRET=replace-with-another-long-random-secret
@@ -40,9 +39,10 @@ ACCESS_TOKEN_TTL=15m
 REFRESH_TOKEN_TTL=30d
 ```
 
-3. Start the server:
+3. Build and start the single service from the repository root:
 
 ```bash
+npm run build
 npm start
 ```
 
