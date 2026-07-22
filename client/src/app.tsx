@@ -18,8 +18,14 @@ export function App() {
         <Route element={<RequireOnboarding />}>
           <Route element={<AppShell />}>
             <Route index element={<DashboardPage />} />
-            <Route path="transactions" element={<PlaceholderPage title="Transactions" />} />
-            <Route path="reports" element={<PlaceholderPage title="Reports" />} />
+            <Route path="vouchers" element={<PlaceholderPage title="All vouchers" description="Review every voucher and its posting status." />} />
+            <Route path="vouchers/drafts" element={<PlaceholderPage title="Voucher drafts" />} />
+            <Route path="vouchers/:voucherType" element={<PlaceholderPage title="Vouchers" />} />
+            <Route path="vouchers/:voucherType/new" element={<PlaceholderPage title="Create voucher" description="Enter a new voucher for the active company and fiscal year." />} />
+            <Route path="masters/:masterType" element={<PlaceholderPage title="Masters" />} />
+            <Route path="accounting/:section" element={<PlaceholderPage title="Accounting" />} />
+            <Route path="reports/:report" element={<PlaceholderPage title="Reports" />} />
+            <Route path="company/:section" element={<SettingsPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Route>
