@@ -2,6 +2,7 @@ import { Card, Dialog, Flex, Heading, Switch, Text } from "@radix-ui/themes";
 import { EyeOpenIcon, Pencil1Icon, TrashIcon } from "@radix-ui/react-icons";
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { LoadingScreen } from "../../components/loading-screen";
 import { Button } from "../../components/ui/button";
 import { AppSelect } from "../../components/ui/select";
 import { ApiClientError } from "../../lib/query-client";
@@ -254,7 +255,11 @@ function AccountGroupsPage() {
         </div>
       </Card>
       {groups.isLoading ? (
-        <EmptyState>Loading account groups…</EmptyState>
+        <LoadingScreen
+          fullScreen={false}
+          label="Loading account groups"
+          description="Retrieving your account hierarchy…"
+        />
       ) : groups.isError ? (
         <Message
           value={{ text: requestMessage(groups.error), tone: "error" }}
@@ -416,7 +421,7 @@ export function AccountGroupEditPage() {
   }
 
   if (groups.isLoading) {
-    return <EmptyState>Loading account group…</EmptyState>;
+    return <LoadingScreen fullScreen={false} label="Loading account group" description="Retrieving account group details…" />;
   }
   if (groups.isError) {
     return <Message value={{ text: requestMessage(groups.error), tone: "error" }} />;
@@ -477,7 +482,7 @@ export function AccountGroupCreatePage() {
   }
 
   if (groups.isLoading) {
-    return <EmptyState>Loading account groups…</EmptyState>;
+    return <LoadingScreen fullScreen={false} label="Loading account groups" description="Preparing the account group form…" />;
   }
   if (groups.isError) {
     return <Message value={{ text: requestMessage(groups.error), tone: "error" }} />;
@@ -729,7 +734,11 @@ function LedgersPage() {
         </div>
       </Card>
       {ledgers.isLoading ? (
-        <EmptyState>Loading ledgers…</EmptyState>
+        <LoadingScreen
+          fullScreen={false}
+          label="Loading ledgers"
+          description="Retrieving fiscal-year ledger data…"
+        />
       ) : ledgers.isError ? (
         <Message
           value={{ text: requestMessage(ledgers.error), tone: "error" }}
@@ -915,7 +924,7 @@ export function LedgerEditPage() {
   }
 
   if (ledgers.isLoading || groups.isLoading) {
-    return <EmptyState>Loading ledger…</EmptyState>;
+    return <LoadingScreen fullScreen={false} label="Loading ledger" description="Retrieving ledger details…" />;
   }
   if (ledgers.isError) {
     return <Message value={{ text: requestMessage(ledgers.error), tone: "error" }} />;
@@ -995,7 +1004,7 @@ export function LedgerCreatePage() {
   }
 
   if (groups.isLoading) {
-    return <EmptyState>Loading account groups…</EmptyState>;
+    return <LoadingScreen fullScreen={false} label="Loading account groups" description="Preparing the ledger form…" />;
   }
   if (groups.isError) {
     return <Message value={{ text: requestMessage(groups.error), tone: "error" }} />;
@@ -1108,7 +1117,11 @@ function ChartOfAccountsPage() {
         </div>
       ) : null}
       {chart.isLoading ? (
-        <EmptyState>Loading chart of accounts…</EmptyState>
+        <LoadingScreen
+          fullScreen={false}
+          label="Loading chart of accounts"
+          description="Building your account hierarchy…"
+        />
       ) : chart.isError ? (
         <Message value={{ text: requestMessage(chart.error), tone: "error" }} />
       ) : (
@@ -1144,7 +1157,11 @@ function VoucherNumberingPage() {
         </Text>
       ) : null}
       {sequences.isLoading ? (
-        <EmptyState>Loading voucher sequences…</EmptyState>
+        <LoadingScreen
+          fullScreen={false}
+          label="Loading voucher numbering"
+          description="Retrieving active fiscal-year sequences…"
+        />
       ) : sequences.isError ? (
         <Message
           value={{ text: requestMessage(sequences.error), tone: "error" }}
@@ -1358,7 +1375,7 @@ export function VoucherSequenceEditPage() {
     }
   }
   if (sequences.isLoading)
-    return <EmptyState>Loading voucher sequence…</EmptyState>;
+    return <LoadingScreen fullScreen={false} label="Loading voucher sequence" description="Retrieving voucher numbering details…" />;
   if (sequences.isError)
     return (
       <Message
