@@ -1,7 +1,7 @@
-import { Card, Dialog, Flex, Heading, Switch, Text } from "@radix-ui/themes";
+import { Card, Dialog, Flex, Heading, Text } from "@radix-ui/themes";
 import { Cross2Icon, Pencil1Icon, TrashIcon } from "@radix-ui/react-icons";
-import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { LoadingScreen } from "../../components/loading-screen";
 import { Button } from "../../components/ui/button";
 import { AppSelect } from "../../components/ui/select";
@@ -48,17 +48,22 @@ const messageFor = (error: unknown) =>
 function Header({
   title,
   description,
+  action,
 }: {
   title: string;
   description: string;
+  action?: React.ReactNode;
 }) {
   return (
-    <div>
-      <Heading size="7">{title}</Heading>
-      <Text as="p" color="gray" mt="2">
-        {description}
-      </Text>
-    </div>
+    <Flex justify="between" align="start" gap="4" wrap="wrap">
+      <div>
+        <Heading size="7">{title}</Heading>
+        <Text as="p" color="gray" mt="2">
+          {description}
+        </Text>
+      </div>
+      {action}
+    </Flex>
   );
 }
 function Status({
@@ -312,10 +317,6 @@ function ContactForm({
         Credit limit
         <input type="number" min="0" placeholder="0.00" value={form.creditLimit ?? ""} onChange={(e) => setForm({ ...form, creditLimit: e.target.value === "" ? undefined : Number(e.target.value) })} />
       </label>
-      <label>
-        Contact group ID
-        <input pattern="[a-fA-F0-9]{24}" title="Enter a valid contact group ID." value={form.contactGroupId ?? ""} onChange={(e) => setForm({ ...form, contactGroupId: e.target.value })} placeholder="Optional contact group ID" />
-      </label>
       <div className="accounting-form__wide contact-additional-info-toggle">
         <Button type="button" variant="outline" onClick={() => setShowAdditionalInfo((visible) => !visible)} aria-expanded={showAdditionalInfo} aria-controls="party-additional-information">
           {showAdditionalInfo ? "Hide addresses" : "Additional information"}
@@ -382,6 +383,7 @@ function PartiesPage() {
       <Header
         title="Parties"
         description="Maintain reusable customers, suppliers, and other business contacts."
+        action={<Button onClick={() => navigate("/masters/parties/new")}>Add party</Button>}
       />
       <Status
         error={archive.error ?? restore.error}
@@ -421,9 +423,6 @@ function PartiesPage() {
               <option value="false">Archived</option>
             </AppSelect>
           </label>
-          <Button onClick={() => navigate("/masters/parties/new")}>
-            Add party
-          </Button>
         </div>
       </Card>
       <Content loading={contacts.isLoading} error={contacts.error}>
@@ -605,7 +604,10 @@ type CatalogProps<T> = {
   form: (
     submit: (event: React.FormEvent<HTMLFormElement>) => void,
     pending: boolean,
+    onCancel?: () => void,
   ) => React.ReactNode;
+  createPage?: boolean;
+  masterType: string;
 };
 function Catalog<T>({
   title,
@@ -617,24 +619,54 @@ function Catalog<T>({
   columns,
   row,
   form,
+  createPage = false,
+  masterType,
 }: CatalogProps<T>) {
-  const [open, setOpen] = useState(false);
-  const [success, setSuccess] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const [search, setSearch] = useState("");
+  const filteredItems = useMemo(
+    () =>
+      items?.filter((item) =>
+        JSON.stringify(item).toLowerCase().includes(search.trim().toLowerCase()),
+      ),
+    [items, search],
+  );
+  const singularTitle = {
+    units: "Unit",
+    categories: "Product category",
+    "tax-rates": "Tax rate",
+    "payment-terms": "Payment term",
+    products: "Product or service",
+  }[masterType] ?? title;
   return (
     <Flex direction="column" gap="5">
-      <Header title={title} description={description} />
-      <Status error={error ?? create.error} success={success} />
-      <Button style={{ alignSelf: "flex-start" }} onClick={() => setOpen(true)}>
-        Add {title.slice(0, -1)}
-      </Button>
+      <Header
+        title={createPage ? `Add ${singularTitle.toLowerCase()}` : title}
+        description={createPage ? `Create a new ${singularTitle.toLowerCase()}.` : description}
+        action={!createPage ? <Button onClick={() => navigate(`/masters/${masterType}/new`)}>Add {singularTitle}</Button> : undefined}
+      />
+      <Status error={error ?? create.error} />
+      {!createPage ? (
+        <Card size="3">
+          <div className="accounting-filters">
+            <label>
+              Search
+              <input
+                value={search}
+                placeholder={`Search ${title.toLowerCase()}`}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+            </label>
+          </div>
+        </Card>
+      ) : null}
       <Content loading={loading} error={error}>
-        {open ? (
+        {createPage ? (
           <Card size="3">
             {form((event) => {
               event.preventDefault();
-              const input: Record<string, unknown> = Object.fromEntries(
-                new FormData(event.currentTarget),
-              );
+              const formData = new FormData(event.currentTarget);
+              const input: Record<string, unknown> = Object.fromEntries(formData);
               for (const key of [
                 "parentId",
                 "categoryId",
@@ -652,20 +684,15 @@ function Catalog<T>({
                 "minimumStock",
               ])
                 if (input[key] !== undefined) input[key] = Number(input[key]);
-              input.decimalAllowed = new FormData(event.currentTarget).has(
-                "decimalAllowed",
-              );
-              input.isService = new FormData(event.currentTarget).has(
-                "isService",
-              );
+              input.decimalAllowed = formData.get("decimalAllowed") === "true";
+              input.isService = formData.get("isService") === "true";
               void create.mutateAsync(input).then(() => {
-                setSuccess(`${title.slice(0, -1)} created.`);
-                setOpen(false);
+                navigate(`/masters/${masterType}`, { replace: true });
               });
-            }, create.isPending)}
+            }, create.isPending, () => navigate(`/masters/${masterType}`))}
           </Card>
         ) : null}
-        <Card size="3" className="accounting-table-card">
+        {!createPage ? <Card size="3" className="accounting-table-card">
           <table className="accounting-table">
             <thead>
               <tr>
@@ -675,23 +702,24 @@ function Catalog<T>({
               </tr>
             </thead>
             <tbody>
-              {items?.map((item) => row(item))}
-              {!items?.length ? (
+              {filteredItems?.map((item) => row(item))}
+              {!filteredItems?.length ? (
                 <tr>
                   <td colSpan={columns.length}>
-                    <Text color="gray">No {title.toLowerCase()} yet.</Text>
+                    <Text color="gray">No {title.toLowerCase()} match your filters.</Text>
                   </td>
                 </tr>
               ) : null}
             </tbody>
           </table>
         </Card>
+        : null}
       </Content>
     </Flex>
   );
 }
 
-function MastersCatalogPage({ type }: { type: string }) {
+function MastersCatalogPage({ type, createPage }: { type: string; createPage?: boolean }) {
   const units = useUnits(),
     categories = useCategories(),
     taxes = useTaxRates(),
@@ -707,10 +735,16 @@ function MastersCatalogPage({ type }: { type: string }) {
     (
       submit: (e: React.FormEvent<HTMLFormElement>) => void,
       pending: boolean,
+      onCancel?: () => void,
     ) => (
       <form className="accounting-form" onSubmit={submit}>
         {fields}
         <div className="accounting-form__actions accounting-form__wide">
+          {onCancel ? (
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+          ) : null}
           <Button type="submit" loading={pending}>
             Create
           </Button>
@@ -738,18 +772,23 @@ function MastersCatalogPage({ type }: { type: string }) {
           <>
             <label>
               Name
-              <input name="name" required minLength={2} />
+              <input name="name" placeholder="Kilogram" required minLength={2} />
             </label>
             <label>
               Symbol
-              <input name="symbol" required />
+              <input name="symbol" placeholder="kg" required />
             </label>
-            <label className="accounting-toggle">
-              Decimals allowed
-              <Switch name="decimalAllowed" />
+            <label>
+              Precision
+              <AppSelect name="decimalAllowed" defaultValue="true">
+                <option value="true">Decimals allowed</option>
+                <option value="false">Whole numbers only</option>
+              </AppSelect>
             </label>
           </>,
         )}
+        masterType={type}
+        createPage={createPage}
       />
     );
   if (type === "categories")
@@ -776,11 +815,11 @@ function MastersCatalogPage({ type }: { type: string }) {
           <>
             <label>
               Code
-              <input name="categoryCode" required />
+              <input name="categoryCode" placeholder="OFFICE" required />
             </label>
             <label>
               Name
-              <input name="name" required minLength={2} />
+              <input name="name" placeholder="Office supplies" required minLength={2} />
             </label>
             <label>
               Parent
@@ -795,10 +834,12 @@ function MastersCatalogPage({ type }: { type: string }) {
             </label>
             <label>
               Description
-              <input name="description" />
+              <input name="description" placeholder="Optional category description" />
             </label>
           </>,
         )}
+        masterType={type}
+        createPage={createPage}
       />
     );
   if (type === "tax-rates")
@@ -824,16 +865,17 @@ function MastersCatalogPage({ type }: { type: string }) {
           <>
             <label>
               Code
-              <input name="taxCode" required />
+              <input name="taxCode" placeholder="VAT-13" required />
             </label>
             <label>
               Name
-              <input name="name" required />
+              <input name="name" placeholder="VAT 13%" required />
             </label>
             <label>
               Percentage
               <input
                 name="percentage"
+                placeholder="13"
                 type="number"
                 min="0"
                 max="100"
@@ -851,10 +893,12 @@ function MastersCatalogPage({ type }: { type: string }) {
             </label>
             <label>
               Effective date
-              <input name="effectiveDate" type="date" required />
+              <input name="effectiveDate" type="date" placeholder="YYYY-MM-DD" required />
             </label>
           </>,
         )}
+        masterType={type}
+        createPage={createPage}
       />
     );
   if (type === "payment-terms")
@@ -878,18 +922,20 @@ function MastersCatalogPage({ type }: { type: string }) {
           <>
             <label>
               Name
-              <input name="name" required />
+              <input name="name" placeholder="Net 30" required />
             </label>
             <label>
               Due days
-              <input name="dueDays" type="number" min="0" required />
+              <input name="dueDays" type="number" min="0" placeholder="30" required />
             </label>
             <label className="accounting-form__wide">
               Description
-              <textarea name="description" rows={2} />
+              <textarea name="description" rows={2} placeholder="Optional payment instructions" />
             </label>
           </>,
         )}
+        masterType={type}
+        createPage={createPage}
       />
     );
   return (
@@ -914,11 +960,11 @@ function MastersCatalogPage({ type }: { type: string }) {
         <>
           <label>
             SKU
-            <input name="sku" required />
+            <input name="sku" placeholder="ITEM-001" required />
           </label>
           <label>
             Name
-            <input name="name" required />
+            <input name="name" placeholder="Office desk" required />
           </label>
           <label>
             Unit
@@ -948,20 +994,20 @@ function MastersCatalogPage({ type }: { type: string }) {
             Purchase price
             <input
               name="purchasePrice"
+              placeholder="0.00"
               type="number"
               min="0"
               step="any"
-              defaultValue="0"
             />
           </label>
           <label>
             Selling price
             <input
               name="sellingPrice"
+              placeholder="0.00"
               type="number"
               min="0"
               step="any"
-              defaultValue="0"
             />
           </label>
           <label>
@@ -975,25 +1021,31 @@ function MastersCatalogPage({ type }: { type: string }) {
               ))}
             </AppSelect>
           </label>
-          <label className="accounting-toggle">
-            Service
-            <Switch name="isService" />
+          <label>
+            Type
+            <AppSelect name="isService" defaultValue="false">
+              <option value="false">Product</option>
+              <option value="true">Service</option>
+            </AppSelect>
           </label>
           <label className="accounting-form__wide">
             Description
-            <textarea name="description" rows={2} />
+            <textarea name="description" rows={2} placeholder="Optional product or service description" />
           </label>
         </>,
       )}
+      masterType={type}
+      createPage={createPage}
     />
   );
 }
 
 export function MastersPage() {
   const { masterType = "parties" } = useParams();
+  const location = useLocation();
   return masterType === "parties" ? (
     <PartiesPage />
   ) : (
-    <MastersCatalogPage type={masterType} />
+    <MastersCatalogPage type={masterType} createPage={location.pathname.endsWith("/new")} />
   );
 }

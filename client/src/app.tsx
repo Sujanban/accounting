@@ -26,6 +26,7 @@ export function App() {
             <Route path="vouchers/:voucherType/new" element={<PlaceholderPage title="Create voucher" description="Enter a new voucher for the active company and fiscal year." />} />
             <Route path="masters/parties/new" element={<PartyCreatePage />} />
             <Route path="masters/parties/:partyId/edit" element={<PartyEditPage />} />
+            <Route path="masters/:masterType/new" element={<MastersPage />} />
             <Route path="masters/:masterType" element={<MastersPage />} />
             <Route path="accounting/voucher-numbering/:voucherSequenceId/edit" element={<VoucherSequenceEditPage />} />
             <Route path="accounting/ledgers/new" element={<LedgerCreatePage />} />
