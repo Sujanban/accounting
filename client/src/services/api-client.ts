@@ -33,7 +33,7 @@ export async function apiClient<T>(
   const requestHeaders = new Headers(headers);
   requestHeaders.set("Accept", "application/json");
 
-  if (requestOptions.body && !requestHeaders.has("Content-Type")) {
+  if (requestOptions.body && !(requestOptions.body instanceof FormData) && !requestHeaders.has("Content-Type")) {
     requestHeaders.set("Content-Type", "application/json");
   }
   if (accessToken) requestHeaders.set("Authorization", `Bearer ${accessToken}`);

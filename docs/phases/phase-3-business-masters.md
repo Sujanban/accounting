@@ -2,13 +2,28 @@
 
 Version: 1.0
 
-Status: Planned
+Status: In progress
 
 ## Frontend delivery
 
-Status: Planned
+Status: In progress
 
 Implement `/masters/parties`, `/masters/products`, `/masters/categories`, `/masters/units`, `/masters/tax-rates`, and `/masters/payment-terms` with typed feature APIs, query hooks, create forms, contacts update/archive behavior, and list loading/empty/error states.
+
+### Current implementation status
+
+Implemented:
+
+- Typed frontend API clients and TanStack Query hooks for contacts, products, categories, units, tax rates, and payment terms.
+- List and dedicated create pages for `/masters/parties`, `/masters/products`, `/masters/categories`, `/masters/units`, `/masters/tax-rates`, and `/masters/payment-terms`.
+- Contact create, detail, update, archive, restore, search, role/status filtering, and server-side pagination.
+- Contact input validation, audit metadata, company isolation, and soft-delete behavior.
+
+Remaining:
+
+- Contact groups, warehouses, price lists, and attachments.
+- Edit/archive/restore workflows for catalog masters other than contacts.
+- Pagination controls in the frontend and the remaining Phase 3 completion criteria below.
 
 Prerequisites
 
@@ -917,37 +932,21 @@ Those belong to later phases.
 
 # Definition of Done
 
-✓ Contact management completed
+- [x] Contact management implemented, including archive and restore.
 
-✓ Contact Groups completed
+- [ ] Contact groups implemented.
 
-✓ Product Categories completed
+- [x] Product categories, products, units, tax rates, and payment terms have list/create delivery.
 
-✓ Product management completed
+- [ ] Edit/archive/restore workflows completed for all catalog masters.
 
-✓ Units completed
+- [ ] Warehouses, price lists, and attachments implemented.
 
-✓ Warehouses completed
+- [x] Contact search, server-side pagination, soft delete, audit metadata, and company isolation implemented.
 
-✓ Tax Rates completed
+- [ ] Frontend pagination controls and all Phase 3 completion criteria implemented.
 
-✓ Payment Terms completed
-
-✓ Price Lists completed
-
-✓ Attachment system completed
-
-✓ Search implemented
-
-✓ Pagination implemented
-
-✓ Soft Delete implemented
-
-✓ Audit metadata implemented
-
-✓ Company isolation enforced
-
-✓ Ready for Phase 4 — Transaction Engine
+- [ ] Ready for Phase 4 — Transaction Engine.
 
 ---
 

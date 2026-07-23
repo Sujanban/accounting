@@ -33,7 +33,8 @@ const navigation: NavigationGroup[] = [
   { label: "Masters", icon: GearIcon, items: [
     { label: "Parties", to: "/masters/parties" }, { label: "Products & services", to: "/masters/products" },
     { label: "Product categories", to: "/masters/categories" }, { label: "Units", to: "/masters/units" },
-    { label: "Tax rates", to: "/masters/tax-rates" }, { label: "Payment terms", to: "/masters/payment-terms" },
+    { label: "Contact groups", to: "/masters/contact-groups" }, { label: "Warehouses", to: "/masters/warehouses" },
+    { label: "Tax rates", to: "/masters/tax-rates" }, { label: "Payment terms", to: "/masters/payment-terms" }, { label: "Price lists", to: "/masters/price-lists" },
   ] },
   { label: "Accounting", icon: FileTextIcon, items: [
     { label: "Chart of accounts", to: "/accounting/chart-of-accounts" }, { label: "Account groups", to: "/accounting/account-groups" },

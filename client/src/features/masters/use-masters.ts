@@ -3,11 +3,14 @@ import {
   masterKeys,
   mastersApi,
   type CategoryInput,
+  type ContactGroupInput,
   type ContactInput,
   type PaymentTermInput,
+  type PriceListInput,
   type ProductInput,
   type TaxRateInput,
   type UnitInput,
+  type WarehouseInput,
 } from "./masters-api";
 
 function useMasterMutation<T>(mutationFn: (value: T) => Promise<unknown>) {
@@ -56,6 +59,9 @@ export const usePaymentTerms = () =>
     queryKey: masterKeys.paymentTerms(),
     queryFn: ({ signal }) => mastersApi.paymentTerms(signal),
   });
+export const useContactGroups = () => useQuery({ queryKey: masterKeys.contactGroups(), queryFn: ({ signal }) => mastersApi.contactGroups(signal) });
+export const useWarehouses = () => useQuery({ queryKey: masterKeys.warehouses(), queryFn: ({ signal }) => mastersApi.warehouses(signal) });
+export const usePriceLists = () => useQuery({ queryKey: masterKeys.priceLists(), queryFn: ({ signal }) => mastersApi.priceLists(signal) });
 export const useProducts = () =>
   useQuery({
     queryKey: masterKeys.products(),
@@ -82,5 +88,10 @@ export const useCreatePaymentTerm = () =>
   useMasterMutation((input: PaymentTermInput) =>
     mastersApi.createPaymentTerm(input),
   );
+export const useCreateContactGroup = () => useMasterMutation((input: ContactGroupInput) => mastersApi.createContactGroup(input));
+export const useCreateWarehouse = () => useMasterMutation((input: WarehouseInput) => mastersApi.createWarehouse(input));
+export const useCreatePriceList = () => useMasterMutation((input: PriceListInput) => mastersApi.createPriceList(input));
+export const useUploadAttachment = () => useMutation({ mutationFn: ({ file, entityType, entityId }: { file: File; entityType: string; entityId: string }) => mastersApi.uploadAttachment(file, entityType, entityId), retry: false });
+export const useAttachments = (entityType: string, entityId: string) => useQuery({ queryKey: [...masterKeys.all, "attachments", entityType, entityId], queryFn: ({ signal }) => mastersApi.attachments(entityType, entityId, signal), enabled: Boolean(entityId) });
 export const useCreateProduct = () =>
   useMasterMutation((input: ProductInput) => mastersApi.createProduct(input));

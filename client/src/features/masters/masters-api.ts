@@ -67,6 +67,10 @@ export type PaymentTerm = {
   description: string | null;
   isActive: boolean;
 };
+export type ContactGroup = { id: string; name: string; description: string | null; parentId: string | null; isActive: boolean };
+export type Warehouse = { id: string; warehouseCode: string; name: string; address: string | null; description: string | null; isDefault: boolean; isActive: boolean };
+export type PriceList = { id: string; name: string; description: string | null; currency: string; isDefault: boolean; isActive: boolean };
+export type Attachment = { id: string; entityType: string; entityId: string; fileName: string; mimeType: string; sizeBytes: number; storageKey: string; url?: string; createdAt: string };
 export type Product = {
   id: string;
   sku: string;
@@ -115,6 +119,9 @@ export type PaymentTermInput = Pick<
   PaymentTerm,
   "name" | "dueDays" | "description"
 >;
+export type ContactGroupInput = Pick<ContactGroup, "name" | "description" | "parentId">;
+export type WarehouseInput = Pick<Warehouse, "warehouseCode" | "name" | "address" | "description" | "isDefault">;
+export type PriceListInput = Pick<PriceList, "name" | "description" | "currency" | "isDefault">;
 export type ProductInput = Pick<
   Product,
   | "sku"
@@ -139,6 +146,9 @@ export const masterKeys = {
   categories: () => [...masterKeys.all, "categories"] as const,
   taxRates: () => [...masterKeys.all, "tax-rates"] as const,
   paymentTerms: () => [...masterKeys.all, "payment-terms"] as const,
+  contactGroups: () => [...masterKeys.all, "contact-groups"] as const,
+  warehouses: () => [...masterKeys.all, "warehouses"] as const,
+  priceLists: () => [...masterKeys.all, "price-lists"] as const,
   products: () => [...masterKeys.all, "products"] as const,
 };
 
@@ -208,6 +218,20 @@ export const mastersApi = {
       method: "POST",
       body: JSON.stringify(input),
     }),
+  contactGroups: (signal?: AbortSignal) => apiClient<ContactGroup[]>("/contact-groups", { signal }),
+  createContactGroup: (input: ContactGroupInput) => apiClient<ContactGroup>("/contact-groups", { method: "POST", body: JSON.stringify(input) }),
+  warehouses: (signal?: AbortSignal) => apiClient<Warehouse[]>("/warehouses", { signal }),
+  createWarehouse: (input: WarehouseInput) => apiClient<Warehouse>("/warehouses", { method: "POST", body: JSON.stringify(input) }),
+  priceLists: (signal?: AbortSignal) => apiClient<PriceList[]>("/price-lists", { signal }),
+  createPriceList: (input: PriceListInput) => apiClient<PriceList>("/price-lists", { method: "POST", body: JSON.stringify(input) }),
+  uploadAttachment: (file: File, entityType: string, entityId: string) => {
+    const body = new FormData();
+    body.set("file", file);
+    body.set("entityType", entityType);
+    body.set("entityId", entityId);
+    return apiClient<Attachment>("/attachments", { method: "POST", body });
+  },
+  attachments: (entityType: string, entityId: string, signal?: AbortSignal) => apiClient<Attachment[]>(`/attachments?${new URLSearchParams({ entityType, entityId })}`, { signal }),
   products: (signal?: AbortSignal) =>
     apiClient<Product[]>("/products", { signal }),
   createProduct: (input: ProductInput) =>

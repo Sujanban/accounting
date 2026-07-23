@@ -30,7 +30,11 @@ const env = {
   refreshTokenTtl: readEnv("REFRESH_TOKEN_TTL", "30d"),
   requestBodyLimit: process.env.REQUEST_BODY_LIMIT || "1mb",
   rateLimitWindowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),
-  rateLimitMax: Number(process.env.RATE_LIMIT_MAX || 300)
+  rateLimitMax: Number(process.env.RATE_LIMIT_MAX || 300),
+  cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME || null,
+  cloudinaryApiKey: process.env.CLOUDINARY_API_KEY || null,
+  cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET || null,
+  uploadMaxBytes: Number(process.env.UPLOAD_MAX_BYTES || 10 * 1024 * 1024)
 };
 
 module.exports = {

@@ -10,8 +10,12 @@ import {
   type Contact,
   type ContactInput,
   type ContactRole,
+  type ContactGroup,
+  type Attachment,
   type MasterAddress,
   type Product,
+  type PriceList,
+  type Warehouse,
 } from "./masters-api";
 import {
   useArchiveContact,
@@ -19,17 +23,25 @@ import {
   useContact,
   useContacts,
   useCreateCategory,
+  useCreateContactGroup,
   useCreateContact,
   useCreatePaymentTerm,
   useCreateProduct,
   useCreateTaxRate,
   useCreateUnit,
+  useCreateWarehouse,
+  useCreatePriceList,
+  useContactGroups,
   usePaymentTerms,
   useProducts,
   useRestoreContact,
   useTaxRates,
   useUnits,
+  useWarehouses,
+  usePriceLists,
   useUpdateContact,
+  useUploadAttachment,
+  useAttachments,
 } from "./use-masters";
 
 const roles: ContactRole[] = [
@@ -162,6 +174,54 @@ function AddressFields({
         </label>
       </div>
     </fieldset>
+  );
+}
+
+function AttachmentUploader({ entityType, entityId }: { entityType: string; entityId: string }) {
+  const upload = useUploadAttachment();
+  const attachments = useAttachments(entityType, entityId);
+  const [file, setFile] = useState<File | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [selectedAttachment, setSelectedAttachment] = useState<Attachment | null>(null);
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!file) return;
+    try {
+      await upload.mutateAsync({ file, entityType, entityId });
+      void attachments.refetch();
+      setSuccess(`${file.name} uploaded.`);
+      setFile(null);
+    } catch {
+      setSuccess(null);
+    }
+  }
+  return (
+    <Card size="3">
+      <Heading size="4">Attachments</Heading>
+      <Text as="p" color="gray" mt="2">Upload a PDF or image up to 10 MB.</Text>
+      <form className="accounting-form" onSubmit={submit}>
+        <label className="accounting-form__wide">
+          File
+          <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
+        </label>
+        <div className="accounting-form__actions accounting-form__wide">
+          <Button type="submit" disabled={!file} loading={upload.isPending}>Upload attachment</Button>
+        </div>
+      </form>
+      <Status error={upload.error} success={success} />
+      {attachments.data?.length ? <div className="attachment-list">{attachments.data.map((attachment) => <div key={attachment.id} className="attachment-list__item">{attachment.mimeType.startsWith("image/") && attachment.url ? <button type="button" className="attachment-list__button" onClick={() => setSelectedAttachment(attachment)}><img src={attachment.url} alt={attachment.fileName} /></button> : null}{attachment.url ? <button type="button" className="attachment-list__name" onClick={() => setSelectedAttachment(attachment)}>{attachment.fileName}</button> : <span>{attachment.fileName}</span>}</div>)}</div> : null}
+      <Dialog.Root open={Boolean(selectedAttachment)} onOpenChange={(open) => { if (!open) setSelectedAttachment(null); }}>
+        <Dialog.Content maxWidth="720px">
+          <Dialog.Title>{selectedAttachment?.fileName}</Dialog.Title>
+          <Dialog.Close className="attachment-preview__close" aria-label="Close attachment preview">
+            <Cross2Icon aria-hidden="true" />
+          </Dialog.Close>
+          {selectedAttachment?.mimeType.startsWith("image/") && selectedAttachment.url ? <img className="attachment-preview" src={selectedAttachment.url} alt={selectedAttachment.fileName} /> : null}
+          {selectedAttachment?.mimeType === "application/pdf" && selectedAttachment.url ? <iframe className="attachment-preview attachment-preview--pdf" title={selectedAttachment.fileName} src={selectedAttachment.url} /> : null}
+          {selectedAttachment?.url ? <a className="attachment-preview__open" href={selectedAttachment.url} target="_blank" rel="noreferrer">Open in a new tab</a> : null}
+        </Dialog.Content>
+      </Dialog.Root>
+    </Card>
   );
 }
 
@@ -579,9 +639,12 @@ export function PartyEditPage() {
       <Status error={error ?? contact.error} />
       <Content loading={contact.isLoading} error={contact.error}>
         {contact.data ? (
-          <Card size="3">
-            <ContactForm value={contact.data} pending={update.isPending} onSubmit={save} onCancel={() => navigate("/masters/parties")} />
-          </Card>
+          <>
+            <Card size="3">
+              <ContactForm value={contact.data} pending={update.isPending} onSubmit={save} onCancel={() => navigate("/masters/parties")} />
+            </Card>
+            <AttachmentUploader entityType="contact" entityId={contact.data.id} />
+          </>
         ) : null}
       </Content>
     </Flex>
@@ -686,6 +749,7 @@ function Catalog<T>({
                 if (input[key] !== undefined) input[key] = Number(input[key]);
               input.decimalAllowed = formData.get("decimalAllowed") === "true";
               input.isService = formData.get("isService") === "true";
+              input.isDefault = formData.get("isDefault") === "true";
               void create.mutateAsync(input).then(() => {
                 navigate(`/masters/${masterType}`, { replace: true });
               });
@@ -722,11 +786,17 @@ function Catalog<T>({
 function MastersCatalogPage({ type, createPage }: { type: string; createPage?: boolean }) {
   const units = useUnits(),
     categories = useCategories(),
+    contactGroups = useContactGroups(),
+    warehouses = useWarehouses(),
+    priceLists = usePriceLists(),
     taxes = useTaxRates(),
     terms = usePaymentTerms(),
     products = useProducts();
   const unitCreate = useCreateUnit(),
     categoryCreate = useCreateCategory(),
+    contactGroupCreate = useCreateContactGroup(),
+    warehouseCreate = useCreateWarehouse(),
+    priceListCreate = useCreatePriceList(),
     taxCreate = useCreateTaxRate(),
     termCreate = useCreatePaymentTerm(),
     productCreate = useCreateProduct();
@@ -751,6 +821,9 @@ function MastersCatalogPage({ type, createPage }: { type: string; createPage?: b
         </div>
       </form>
     );
+  if (type === "contact-groups") return <Catalog<ContactGroup> title="Contact groups" description="Organize customers and suppliers into reusable groups." loading={contactGroups.isLoading} error={contactGroups.error} items={contactGroups.data} create={contactGroupCreate} columns={["Name", "Parent", "Description"]} row={(x) => <tr key={x.id}><td>{x.name}</td><td>{contactGroups.data?.find((group) => group.id === x.parentId)?.name ?? "—"}</td><td>{x.description ?? "—"}</td></tr>} form={simpleForm(<><label>Name<input name="name" placeholder="Wholesale customers" required /></label><label>Parent<AppSelect name="parentId" defaultValue=""><option value="">No parent</option>{contactGroups.data?.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</AppSelect></label><label className="accounting-form__wide">Description<textarea name="description" rows={2} placeholder="Optional group description" /></label></>)} masterType={type} createPage={createPage} />;
+  if (type === "warehouses") return <Catalog<Warehouse> title="Warehouses" description="Maintain locations used for inventory operations." loading={warehouses.isLoading} error={warehouses.error} items={warehouses.data} create={warehouseCreate} columns={["Code", "Name", "Address", "Default"]} row={(x) => <tr key={x.id}><td>{x.warehouseCode}</td><td>{x.name}</td><td>{x.address ?? "—"}</td><td>{x.isDefault ? "Yes" : "No"}</td></tr>} form={simpleForm(<><label>Code<input name="warehouseCode" placeholder="MAIN" required /></label><label>Name<input name="name" placeholder="Main warehouse" required /></label><label>Address<input name="address" placeholder="Kathmandu" /></label><label>Default<AppSelect name="isDefault" defaultValue="false"><option value="false">No</option><option value="true">Yes</option></AppSelect></label><label className="accounting-form__wide">Description<textarea name="description" rows={2} placeholder="Optional warehouse description" /></label></>)} masterType={type} createPage={createPage} />;
+  if (type === "price-lists") return <Catalog<PriceList> title="Price lists" description="Define reusable pricing strategies for sales." loading={priceLists.isLoading} error={priceLists.error} items={priceLists.data} create={priceListCreate} columns={["Name", "Currency", "Default", "Description"]} row={(x) => <tr key={x.id}><td>{x.name}</td><td>{x.currency}</td><td>{x.isDefault ? "Yes" : "No"}</td><td>{x.description ?? "—"}</td></tr>} form={simpleForm(<><label>Name<input name="name" placeholder="Retail" required /></label><label>Currency<input name="currency" placeholder="NPR" defaultValue="NPR" required /></label><label>Default<AppSelect name="isDefault" defaultValue="false"><option value="false">No</option><option value="true">Yes</option></AppSelect></label><label className="accounting-form__wide">Description<textarea name="description" rows={2} placeholder="Optional price list description" /></label></>)} masterType={type} createPage={createPage} />;
   if (type === "units")
     return (
       <Catalog
@@ -967,6 +1040,10 @@ function MastersCatalogPage({ type, createPage }: { type: string; createPage?: b
             <input name="name" placeholder="Office desk" required />
           </label>
           <label>
+            Barcode
+            <input name="barcode" placeholder="Optional barcode" />
+          </label>
+          <label>
             Unit
             <AppSelect name="unitId" required defaultValue="">
               <option value="" disabled>
@@ -1020,6 +1097,14 @@ function MastersCatalogPage({ type, createPage }: { type: string; createPage?: b
                 </option>
               ))}
             </AppSelect>
+          </label>
+          <label>
+            Reorder level
+            <input name="reorderLevel" type="number" min="0" placeholder="0" />
+          </label>
+          <label>
+            Minimum stock
+            <input name="minimumStock" type="number" min="0" placeholder="0" />
           </label>
           <label>
             Type
