@@ -1,5 +1,6 @@
 const { Contact } = require("../models/Contact");
 const { ContactGroup } = require("../models/ContactGroup");
+const mongoose = require("mongoose");
 const { ApiError } = require("../utils/apiError");
 
 const MAX_LIMIT = 100;
@@ -45,6 +46,9 @@ function mapContact(contact) {
 
 async function assertContactGroup(companyId, groupId) {
   if (!groupId) return null;
+  if (!mongoose.isObjectIdOrHexString(groupId)) {
+    throw new ApiError(400, "Contact group ID must be a valid identifier.");
+  }
   const group = await ContactGroup.findOne({ _id: groupId, companyId, isActive: true }).lean();
   if (!group) throw new ApiError(400, "A valid active contact group is required.");
   return group;
@@ -52,7 +56,8 @@ async function assertContactGroup(companyId, groupId) {
 
 async function listContacts(companyId, query = {}) {
   const { page, limit } = getPage(query);
-  const filters = { companyId, isActive: query.isActive === "false" ? false : true };
+  const filters = { companyId };
+  if (query.isActive !== "all") filters.isActive = query.isActive === "false" ? false : true;
   if (query.role) filters.roles = query.role;
   if (query.contactGroupId) filters.contactGroupId = query.contactGroupId;
   if (query.search) {
@@ -64,6 +69,15 @@ async function listContacts(companyId, query = {}) {
     Contact.countDocuments(filters)
   ]);
   return { data: contacts.map(mapContact), meta: { page, limit, total, totalPages: Math.ceil(total / limit), hasNextPage: page * limit < total } };
+}
+
+async function getContact(companyId, contactId) {
+  if (!mongoose.isObjectIdOrHexString(contactId)) {
+    throw new ApiError(400, "Contact ID must be a valid identifier.");
+  }
+  const contact = await Contact.findOne({ _id: contactId, companyId }).lean();
+  if (!contact) throw new ApiError(404, "Contact was not found.");
+  return mapContact(contact);
 }
 
 async function createContact(companyId, payload) {
@@ -106,4 +120,15 @@ async function archiveContact(companyId, contactId, actorUserId) {
   return mapContact(contact);
 }
 
-module.exports = { listContacts, createContact, updateContact, archiveContact };
+async function restoreContact(companyId, contactId, actorUserId) {
+  const contact = await Contact.findOne({ _id: contactId, companyId });
+  if (!contact) throw new ApiError(404, "Contact was not found.");
+  contact.isActive = true;
+  contact.deletedAt = null;
+  contact.deletedBy = null;
+  contact.updatedBy = actorUserId;
+  await contact.save();
+  return mapContact(contact);
+}
+
+module.exports = { listContacts, getContact, createContact, updateContact, archiveContact, restoreContact };

@@ -1,4 +1,5 @@
 const CONTACT_ROLES = new Set(["CUSTOMER", "SUPPLIER", "EMPLOYEE", "VENDOR", "TRANSPORTER", "OTHER"]);
+const mongoose = require("mongoose");
 const { isValidEmail } = require("../utils/email");
 
 function rejectUnknown(body, fields, errors) {
@@ -19,6 +20,7 @@ function validateContact(body, { partial = false } = {}) {
   if (body.name !== undefined && (!body.name || body.name.trim().length < 2)) errors.push({ field: "name", message: "Contact name must be at least 2 characters." });
   if (body.roles !== undefined && (!Array.isArray(body.roles) || !body.roles.length || body.roles.some((role) => !CONTACT_ROLES.has(role)))) errors.push({ field: "roles", message: "At least one valid contact role is required." });
   if (!partial && body.roles === undefined) errors.push({ field: "roles", message: "At least one valid contact role is required." });
+  if (body.contactGroupId !== undefined && body.contactGroupId !== null && body.contactGroupId !== "" && !mongoose.isObjectIdOrHexString(body.contactGroupId)) errors.push({ field: "contactGroupId", message: "Contact group ID must be a valid identifier." });
   if (body.email !== undefined && body.email && !isValidEmail(body.email)) errors.push({ field: "email", message: "Enter a valid email address." });
   if (body.panNumber !== undefined && body.panNumber && !/^\d{9}$/.test(body.panNumber.trim())) errors.push({ field: "panNumber", message: "PAN number must contain 9 digits." });
   if (body.vatNumber !== undefined && body.vatNumber && !/^\d{9}$/.test(body.vatNumber.trim())) errors.push({ field: "vatNumber", message: "VAT number must contain 9 digits." });

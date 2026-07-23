@@ -1,4 +1,4 @@
-const { listContacts, createContact, updateContact, archiveContact } = require("../services/contactService");
+const { listContacts, getContact: getContactById, createContact, updateContact, archiveContact, restoreContact } = require("../services/contactService");
 const { asyncHandler } = require("../utils/asyncHandler");
 const { sendSuccess } = require("../utils/apiResponse");
 
@@ -8,6 +8,11 @@ const getContacts = asyncHandler(async (request, response) => {
     items: result.data,
     meta: result.meta
   });
+});
+
+const getContact = asyncHandler(async (request, response) => {
+  const data = await getContactById(request.auth.activeCompanyId, request.params.id);
+  return sendSuccess(response, 200, "Contact fetched successfully.", data);
 });
 
 const postContact = asyncHandler(async (request, response) => {
@@ -25,4 +30,9 @@ const archiveContactRecord = asyncHandler(async (request, response) => {
   return sendSuccess(response, 200, "Contact archived successfully.", data);
 });
 
-module.exports = { getContacts, postContact, patchContact, archiveContactRecord };
+const restoreContactRecord = asyncHandler(async (request, response) => {
+  const data = await restoreContact(request.auth.activeCompanyId, request.params.id, request.auth.user._id);
+  return sendSuccess(response, 200, "Contact restored successfully.", data);
+});
+
+module.exports = { getContacts, getContact, postContact, patchContact, archiveContactRecord, restoreContactRecord };

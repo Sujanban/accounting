@@ -614,6 +614,10 @@ input {
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+.accounting-table th:last-child,
+.accounting-table td:last-child {
+  text-align: right;
+}
 .accounting-table td > span {
   display: block;
   margin-top: 0.16rem;
@@ -649,6 +653,9 @@ input {
   height: 1.1rem;
   color: currentColor;
   transform: scale(1.08);
+}
+.archived-party-row {
+  color: #71837f;
 }
 .accounting-form {
   display: grid;
@@ -705,6 +712,82 @@ input {
   display: flex;
   justify-content: flex-end;
   gap: 0.65rem;
+}
+.contact-role-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+}
+.form-required-mark {
+  color: #b42318;
+}
+.contact-role-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  border: 1px solid #8ed0ba;
+  border-radius: 999px;
+  padding: 0.35rem 0.42rem 0.35rem 0.72rem;
+  color: #12614e;
+  background: #dff5eb;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.contact-role-chip__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  padding: 0;
+  color: #c75b54;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+.contact-role-chip__remove svg { width: 0.85rem; height: 0.85rem; }
+.contact-role-chip__remove:hover { color: #b42318; }
+.contact-form__cancel {
+  border: 1px solid #9fb7ae !important;
+  color: #36544b !important;
+  background: #fff !important;
+}
+.contact-form__cancel:hover:not(:disabled) {
+  border-color: #168567 !important;
+  color: #12614e !important;
+  background: #eef7f3 !important;
+}
+.contact-address-fields {
+  margin: 0;
+  border: 1px solid #cfded8;
+  border-radius: 0.55rem;
+  padding: 0.85rem;
+}
+.contact-address-fields legend {
+  padding: 0 0.3rem;
+  color: #415854;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+.contact-address-fields__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.contact-additional-info-toggle {
+  display: flex;
+  justify-content: flex-start;
+}
+.contact-additional-info {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  border-top: 1px solid #dbe7e2;
+  padding-top: 1rem;
+}
+.contact-additional-info .accounting-form__wide {
+  grid-column: 1 / -1;
 }
 .accounting-toggle {
   display: inline-flex !important;
@@ -838,6 +921,15 @@ input {
     grid-template-columns: minmax(0, 1fr);
   }
   .accounting-form__wide {
+    grid-column: auto;
+  }
+  .contact-address-fields__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .contact-additional-info {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .contact-additional-info .accounting-form__wide {
     grid-column: auto;
   }
   .accounting-form__actions {
