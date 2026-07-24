@@ -63,6 +63,13 @@ export type FiscalYear = {
   isActive: boolean;
   isLocked: boolean;
 };
+export type FiscalYearCloseResult = {
+  id: string;
+  name: string;
+  isLocked: boolean;
+  totalDebit: number;
+  totalCredit: number;
+};
 export type BsDate = {
   date: string;
   year: number;
@@ -160,7 +167,9 @@ export const settingsApi = {
       body: JSON.stringify({ isActive: true }),
     }),
   closeFiscalYear: (id: string) =>
-    apiClient<FiscalYear>(`/fiscal-years/${id}/close`, { method: "POST" }),
+    apiClient<FiscalYearCloseResult>(`/localization/fiscal-years/${id}/close`, {
+      method: "POST",
+    }),
   calculateVat: (
     input: { amount: number; rate: number; mode: VatSettings["vatMode"] },
     signal?: AbortSignal,

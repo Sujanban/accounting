@@ -589,6 +589,22 @@ function FiscalYears({ years }: { years: FiscalYear[] }) {
   const create = useFiscalYearMutation();
   const activate = useActivateFiscalYear();
   const close = useCloseFiscalYear();
+  const convertBsToAd = useBsToAd();
+
+  const fillAdDates = async () => {
+    try {
+      const start = await convertBsToAd.mutateAsync(form.startDateBS);
+      const end = await convertBsToAd.mutateAsync(form.endDateBS);
+      setForm((current) => ({
+        ...current,
+        startDateAD: start.date,
+        endDateAD: end.date,
+      }));
+    } catch {
+      // The mutation state provides the server's validation message below.
+    }
+  };
+
   return (
     <Flex direction="column" gap="3">
       <form
@@ -644,13 +660,32 @@ function FiscalYears({ years }: { years: FiscalYear[] }) {
             />
           </div>
           <Flex justify="end" className="fiscal-year-actions">
+            <Button
+              type="button"
+              variant="outline"
+              loading={convertBsToAd.isPending}
+              disabled={!form.startDateBS || !form.endDateBS}
+              onClick={() => void fillAdDates()}
+            >
+              Fill AD dates from BS
+            </Button>
             <Button type="submit" loading={create.isPending}>
               Create and activate fiscal year
             </Button>
           </Flex>
+          {convertBsToAd.error instanceof Error ? (
+            <Text color="red" role="alert">
+              {convertBsToAd.error.message}
+            </Text>
+          ) : null}
         </Flex>
       </form>
       <Separator size="4" />
+      {close.error instanceof Error ? (
+        <Text color="red" role="alert">
+          {close.error.message}
+        </Text>
+      ) : null}
       {years.map((year) => (
         <Flex
           key={year.id}
