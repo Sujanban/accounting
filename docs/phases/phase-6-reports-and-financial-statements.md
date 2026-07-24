@@ -2,11 +2,11 @@
 
 Version: 1.0
 
-Status: In progress
+Status: Complete
 
 ## Frontend delivery
 
-Status: In progress
+Status: Complete
 
 Implement read-only general-ledger, trial-balance, journal-register, and day-book routes with validated filters, totals, loading/empty/error states, and print-friendly layouts.
 
@@ -36,11 +36,13 @@ Implemented in the initial delivery:
 - Dashboard widgets for Closing Cash and Inventory Value, backed by Cash Flow and Stock Summary report data.
 - Expense Trend report with monthly expense totals, date filters, printing, and CSV export.
 - Sales Trend report with monthly posted-sales totals and voucher counts, date filters, printing, and CSV export.
-- Shared Excel-compatible export action for report tables, complementing the existing CSV and print exports.
+- Shared native XLSX export action for report tables, complementing the existing CSV and print exports.
+- Shared native PDF export action for report tables, with landscape layout, document metadata, and tabular pagination.
+- Financial dashboard data uses a one-minute freshness window and five-minute query-cache retention to avoid redundant expensive calculations during normal navigation.
 - Shared Detailed and Compact report layout templates for on-screen review and print output.
 - Voucher-style print template for reports: document header and generated timestamp, simplified print chrome, dotted totals, and page-break-safe sections.
 
-Remaining: native PDF/XLSX export, dashboard caching, and scheduled/email report delivery. Additional sales/purchase breakdowns are deferred unless the existing API contract is extended.
+Deferred follow-up: scheduled/email report delivery requires an approved email provider, queue, and scheduling policy. Additional sales/purchase breakdowns are deferred unless the existing API contract is extended.
 
 Prerequisites
 

@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { reportKeys, reportsApi, type ReportFilters } from "./reports-api";
 
+const DASHBOARD_CACHE_OPTIONS = { staleTime: 60_000, gcTime: 300_000 };
+
 export const useGeneralLedger = (ledgerId: string, filters: ReportFilters) =>
   useQuery({
     queryKey: reportKeys.generalLedger(ledgerId, filters),
@@ -12,6 +14,7 @@ export const useTrialBalance = (filters: ReportFilters) =>
   useQuery({
     queryKey: reportKeys.trialBalance(filters),
     queryFn: ({ signal }) => reportsApi.trialBalance(filters, signal),
+    ...DASHBOARD_CACHE_OPTIONS,
   });
 export const useJournalRegister = (filters: ReportFilters) =>
   useQuery({
@@ -27,6 +30,7 @@ export const useStockSummary = (filters: ReportFilters) =>
   useQuery({
     queryKey: reportKeys.stockSummary(filters),
     queryFn: ({ signal }) => reportsApi.stockSummary(filters, signal),
+    ...DASHBOARD_CACHE_OPTIONS,
   });
 export const useStockLedger = (productId: string, filters: ReportFilters) =>
   useQuery({
@@ -38,11 +42,13 @@ export const useProfitLoss = (filters: ReportFilters) =>
   useQuery({
     queryKey: reportKeys.profitLoss(filters),
     queryFn: ({ signal }) => reportsApi.profitLoss(filters, signal),
+    ...DASHBOARD_CACHE_OPTIONS,
   });
 export const useBalanceSheet = (filters: ReportFilters) =>
   useQuery({
     queryKey: reportKeys.balanceSheet(filters),
     queryFn: ({ signal }) => reportsApi.balanceSheet(filters, signal),
+    ...DASHBOARD_CACHE_OPTIONS,
   });
 export const useContactStatement = (role: "customer" | "supplier", contactId: string, filters: ReportFilters) =>
   useQuery({
@@ -54,6 +60,7 @@ export const useCashFlow = (filters: ReportFilters) =>
   useQuery({
     queryKey: reportKeys.cashFlow(filters),
     queryFn: ({ signal }) => reportsApi.cashFlow(filters, signal),
+    ...DASHBOARD_CACHE_OPTIONS,
   });
 export const useVoucherSummary = (type: "sales" | "purchase", filters: ReportFilters) =>
   useQuery({ queryKey: reportKeys.voucherSummary(type, filters), queryFn: ({ signal }) => reportsApi.voucherSummary(type, filters, signal) });

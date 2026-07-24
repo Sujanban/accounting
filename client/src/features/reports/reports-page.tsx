@@ -38,7 +38,6 @@ const errorMessage = (error: unknown) =>
   error instanceof ApiClientError
     ? error.message
     : "The report could not be loaded.";
-const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character] ?? character);
 const reportMetadata: Record<string, { title: string; description: string }> = {
   "general-ledger": {
     title: "General ledger",
@@ -166,30 +165,49 @@ function ReportFrame({
 }) {
   const reportRef = useRef<HTMLDivElement>(null);
   const [template, setTemplate] = useState<"detailed" | "compact">("detailed");
-  const downloadExcel = () => {
+  const downloadExcel = async () => {
     const tables = reportRef.current?.querySelectorAll("table");
     if (!tables?.length) return;
+    const XLSX = await import("xlsx");
     const filename = printTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    const tableMarkup = [...tables].map((table) => {
+    const workbook = XLSX.utils.book_new();
+    [...tables].forEach((table, index) => {
       const clone = table.cloneNode(true) as HTMLTableElement;
       clone.querySelectorAll("td,th").forEach((cell) => {
         if (/^[=+\-@]/.test(cell.textContent?.trim() ?? "")) cell.textContent = `'${cell.textContent}`;
       });
-      return clone.outerHTML;
-    }).join("");
-    const workbook = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>table{border-collapse:collapse}th,td{border:1px solid #999;padding:6px;text-align:left}</style></head><body><h1>${escapeHtml(printTitle)}</h1>${tableMarkup}</body></html>`;
-    const url = URL.createObjectURL(new Blob([workbook], { type: "application/vnd.ms-excel;charset=utf-8" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${filename || "report"}.xls`;
-    link.click();
-    URL.revokeObjectURL(url);
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.table_to_sheet(clone, { raw: true }), `Report ${index + 1}`);
+    });
+    workbook.Props = { Title: printTitle, CreatedDate: new Date() };
+    XLSX.writeFile(workbook, `${filename || "report"}.xlsx`, { compression: true });
+  };
+  const downloadPdf = async () => {
+    const tables = reportRef.current?.querySelectorAll("table");
+    if (!tables?.length) return;
+    const filename = printTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const [{ jsPDF }, { default: autoTable }] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
+    const document = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    document.setFontSize(16);
+    document.text(printTitle, 40, 38);
+    document.setFontSize(9);
+    document.setTextColor(96, 115, 111);
+    document.text(`Generated ${new Date().toLocaleString()}`, 40, 54);
+    let startY = 72;
+    [...tables].forEach((table) => {
+      const header = [...(table.tHead?.rows ?? [])].map((row) => [...row.cells].map((cell) => cell.textContent?.trim() ?? ""));
+      const body = [...(table.tBodies[0]?.rows ?? [])].map((row) => [...row.cells].map((cell) => cell.textContent?.trim() ?? ""));
+      const footer = [...(table.tFoot?.rows ?? [])].map((row) => [...row.cells].map((cell) => cell.textContent?.trim() ?? ""));
+      autoTable(document, { head: header, body: [...body, ...footer], startY, theme: "grid", styles: { fontSize: 8, cellPadding: 4 }, headStyles: { fillColor: [23, 59, 74] }, footStyles: { fillColor: [245, 249, 247], textColor: [23, 59, 74], fontStyle: "bold" } });
+      const finalY = (document as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY;
+      startY = finalY === undefined ? startY + 32 : finalY + 16;
+    });
+    document.save(`${filename || "report"}.pdf`);
   };
   return (
     <Card ref={reportRef} size="3" className={`accounting-table-card report-result report-result--${template}`}>
       <div className="report-result__heading">
         <div><Heading size="4">{printTitle}</Heading><Text className="report-print-meta" size="2">Generated {new Date().toLocaleString()}</Text></div>
-        <Flex className="no-print" gap="2" align="center"><label className="report-template-label">Layout<AppSelect value={template} onChange={(event) => setTemplate(event.target.value as "detailed" | "compact")}><option value="detailed">Detailed</option><option value="compact">Compact</option></AppSelect></label><Button variant="outline" onClick={downloadExcel}>Export Excel</Button><Button variant="outline" onClick={() => window.print()}>Print</Button></Flex>
+        <Flex className="no-print" gap="2" align="center"><label className="report-template-label">Layout<AppSelect value={template} onChange={(event) => setTemplate(event.target.value as "detailed" | "compact")}><option value="detailed">Detailed</option><option value="compact">Compact</option></AppSelect></label><Button variant="outline" onClick={() => void downloadExcel()}>Export Excel</Button><Button variant="outline" onClick={() => void downloadPdf()}>Export PDF</Button><Button variant="outline" onClick={() => window.print()}>Print</Button></Flex>
       </div>
       {children}
     </Card>
