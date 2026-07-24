@@ -11,6 +11,7 @@ const {
   validateGeneralLedgerQuery,
   validateListReportQuery,
   validateStockSummaryQuery,
+  validateStockLedgerQuery,
 } = require("../validators/reportValidators");
 const controller = require("../controllers/reportController");
 const reportRouter = express.Router();
@@ -45,5 +46,10 @@ reportRouter.get(
   "/stock-summary",
   validateQuery(validateStockSummaryQuery),
   controller.getStockSummary,
+);
+reportRouter.get(
+  "/stock-ledger",
+  validateQuery(validateStockLedgerQuery),
+  controller.getStockLedger,
 );
 module.exports = { reportRouter };

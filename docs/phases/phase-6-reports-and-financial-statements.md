@@ -20,6 +20,7 @@ Implemented in the initial delivery:
 - Date filters, empty/error/loading states, Trial Balance totals and balance state, and print-friendly result layouts.
 - Postman examples aligned with the required General Ledger filter contract.
 - Stock Summary based on immutable inventory movements, with optional warehouse and date filters.
+- Stock Ledger with a product-specific, running quantity and value calculation from inventory movements.
 
 Remaining: financial statements, customer/supplier and inventory reporting, exports, dashboard reporting, templates, and scheduled reports.
 
@@ -662,6 +663,8 @@ GET /reports/customer-statement
 GET /reports/supplier-statement
 
 GET /reports/stock-summary
+
+GET /reports/stock-ledger
 
 GET /reports/stock-ledger
 

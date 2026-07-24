@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const ALLOWED_FILTERS = new Set(["from", "to", "page", "limit"]);
 const GENERAL_LEDGER_FILTERS = new Set([...ALLOWED_FILTERS, "ledgerId"]);
 const STOCK_SUMMARY_FILTERS = new Set([...ALLOWED_FILTERS, "warehouseId"]);
+const STOCK_LEDGER_FILTERS = new Set([...ALLOWED_FILTERS, "productId", "warehouseId"]);
 
 const isDate = (value) =>
   typeof value === "string" &&
@@ -77,8 +78,16 @@ function validateStockSummaryQuery(query) {
   return errors;
 }
 
+function validateStockLedgerQuery(query) {
+  const errors = validateReportQuery(query, STOCK_LEDGER_FILTERS);
+  if (!mongoose.isObjectIdOrHexString(query.productId)) errors.push({ field: "productId", message: "Product must be a valid identifier." });
+  if (query.warehouseId !== undefined && !mongoose.isObjectIdOrHexString(query.warehouseId)) errors.push({ field: "warehouseId", message: "Warehouse must be a valid identifier." });
+  return errors;
+}
+
 module.exports = {
   validateGeneralLedgerQuery,
   validateListReportQuery,
   validateStockSummaryQuery,
+  validateStockLedgerQuery,
 };

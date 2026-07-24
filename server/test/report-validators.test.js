@@ -4,6 +4,7 @@ const {
   validateGeneralLedgerQuery,
   validateListReportQuery,
   validateStockSummaryQuery,
+  validateStockLedgerQuery,
 } = require("../src/validators/reportValidators");
 
 test("general ledger filters require a valid ledger and a chronological date range", () => {
@@ -55,6 +56,16 @@ test("stock summary accepts an optional warehouse filter and rejects invalid ide
   ]);
   assert.deepEqual(
     validateStockSummaryQuery({ warehouseId: "507f1f77bcf86cd799439011" }),
+    [],
+  );
+});
+
+test("stock ledger requires a valid product and accepts an optional warehouse", () => {
+  assert.deepEqual(validateStockLedgerQuery({}), [
+    { field: "productId", message: "Product must be a valid identifier." },
+  ]);
+  assert.deepEqual(
+    validateStockLedgerQuery({ productId: "507f1f77bcf86cd799439011", warehouseId: "507f1f77bcf86cd799439012" }),
     [],
   );
 });

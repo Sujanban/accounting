@@ -41,6 +41,7 @@ const navigation: NavigationGroup[] = [
     { label: "General ledger", to: "/reports/general-ledger" }, { label: "Trial balance", to: "/reports/trial-balance" },
     { label: "Journal register", to: "/reports/journal-register" }, { label: "Day book", to: "/reports/day-book" },
     { label: "Stock summary", to: "/reports/stock-summary" },
+    { label: "Stock ledger", to: "/reports/stock-ledger" },
   ] },
   { label: "Company", icon: GearIcon, items: [
     { label: "Company profile", to: "/company/profile" }, { label: "Preferences", to: "/company/preferences" },

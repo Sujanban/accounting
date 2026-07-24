@@ -6,13 +6,14 @@ import { AppSelect } from "../../components/ui/select";
 import { LoadingScreen } from "../../components/loading-screen";
 import { ApiClientError } from "../../lib/query-client";
 import { useLedgers } from "../accounting/use-accounting";
-import { useWarehouses } from "../masters/use-masters";
+import { useProducts, useWarehouses } from "../masters/use-masters";
 import type { ReportFilters } from "./reports-api";
 import {
   useDayBook,
   useGeneralLedger,
   useJournalRegister,
   useStockSummary,
+  useStockLedger,
   useTrialBalance,
 } from "./use-reports";
 
@@ -46,6 +47,10 @@ const reportMetadata: Record<string, { title: string; description: string }> = {
   "stock-summary": {
     title: "Stock summary",
     description: "Review stock movement, quantity on hand, and inventory value by warehouse.",
+  },
+  "stock-ledger": {
+    title: "Stock ledger",
+    description: "Trace inventory movements and running quantity for one product.",
   },
 };
 
@@ -409,6 +414,14 @@ function StockSummaryReport() {
   );
 }
 
+function StockLedgerReport() {
+  const [filters, setFilters] = useState<ReportFilters>({});
+  const [productId, setProductId] = useState("");
+  const products = useProducts();
+  const report = useStockLedger(productId, filters);
+  return <><ReportFiltersForm filters={filters} onApply={setFilters}><label>Product<AppSelect value={productId} onChange={(event) => setProductId(event.target.value)} required><option value="">Select a product</option>{products.data?.filter((product) => !product.isService).map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</AppSelect></label></ReportFiltersForm>{products.isLoading ? <LoadingScreen fullScreen={false} label="Loading products" description="Preparing your product selector…" /> : !productId ? <Text color="gray">Select a product and apply filters to view its inventory movements.</Text> : report.isLoading ? <LoadingScreen fullScreen={false} label="Loading stock ledger" description="Calculating running inventory…" /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle={`${report.data.product.name} — Stock ledger`}><div className="report-summary"><span>Opening quantity<strong>{money.format(report.data.openingQuantity)}</strong></span><span>Closing quantity<strong>{money.format(report.data.closingQuantity)}</strong></span><span>Closing value<strong>{money.format(report.data.closingValue)}</strong></span></div><table className="accounting-table"><thead><tr><th>Date</th><th>Movement</th><th>In</th><th>Out</th><th>Running quantity</th><th>Running value</th></tr></thead><tbody>{report.data.entries.map((entry) => <tr key={entry.id}><td>{date(entry.transactionDate)}</td><td>{entry.movementType}</td><td>{money.format(entry.quantityIn)}</td><td>{money.format(entry.quantityOut)}</td><td>{money.format(entry.runningQuantity)}</td><td>{money.format(entry.runningValue)}</td></tr>)}</tbody></table>{report.data.entries.length === 0 ? <Text as="p" color="gray" className="accounting-empty">No inventory movements match these filters.</Text> : null}</ReportFrame> : null}</>;
+}
+
 export function ReportsPage() {
   const { report = "" } = useParams();
   const metadata = reportMetadata[report];
@@ -434,6 +447,8 @@ export function ReportsPage() {
         <JournalRegisterReport />
       ) : report === "stock-summary" ? (
         <StockSummaryReport />
+      ) : report === "stock-ledger" ? (
+        <StockLedgerReport />
       ) : (
         <DayBookReport />
       )}

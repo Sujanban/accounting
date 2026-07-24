@@ -2,6 +2,7 @@ const { Journal, JournalLine } = require("../models/Journal");
 const { Transaction } = require("../models/Transaction");
 const { Ledger } = require("../models/Ledger");
 const { InventoryMovement } = require("../models/InventoryMovement");
+const { Product } = require("../models/Product");
 const { ApiError } = require("../utils/apiError");
 
 const MAX_LIMIT = 100;
@@ -84,4 +85,32 @@ async function getStockSummary(companyId, fiscalYearId, query) {
   return { items: rows, totals: rows.reduce((result, row) => ({ quantityIn: result.quantityIn + Number(row.quantityIn || 0), quantityOut: result.quantityOut + Number(row.quantityOut || 0), quantityOnHand: result.quantityOnHand + Number(row.quantityOnHand || 0), stockValue: result.stockValue + Number(row.stockValue || 0) }), { quantityIn: 0, quantityOut: 0, quantityOnHand: 0, stockValue: 0 }) };
 }
 
-module.exports = { getGeneralLedger, getTrialBalance, getJournalRegister, getDayBook, getStockSummary };
+async function getStockLedger(companyId, fiscalYearId, query) {
+  const range = dateRange(query);
+  const filters = { companyId, fiscalYearId, productId: query.productId };
+  if (query.warehouseId) filters.warehouseId = query.warehouseId;
+  const product = await Product.findOne({ _id: query.productId, companyId }).select("name sku").lean();
+  if (!product) throw new ApiError(404, "Product was not found.");
+  const allMovements = await InventoryMovement.find(filters).select("warehouseId movementType direction quantity unitCost transactionDate transactionId").sort({ transactionDate: 1, _id: 1 }).lean();
+  const fromDate = range?.$gte;
+  let openingQuantity = 0;
+  let openingValue = 0;
+  const entries = [];
+  for (const movement of allMovements) {
+    const quantity = Number(movement.quantity || 0);
+    const value = quantity * Number(movement.unitCost || 0);
+    const isIn = movement.direction === "IN";
+    if (fromDate && movement.transactionDate < fromDate) {
+      openingQuantity += isIn ? quantity : -quantity;
+      openingValue += isIn ? value : -value;
+      continue;
+    }
+    if (range?.$lte && movement.transactionDate > range.$lte) continue;
+    openingQuantity += isIn ? quantity : -quantity;
+    openingValue += isIn ? value : -value;
+    entries.push({ id: movement._id, transactionId: movement.transactionId, transactionDate: movement.transactionDate, warehouseId: movement.warehouseId, movementType: movement.movementType, quantityIn: isIn ? quantity : 0, quantityOut: isIn ? 0 : quantity, runningQuantity: openingQuantity, runningValue: openingValue });
+  }
+  return { product: { id: product._id, name: product.name, sku: product.sku }, openingQuantity: entries.length ? entries[0].runningQuantity - entries[0].quantityIn + entries[0].quantityOut : openingQuantity, closingQuantity: openingQuantity, closingValue: openingValue, entries };
+}
+
+module.exports = { getGeneralLedger, getTrialBalance, getJournalRegister, getDayBook, getStockSummary, getStockLedger };

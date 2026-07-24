@@ -6,6 +6,7 @@ export type ReportFilters = {
   page?: number;
   limit?: number;
   warehouseId?: string;
+  productId?: string;
 };
 export type ReportPageMeta = {
   page: number;
@@ -73,6 +74,13 @@ export type StockSummary = {
   items: Array<{ productId: string; productName: string; productSku: string; warehouseId: string; warehouseName: string; quantityIn: number; quantityOut: number; quantityOnHand: number; stockValue: number }>;
   totals: { quantityIn: number; quantityOut: number; quantityOnHand: number; stockValue: number };
 };
+export type StockLedger = {
+  product: { id: string; name: string; sku: string };
+  openingQuantity: number;
+  closingQuantity: number;
+  closingValue: number;
+  entries: Array<{ id: string; transactionId: string; transactionDate: string; warehouseId: string; movementType: string; quantityIn: number; quantityOut: number; runningQuantity: number; runningValue: number }>;
+};
 
 const query = (values: ReportFilters) => {
   const params = new URLSearchParams();
@@ -93,6 +101,8 @@ export const reportKeys = {
     [...reportKeys.all, "day-book", filters] as const,
   stockSummary: (filters: ReportFilters) =>
     [...reportKeys.all, "stock-summary", filters] as const,
+  stockLedger: (productId: string, filters: ReportFilters) =>
+    [...reportKeys.all, "stock-ledger", productId, filters] as const,
 };
 
 export const reportsApi = {
@@ -117,4 +127,6 @@ export const reportsApi = {
     apiClient<DayBook>(`/reports/day-book${query(filters)}`, { signal }),
   stockSummary: (filters: ReportFilters, signal?: AbortSignal) =>
     apiClient<StockSummary>(`/reports/stock-summary${query(filters)}`, { signal }),
+  stockLedger: (productId: string, filters: ReportFilters, signal?: AbortSignal) =>
+    apiClient<StockLedger>(`/reports/stock-ledger${query({ ...filters, productId })}`, { signal }),
 };

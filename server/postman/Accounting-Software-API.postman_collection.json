@@ -17,6 +17,7 @@
     { "key": "unitId", "value": "" },
     { "key": "branchId", "value": "" },
     { "key": "warehouseId", "value": "" },
+    { "key": "productId", "value": "" },
     { "key": "transactionId", "value": "" }
   ],
   "auth": {
@@ -669,6 +670,13 @@
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/api/reports/stock-summary?from=2025-07-17&to=2025-07-31&warehouseId={{warehouseId}}"
+          }
+        },
+        {
+          "name": "Stock Ledger",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/reports/stock-ledger?productId={{productId}}&from=2025-07-17&to=2025-07-31"
           }
         }
       ]

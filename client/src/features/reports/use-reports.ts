@@ -28,3 +28,9 @@ export const useStockSummary = (filters: ReportFilters) =>
     queryKey: reportKeys.stockSummary(filters),
     queryFn: ({ signal }) => reportsApi.stockSummary(filters, signal),
   });
+export const useStockLedger = (productId: string, filters: ReportFilters) =>
+  useQuery({
+    queryKey: reportKeys.stockLedger(productId, filters),
+    queryFn: ({ signal }) => reportsApi.stockLedger(productId, filters, signal),
+    enabled: Boolean(productId),
+  });
