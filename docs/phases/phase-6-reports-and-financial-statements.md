@@ -24,7 +24,7 @@ Implemented in the initial delivery:
 - Profit & Loss calculated from income and expense journal lines, grouped through the chart of accounts.
 - Balance Sheet calculated as of the selected date from ledger opening balances, journals, account categories, and current earnings.
 - Dashboard widgets for current fiscal-year net profit/loss, total assets, and Trial Balance status.
-- CSV export for Profit & Loss, with safe RFC 4180-style escaping for spreadsheet-ready values.
+- CSV export for Profit & Loss and Balance Sheet, with safe RFC 4180-style escaping for spreadsheet-ready values.
 
 Remaining: financial statements, customer/supplier and inventory reporting, exports, dashboard reporting, templates, and scheduled reports.
 
