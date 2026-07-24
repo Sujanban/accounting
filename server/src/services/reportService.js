@@ -177,6 +177,88 @@ async function getBalanceSheet(companyId, fiscalYearId, query) {
   return { assets: categories.Assets, liabilities: categories.Liabilities, equity: categories.Equity, totals, isBalanced: Math.abs(totals.assets - totals.liabilitiesAndEquity) < 0.000001 };
 }
 
+function cashFlowCategory(counterpartGroups) {
+  if (counterpartGroups.some((group) => ["FIXED_ASSETS", "INVESTMENTS"].includes(group.systemCode))) return "investing";
+  if (counterpartGroups.some((group) => ["Liabilities", "Equity"].includes(group.category))) return "financing";
+  return "operating";
+}
+
+async function getCashFlow(companyId, fiscalYearId, query) {
+  const cashLedgers = await Ledger.find({ companyId, fiscalYearId, isActive: true, systemCode: { $in: ["CASH", "BANK"] } })
+    .select("name openingBalance openingBalanceType")
+    .lean();
+  const cashLedgerIds = cashLedgers.map((ledger) => ledger._id);
+  if (!cashLedgerIds.length) return { openingBalance: 0, closingBalance: 0, operating: [], investing: [], financing: [], totals: { operating: 0, investing: 0, financing: 0, netCashFlow: 0 } };
+  const range = dateRange(query);
+  const basePipeline = [
+    { $match: { companyId, ledgerId: { $in: cashLedgerIds } } },
+    { $lookup: { from: "journals", localField: "journalId", foreignField: "_id", as: "journal" } },
+    { $unwind: "$journal" },
+    { $match: { "journal.companyId": companyId, "journal.fiscalYearId": fiscalYearId } }
+  ];
+  const [beforeRows, cashRows] = await Promise.all([
+    range?.$gte ? JournalLine.aggregate([...basePipeline, { $match: { "journal.transactionDate": { $lt: range.$gte } } }, { $group: { _id: null, debit: { $sum: "$debit" }, credit: { $sum: "$credit" } } }]) : [],
+    JournalLine.aggregate([...basePipeline, ...(range ? [{ $match: { "journal.transactionDate": range } }] : []), { $group: { _id: "$journalId", transactionDate: { $first: "$journal.transactionDate" }, voucherNumber: { $first: "$journal.voucherNumber" }, narration: { $first: "$journal.narration" }, debit: { $sum: "$debit" }, credit: { $sum: "$credit" } } }, { $sort: { transactionDate: 1, _id: 1 } }])
+  ]);
+  const journalIds = cashRows.map((row) => row._id);
+  const counterparts = journalIds.length ? await JournalLine.aggregate([
+    { $match: { companyId, journalId: { $in: journalIds }, ledgerId: { $nin: cashLedgerIds } } },
+    { $lookup: { from: "ledgers", localField: "ledgerId", foreignField: "_id", as: "ledger" } }, { $unwind: "$ledger" },
+    { $lookup: { from: "accountgroups", localField: "ledger.groupId", foreignField: "_id", as: "group" } }, { $unwind: "$group" },
+    { $group: { _id: "$journalId", groups: { $addToSet: { category: "$group.category", systemCode: "$group.systemCode" } } } }
+  ]) : [];
+  const groupsByJournal = new Map(counterparts.map((row) => [String(row._id), row.groups]));
+  const activities = { operating: [], investing: [], financing: [] };
+  for (const row of cashRows) {
+    const amount = Number(row.debit || 0) - Number(row.credit || 0);
+    const category = cashFlowCategory(groupsByJournal.get(String(row._id)) || []);
+    activities[category].push({ journalId: row._id, transactionDate: row.transactionDate, voucherNumber: row.voucherNumber, narration: row.narration, amount });
+  }
+  const openingFromLedgers = cashLedgers.reduce((total, ledger) => total + Number(ledger.openingBalance || 0) * (ledger.openingBalanceType === "CREDIT" ? -1 : 1), 0);
+  const openingBalance = openingFromLedgers + Number(beforeRows[0]?.debit || 0) - Number(beforeRows[0]?.credit || 0);
+  const totals = Object.fromEntries(Object.entries(activities).map(([category, entries]) => [category, entries.reduce((total, entry) => total + entry.amount, 0)]));
+  totals.netCashFlow = totals.operating + totals.investing + totals.financing;
+  return { openingBalance, closingBalance: openingBalance + totals.netCashFlow, ...activities, totals };
+}
+
+async function getVoucherSummary(companyId, fiscalYearId, query, transactionType) {
+  const { value, limit } = page(query);
+  const filters = { companyId, fiscalYearId, transactionType, status: "POSTED" };
+  const range = dateRange(query);
+  if (range) filters.transactionDate = range;
+  const [items, total] = await Promise.all([
+    Transaction.find(filters).select("voucherNumber transactionDate narration accountingEntries inventoryEntries").sort({ transactionDate: -1, _id: -1 }).skip((value - 1) * limit).limit(limit).lean(),
+    Transaction.countDocuments(filters)
+  ]);
+  const data = items.map((item) => ({ id: item._id, voucherNumber: item.voucherNumber, transactionDate: item.transactionDate, narration: item.narration, itemCount: item.inventoryEntries.length, amount: item.accountingEntries.reduce((totalDebit, entry) => totalDebit + Number(entry.debit || 0), 0) }));
+  const totals = await Transaction.aggregate([
+    { $match: filters },
+    { $unwind: "$accountingEntries" },
+    { $group: { _id: null, amount: { $sum: "$accountingEntries.debit" } } }
+  ]);
+  return { items: data, totals: { amount: Number(totals[0]?.amount || 0), count: total }, meta: { page: value, limit, total, totalPages: Math.ceil(total / limit), hasNextPage: value * limit < total } };
+}
+
+function getSalesSummary(companyId, fiscalYearId, query) { return getVoucherSummary(companyId, fiscalYearId, query, "SALE"); }
+function getPurchaseSummary(companyId, fiscalYearId, query) { return getVoucherSummary(companyId, fiscalYearId, query, "PURCHASE"); }
+
+async function getProductMovementSummary(companyId, fiscalYearId, query, transactionType, direction) {
+  const filters = { companyId, fiscalYearId, movementType: transactionType, direction };
+  const range = dateRange(query);
+  if (range) filters.transactionDate = range;
+  const items = await InventoryMovement.aggregate([
+    { $match: filters },
+    { $group: { _id: "$productId", quantity: { $sum: "$quantity" }, value: { $sum: { $multiply: ["$quantity", "$unitCost"] } }, transactionCount: { $addToSet: "$transactionId" } } },
+    { $lookup: { from: "products", localField: "_id", foreignField: "_id", as: "product" } }, { $unwind: "$product" },
+    { $project: { _id: 0, productId: "$_id", productName: "$product.name", productSku: "$product.sku", quantity: 1, value: 1, transactionCount: { $size: "$transactionCount" } } },
+    { $sort: { value: -1, productName: 1, productId: 1 } }
+  ]);
+  return { items, totals: items.reduce((total, item) => ({ quantity: total.quantity + Number(item.quantity || 0), value: total.value + Number(item.value || 0), transactionCount: total.transactionCount + Number(item.transactionCount || 0) }), { quantity: 0, value: 0, transactionCount: 0 }) };
+}
+
+function getSalesByProduct(companyId, fiscalYearId, query) { return getProductMovementSummary(companyId, fiscalYearId, query, "SALE", "OUT"); }
+function getPurchasesByProduct(companyId, fiscalYearId, query) { return getProductMovementSummary(companyId, fiscalYearId, query, "PURCHASE", "IN"); }
+
 async function getContactStatement(companyId, fiscalYearId, query, role) {
   const contact = await Contact.findOne({ _id: query.contactId, companyId, isActive: true })
     .select("contactCode name displayName roles")
@@ -237,4 +319,4 @@ function getSupplierStatement(companyId, fiscalYearId, query) {
   return getContactStatement(companyId, fiscalYearId, query, "SUPPLIER");
 }
 
-module.exports = { getGeneralLedger, getTrialBalance, getJournalRegister, getDayBook, getStockSummary, getStockLedger, getProfitLoss, getBalanceSheet, getCustomerStatement, getSupplierStatement };
+module.exports = { getGeneralLedger, getTrialBalance, getJournalRegister, getDayBook, getStockSummary, getStockLedger, getProfitLoss, getBalanceSheet, getCashFlow, getSalesSummary, getPurchaseSummary, getSalesByProduct, getPurchasesByProduct, getCustomerStatement, getSupplierStatement };

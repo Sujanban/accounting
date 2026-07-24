@@ -50,3 +50,12 @@ export const useContactStatement = (role: "customer" | "supplier", contactId: st
     queryFn: ({ signal }) => reportsApi.contactStatement(role, contactId, filters, signal),
     enabled: Boolean(contactId),
   });
+export const useCashFlow = (filters: ReportFilters) =>
+  useQuery({
+    queryKey: reportKeys.cashFlow(filters),
+    queryFn: ({ signal }) => reportsApi.cashFlow(filters, signal),
+  });
+export const useVoucherSummary = (type: "sales" | "purchase", filters: ReportFilters) =>
+  useQuery({ queryKey: reportKeys.voucherSummary(type, filters), queryFn: ({ signal }) => reportsApi.voucherSummary(type, filters, signal) });
+export const useProductMovementSummary = (type: "sales" | "purchases", filters: ReportFilters) =>
+  useQuery({ queryKey: reportKeys.productMovementSummary(type, filters), queryFn: ({ signal }) => reportsApi.productMovementSummary(type, filters, signal) });

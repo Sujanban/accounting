@@ -710,6 +710,29 @@
           }
         },
         {
+          "name": "Cash Flow",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/reports/cash-flow?from=2025-07-17&to=2025-07-31"
+          }
+        },
+        {
+          "name": "Sales Summary",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/reports/sales-summary?from=2025-07-17&to=2025-07-31&page=1&limit=20" }
+        },
+        {
+          "name": "Purchase Summary",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/reports/purchase-summary?from=2025-07-17&to=2025-07-31&page=1&limit=20" }
+        },
+        {
+          "name": "Sales by Product",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/reports/sales-by-product?from=2025-07-17&to=2025-07-31" }
+        },
+        {
+          "name": "Purchases by Product",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/reports/purchases-by-product?from=2025-07-17&to=2025-07-31" }
+        },
+        {
           "name": "Customer Statement",
           "request": {
             "method": "GET",

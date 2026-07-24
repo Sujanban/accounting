@@ -83,6 +83,10 @@ export type StockLedger = {
 };
 export type ProfitLoss = { income: Array<{ ledgerId: string; ledgerName: string; amount: number }>; expenses: Array<{ ledgerId: string; ledgerName: string; amount: number }>; totals: { income: number; expenses: number; netProfit: number } };
 export type BalanceSheet = { assets: Array<{ ledgerId: string; ledgerName: string; amount: number }>; liabilities: Array<{ ledgerId: string; ledgerName: string; amount: number }>; equity: Array<{ ledgerId: string; ledgerName: string; amount: number }>; totals: { assets: number; liabilities: number; equity: number; currentEarnings: number; totalEquity: number; liabilitiesAndEquity: number }; isBalanced: boolean };
+export type CashFlow = { openingBalance: number; closingBalance: number; operating: CashFlowEntry[]; investing: CashFlowEntry[]; financing: CashFlowEntry[]; totals: { operating: number; investing: number; financing: number; netCashFlow: number } };
+type CashFlowEntry = { journalId: string; transactionDate: string; voucherNumber: string | null; narration: string | null; amount: number };
+export type VoucherSummary = { items: Array<{ id: string; voucherNumber: string; transactionDate: string; narration: string | null; itemCount: number; amount: number }>; totals: { amount: number; count: number }; meta: ReportPageMeta };
+export type ProductMovementSummary = { items: Array<{ productId: string; productName: string; productSku: string; quantity: number; value: number; transactionCount: number }>; totals: { quantity: number; value: number; transactionCount: number } };
 export type ContactStatement = {
   contact: { id: string; contactCode: string; name: string; role: "CUSTOMER" | "SUPPLIER" };
   ledger: { id: string; name: string };
@@ -119,6 +123,9 @@ export const reportKeys = {
     [...reportKeys.all, "balance-sheet", filters] as const,
   contactStatement: (role: "customer" | "supplier", contactId: string, filters: ReportFilters) =>
     [...reportKeys.all, `${role}-statement`, contactId, filters] as const,
+  cashFlow: (filters: ReportFilters) => [...reportKeys.all, "cash-flow", filters] as const,
+  voucherSummary: (type: "sales" | "purchase", filters: ReportFilters) => [...reportKeys.all, `${type}-summary`, filters] as const,
+  productMovementSummary: (type: "sales" | "purchases", filters: ReportFilters) => [...reportKeys.all, `${type}-by-product`, filters] as const,
 };
 
 export const reportsApi = {
@@ -151,4 +158,10 @@ export const reportsApi = {
     apiClient<BalanceSheet>(`/reports/balance-sheet${query(filters)}`, { signal }),
   contactStatement: (role: "customer" | "supplier", contactId: string, filters: ReportFilters, signal?: AbortSignal) =>
     apiClient<ContactStatement>(`/reports/${role}-statement${query({ ...filters, contactId } as ReportFilters & { contactId: string })}`, { signal }),
+  cashFlow: (filters: ReportFilters, signal?: AbortSignal) =>
+    apiClient<CashFlow>(`/reports/cash-flow${query(filters)}`, { signal }),
+  voucherSummary: (type: "sales" | "purchase", filters: ReportFilters, signal?: AbortSignal) =>
+    apiClient<VoucherSummary>(`/reports/${type}-summary${query(filters)}`, { signal }),
+  productMovementSummary: (type: "sales" | "purchases", filters: ReportFilters, signal?: AbortSignal) =>
+    apiClient<ProductMovementSummary>(`/reports/${type}-by-product${query(filters)}`, { signal }),
 };

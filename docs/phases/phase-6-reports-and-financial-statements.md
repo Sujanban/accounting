@@ -27,8 +27,11 @@ Implemented in the initial delivery:
 - CSV export for Trial Balance, Profit & Loss, and Balance Sheet, with safe RFC 4180-style escaping for spreadsheet-ready values.
 - Fiscal-year and role-specific contact-to-ledger mappings for customer and supplier reporting, preventing a current-year mapping from rewriting historical statements.
 - Read-only Customer Statement and Supplier Statement APIs and report screens with company/fiscal-year isolation, allowlisted date/pagination filters, running balances, printing, and CSV export.
+- Cash Flow API and report screen, calculated dynamically from Cash/Bank journal activity and classified into operating, investing, and financing activities.
+- Sales Summary and Purchase Summary APIs and report screens for posted vouchers, including date filters, totals, printing, and CSV export.
+- Sales by Product and Purchases by Product reports from immutable inventory movements, including product quantities, movement values, and transaction counts.
 
-Remaining: cash-flow, sales/purchase reporting, PDF/Excel export, dashboard reporting, templates, scheduled reports, and their remaining frontend delivery.
+Remaining: further sales/purchase breakdowns, PDF/Excel export, dashboard reporting, templates, scheduled reports, and their remaining frontend delivery.
 
 Prerequisites
 

@@ -45,6 +45,11 @@ module.exports = {
     "getBalanceSheet",
     "Balance sheet fetched successfully.",
   ),
+  getCashFlow: handler("getCashFlow", "Cash flow fetched successfully."),
+  getSalesSummary: handler("getSalesSummary", "Sales summary fetched successfully."),
+  getPurchaseSummary: handler("getPurchaseSummary", "Purchase summary fetched successfully."),
+  getSalesByProduct: handler("getSalesByProduct", "Sales by product fetched successfully."),
+  getPurchasesByProduct: handler("getPurchasesByProduct", "Purchases by product fetched successfully."),
   getCustomerStatement: handler(
     "getCustomerStatement",
     "Customer statement fetched successfully.",

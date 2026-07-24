@@ -64,6 +64,15 @@ reportRouter.get(
   controller.getBalanceSheet,
 );
 reportRouter.get(
+  "/cash-flow",
+  validateQuery(validateListReportQuery),
+  controller.getCashFlow,
+);
+reportRouter.get("/sales-summary", validateQuery(validateListReportQuery), controller.getSalesSummary);
+reportRouter.get("/purchase-summary", validateQuery(validateListReportQuery), controller.getPurchaseSummary);
+reportRouter.get("/sales-by-product", validateQuery(validateListReportQuery), controller.getSalesByProduct);
+reportRouter.get("/purchases-by-product", validateQuery(validateListReportQuery), controller.getPurchasesByProduct);
+reportRouter.get(
   "/customer-statement",
   validateQuery(validateContactStatementQuery),
   controller.getCustomerStatement,

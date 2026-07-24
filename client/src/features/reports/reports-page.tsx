@@ -17,6 +17,9 @@ import {
   useStockLedger,
   useProfitLoss,
   useBalanceSheet,
+  useCashFlow,
+  useVoucherSummary,
+  useProductMovementSummary,
   useContactStatement,
   useTrialBalance,
 } from "./use-reports";
@@ -64,6 +67,14 @@ const reportMetadata: Record<string, { title: string; description: string }> = {
     title: "Balance sheet",
     description: "Review assets, liabilities, equity, and current earnings as of the selected date.",
   },
+  "cash-flow": {
+    title: "Cash flow",
+    description: "Review operating, investing, and financing cash movements for the selected period.",
+  },
+  "sales-summary": { title: "Sales summary", description: "Review posted sales vouchers and total sales for the selected period." },
+  "purchase-summary": { title: "Purchase summary", description: "Review posted purchase vouchers and total purchases for the selected period." },
+  "sales-by-product": { title: "Sales by product", description: "Review sold stock quantities and their movement value by product." },
+  "purchases-by-product": { title: "Purchases by product", description: "Review purchased stock quantities and their movement value by product." },
   "customer-statement": {
     title: "Customer statement",
     description: "Review receivable activity and the running balance for one customer.",
@@ -157,6 +168,11 @@ function ReportFrame({
       {children}
     </Card>
   );
+}
+
+function ReportPagination({ meta, onPageChange }: { meta: { page: number; totalPages: number; hasNextPage: boolean }; onPageChange: (page: number) => void }) {
+  if (meta.totalPages <= 1) return null;
+  return <Flex className="no-print" gap="2" justify="between" align="center" mt="3"><Text color="gray" size="2">Page {meta.page} of {meta.totalPages}</Text><Flex gap="2"><Button variant="outline" disabled={meta.page === 1} onClick={() => onPageChange(meta.page - 1)}>Previous</Button><Button variant="outline" disabled={!meta.hasNextPage} onClick={() => onPageChange(meta.page + 1)}>Next</Button></Flex></Flex>;
 }
 
 function GeneralLedgerReport() {
@@ -458,6 +474,27 @@ function BalanceSheetReport() {
   return <><ReportFiltersForm filters={filters} onApply={setFilters} showFrom={false} />{report.isLoading ? <LoadingScreen fullScreen={false} label="Loading balance sheet" description="Calculating account balances…" /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle="Balance sheet"><Button className="no-print report-export" variant="outline" onClick={() => downloadCsv("balance-sheet.csv", ["Category", "Ledger", "Amount"], [...report.data.assets.map((entry) => ["Asset", entry.ledgerName, entry.amount]), ...report.data.liabilities.map((entry) => ["Liability", entry.ledgerName, entry.amount]), ...report.data.equity.map((entry) => ["Equity", entry.ledgerName, entry.amount]), ["Equity", "Current earnings", report.data.totals.currentEarnings], ["", "Total assets", report.data.totals.assets], ["", "Total liabilities and equity", report.data.totals.liabilitiesAndEquity]])}>Export CSV</Button><div className={`report-balance ${report.data.isBalanced ? "report-balance--balanced" : "report-balance--unbalanced"}`}>{report.data.isBalanced ? "Balanced" : "Out of balance"}</div><div className="report-summary"><span>Assets<strong>{money.format(report.data.totals.assets)}</strong></span><span>Liabilities & equity<strong>{money.format(report.data.totals.liabilitiesAndEquity)}</strong></span><span>Current earnings<strong>{money.format(report.data.totals.currentEarnings)}</strong></span></div>{renderSection("Assets", report.data.assets, report.data.totals.assets)}{renderSection("Liabilities", report.data.liabilities, report.data.totals.liabilities)}{renderSection("Equity", report.data.equity, report.data.totals.equity)}<table className="accounting-table"><tbody><tr><th>Current earnings</th><td>{money.format(report.data.totals.currentEarnings)}</td></tr><tr><th>Total equity</th><td>{money.format(report.data.totals.totalEquity)}</td></tr><tr><th>Total liabilities & equity</th><td>{money.format(report.data.totals.liabilitiesAndEquity)}</td></tr></tbody></table></ReportFrame> : null}</>;
 }
 
+function CashFlowReport() {
+  const [filters, setFilters] = useState<ReportFilters>({});
+  const report = useCashFlow(filters);
+  const renderSection = (title: string, entries: Array<{ journalId: string; transactionDate: string; voucherNumber: string | null; narration: string | null; amount: number }>, total: number) => <table className="accounting-table"><thead><tr><th colSpan={3}>{title}</th><th>Amount</th></tr><tr><th>Date</th><th>Voucher</th><th>Narration</th><th>Cash movement</th></tr></thead><tbody>{entries.map((entry) => <tr key={entry.journalId}><td>{date(entry.transactionDate)}</td><td>{entry.voucherNumber || "—"}</td><td>{entry.narration || "—"}</td><td>{money.format(entry.amount)}</td></tr>)}</tbody><tfoot><tr><th colSpan={3}>Net {title.toLowerCase()}</th><th>{money.format(total)}</th></tr></tfoot></table>;
+  return <><ReportFiltersForm filters={filters} onApply={setFilters} />{report.isLoading ? <LoadingScreen fullScreen={false} label="Loading cash flow" description="Classifying cash movements…" /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle="Cash flow"><Button className="no-print report-export" variant="outline" onClick={() => downloadCsv("cash-flow.csv", ["Activity", "Date", "Voucher", "Narration", "Amount"], [...report.data.operating.map((entry) => ["Operating", date(entry.transactionDate), entry.voucherNumber || "", entry.narration || "", entry.amount]), ...report.data.investing.map((entry) => ["Investing", date(entry.transactionDate), entry.voucherNumber || "", entry.narration || "", entry.amount]), ...report.data.financing.map((entry) => ["Financing", date(entry.transactionDate), entry.voucherNumber || "", entry.narration || "", entry.amount])])}>Export CSV</Button><div className="report-summary"><span>Opening cash<strong>{money.format(report.data.openingBalance)}</strong></span><span>Net cash flow<strong>{money.format(report.data.totals.netCashFlow)}</strong></span><span>Closing cash<strong>{money.format(report.data.closingBalance)}</strong></span></div>{renderSection("Operating activities", report.data.operating, report.data.totals.operating)}{renderSection("Investing activities", report.data.investing, report.data.totals.investing)}{renderSection("Financing activities", report.data.financing, report.data.totals.financing)}</ReportFrame> : null}</>;
+}
+
+function VoucherSummaryReport({ type }: { type: "sales" | "purchase" }) {
+  const [filters, setFilters] = useState<ReportFilters>({ page: 1, limit: 20 });
+  const report = useVoucherSummary(type, filters);
+  const title = type === "sales" ? "Sales" : "Purchase";
+  return <><ReportFiltersForm filters={filters} onApply={setFilters} />{report.isLoading ? <LoadingScreen fullScreen={false} label={`Loading ${type} summary`} description={`Retrieving posted ${type} vouchers…`} /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle={`${title} summary`}><Button className="no-print report-export" variant="outline" onClick={() => downloadCsv(`${type}-summary.csv`, ["Date", "Voucher", "Narration", "Items", "Amount"], [...report.data.items.map((item) => [date(item.transactionDate), item.voucherNumber, item.narration || "", item.itemCount, item.amount]), ["", "", "Total", report.data.totals.count, report.data.totals.amount]])}>Export CSV</Button><div className="report-summary"><span>Posted vouchers<strong>{report.data.totals.count}</strong></span><span>Total {type}<strong>{money.format(report.data.totals.amount)}</strong></span></div><table className="accounting-table"><thead><tr><th>Date</th><th>Voucher</th><th>Narration</th><th>Items</th><th>Amount</th></tr></thead><tbody>{report.data.items.map((item) => <tr key={item.id}><td>{date(item.transactionDate)}</td><td>{item.voucherNumber}</td><td>{item.narration || "—"}</td><td>{item.itemCount}</td><td>{money.format(item.amount)}</td></tr>)}</tbody><tfoot><tr><th colSpan={3}>Total</th><th>{report.data.totals.count}</th><th>{money.format(report.data.totals.amount)}</th></tr></tfoot></table><ReportPagination meta={report.data.meta} onPageChange={(page) => setFilters({ ...filters, page })} />{report.data.items.length === 0 ? <Text as="p" color="gray" className="accounting-empty">No posted {type} vouchers match these filters.</Text> : null}</ReportFrame> : null}</>;
+}
+
+function ProductMovementSummaryReport({ type }: { type: "sales" | "purchases" }) {
+  const [filters, setFilters] = useState<ReportFilters>({});
+  const report = useProductMovementSummary(type, filters);
+  const title = type === "sales" ? "Sales by product" : "Purchases by product";
+  return <><ReportFiltersForm filters={filters} onApply={setFilters} />{report.isLoading ? <LoadingScreen fullScreen={false} label={`Loading ${title.toLowerCase()}`} description="Calculating immutable inventory movements…" /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle={title}><Button className="no-print report-export" variant="outline" onClick={() => downloadCsv(`${type}-by-product.csv`, ["Product", "SKU", "Transactions", "Quantity", "Movement value"], [...report.data.items.map((item) => [item.productName, item.productSku, item.transactionCount, item.quantity, item.value]), ["Total", "", report.data.totals.transactionCount, report.data.totals.quantity, report.data.totals.value]])}>Export CSV</Button><div className="report-summary"><span>Transactions<strong>{report.data.totals.transactionCount}</strong></span><span>Quantity<strong>{money.format(report.data.totals.quantity)}</strong></span><span>Movement value<strong>{money.format(report.data.totals.value)}</strong></span></div><table className="accounting-table"><thead><tr><th>Product</th><th>SKU</th><th>Transactions</th><th>Quantity</th><th>Movement value</th></tr></thead><tbody>{report.data.items.map((item) => <tr key={item.productId}><td>{item.productName}</td><td>{item.productSku}</td><td>{item.transactionCount}</td><td>{money.format(item.quantity)}</td><td>{money.format(item.value)}</td></tr>)}</tbody><tfoot><tr><th colSpan={2}>Total</th><th>{report.data.totals.transactionCount}</th><th>{money.format(report.data.totals.quantity)}</th><th>{money.format(report.data.totals.value)}</th></tr></tfoot></table>{report.data.items.length === 0 ? <Text as="p" color="gray" className="accounting-empty">No inventory movements match these filters.</Text> : null}</ReportFrame> : null}</>;
+}
+
 function ContactStatementReport({ role }: { role: "customer" | "supplier" }) {
   const [filters, setFilters] = useState<ReportFilters>({ page: 1, limit: 20 });
   const [contactId, setContactId] = useState("");
@@ -502,6 +539,16 @@ export function ReportsPage() {
         <ProfitLossReport />
       ) : report === "balance-sheet" ? (
         <BalanceSheetReport />
+      ) : report === "cash-flow" ? (
+        <CashFlowReport />
+      ) : report === "sales-summary" ? (
+        <VoucherSummaryReport type="sales" />
+      ) : report === "purchase-summary" ? (
+        <VoucherSummaryReport type="purchase" />
+      ) : report === "sales-by-product" ? (
+        <ProductMovementSummaryReport type="sales" />
+      ) : report === "purchases-by-product" ? (
+        <ProductMovementSummaryReport type="purchases" />
       ) : report === "customer-statement" ? (
         <ContactStatementReport role="customer" />
       ) : report === "supplier-statement" ? (
