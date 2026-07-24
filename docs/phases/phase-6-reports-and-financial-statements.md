@@ -23,6 +23,7 @@ Implemented in the initial delivery:
 - Stock Ledger with a product-specific, running quantity and value calculation from inventory movements.
 - Profit & Loss calculated from income and expense journal lines, grouped through the chart of accounts.
 - Balance Sheet calculated as of the selected date from ledger opening balances, journals, account categories, and current earnings.
+- Dashboard widgets for current fiscal-year net profit/loss, total assets, and Trial Balance status.
 
 Remaining: financial statements, customer/supplier and inventory reporting, exports, dashboard reporting, templates, and scheduled reports.
 
