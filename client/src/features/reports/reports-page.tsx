@@ -6,11 +6,13 @@ import { AppSelect } from "../../components/ui/select";
 import { LoadingScreen } from "../../components/loading-screen";
 import { ApiClientError } from "../../lib/query-client";
 import { useLedgers } from "../accounting/use-accounting";
+import { useWarehouses } from "../masters/use-masters";
 import type { ReportFilters } from "./reports-api";
 import {
   useDayBook,
   useGeneralLedger,
   useJournalRegister,
+  useStockSummary,
   useTrialBalance,
 } from "./use-reports";
 
@@ -40,6 +42,10 @@ const reportMetadata: Record<string, { title: string; description: string }> = {
   "day-book": {
     title: "Day book",
     description: "Review posted and reversed vouchers by transaction date.",
+  },
+  "stock-summary": {
+    title: "Stock summary",
+    description: "Review stock movement, quantity on hand, and inventory value by warehouse.",
   },
 };
 
@@ -383,6 +389,26 @@ function DayBookReport() {
   );
 }
 
+function StockSummaryReport() {
+  const [filters, setFilters] = useState<ReportFilters>({});
+  const warehouses = useWarehouses();
+  const report = useStockSummary(filters);
+  return (
+    <>
+      <ReportFiltersForm filters={filters} onApply={setFilters}>
+        <label>
+          Warehouse
+          <AppSelect value={filters.warehouseId ?? ""} onChange={(event) => setFilters({ ...filters, warehouseId: event.target.value || undefined })}>
+            <option value="">All warehouses</option>
+            {warehouses.data?.map((warehouse) => <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>)}
+          </AppSelect>
+        </label>
+      </ReportFiltersForm>
+      {report.isLoading ? <LoadingScreen fullScreen={false} label="Loading stock summary" description="Calculating inventory movements…" /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle="Stock summary"><div className="report-summary"><span>Quantity on hand<strong>{money.format(report.data.totals.quantityOnHand)}</strong></span><span>Inventory value<strong>{money.format(report.data.totals.stockValue)}</strong></span></div><table className="accounting-table"><thead><tr><th>Product</th><th>Warehouse</th><th>In</th><th>Out</th><th>On hand</th><th>Value</th></tr></thead><tbody>{report.data.items.map((item) => <tr key={`${item.productId}-${item.warehouseId}`}><td>{item.productName}<span>{item.productSku}</span></td><td>{item.warehouseName}</td><td>{money.format(item.quantityIn)}</td><td>{money.format(item.quantityOut)}</td><td>{money.format(item.quantityOnHand)}</td><td>{money.format(item.stockValue)}</td></tr>)}</tbody><tfoot><tr><th colSpan={2}>Total</th><th>{money.format(report.data.totals.quantityIn)}</th><th>{money.format(report.data.totals.quantityOut)}</th><th>{money.format(report.data.totals.quantityOnHand)}</th><th>{money.format(report.data.totals.stockValue)}</th></tr></tfoot></table>{report.data.items.length === 0 ? <Text as="p" color="gray" className="accounting-empty">No inventory movements match these filters.</Text> : null}</ReportFrame> : null}
+    </>
+  );
+}
+
 export function ReportsPage() {
   const { report = "" } = useParams();
   const metadata = reportMetadata[report];
@@ -406,6 +432,8 @@ export function ReportsPage() {
         <TrialBalanceReport />
       ) : report === "journal-register" ? (
         <JournalRegisterReport />
+      ) : report === "stock-summary" ? (
+        <StockSummaryReport />
       ) : (
         <DayBookReport />
       )}

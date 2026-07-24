@@ -23,3 +23,8 @@ export const useDayBook = (filters: ReportFilters) =>
     queryKey: reportKeys.dayBook(filters),
     queryFn: ({ signal }) => reportsApi.dayBook(filters, signal),
   });
+export const useStockSummary = (filters: ReportFilters) =>
+  useQuery({
+    queryKey: reportKeys.stockSummary(filters),
+    queryFn: ({ signal }) => reportsApi.stockSummary(filters, signal),
+  });

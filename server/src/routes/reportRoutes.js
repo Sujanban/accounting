@@ -10,6 +10,7 @@ const { validateQuery } = require("../middleware/validate");
 const {
   validateGeneralLedgerQuery,
   validateListReportQuery,
+  validateStockSummaryQuery,
 } = require("../validators/reportValidators");
 const controller = require("../controllers/reportController");
 const reportRouter = express.Router();
@@ -39,5 +40,10 @@ reportRouter.get(
   "/day-book",
   validateQuery(validateListReportQuery),
   controller.getDayBook,
+);
+reportRouter.get(
+  "/stock-summary",
+  validateQuery(validateStockSummaryQuery),
+  controller.getStockSummary,
 );
 module.exports = { reportRouter };

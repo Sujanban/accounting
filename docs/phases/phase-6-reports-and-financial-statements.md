@@ -19,8 +19,11 @@ Implemented in the initial delivery:
 - Typed TanStack Query clients and responsive report screens for the four initial reports.
 - Date filters, empty/error/loading states, Trial Balance totals and balance state, and print-friendly result layouts.
 - Postman examples aligned with the required General Ledger filter contract.
+- Stock Summary based on immutable inventory movements, with optional warehouse and date filters.
 
 Remaining: financial statements, customer/supplier and inventory reporting, exports, dashboard reporting, templates, and scheduled reports.
+
+Known design dependency: customer and supplier statements require a fiscal-year-aware contact-to-ledger mapping. The current contact model exposes a single ledger reference but does not assign or version that relationship, so those statements remain blocked until that accounting design is completed.
 
 Prerequisites
 

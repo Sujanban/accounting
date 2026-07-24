@@ -5,6 +5,7 @@ export type ReportFilters = {
   to?: string;
   page?: number;
   limit?: number;
+  warehouseId?: string;
 };
 export type ReportPageMeta = {
   page: number;
@@ -68,6 +69,10 @@ export type DayBook = {
   }>;
   meta: ReportPageMeta;
 };
+export type StockSummary = {
+  items: Array<{ productId: string; productName: string; productSku: string; warehouseId: string; warehouseName: string; quantityIn: number; quantityOut: number; quantityOnHand: number; stockValue: number }>;
+  totals: { quantityIn: number; quantityOut: number; quantityOnHand: number; stockValue: number };
+};
 
 const query = (values: ReportFilters) => {
   const params = new URLSearchParams();
@@ -86,6 +91,8 @@ export const reportKeys = {
     [...reportKeys.all, "journal-register", filters] as const,
   dayBook: (filters: ReportFilters) =>
     [...reportKeys.all, "day-book", filters] as const,
+  stockSummary: (filters: ReportFilters) =>
+    [...reportKeys.all, "stock-summary", filters] as const,
 };
 
 export const reportsApi = {
@@ -108,4 +115,6 @@ export const reportsApi = {
     }),
   dayBook: (filters: ReportFilters, signal?: AbortSignal) =>
     apiClient<DayBook>(`/reports/day-book${query(filters)}`, { signal }),
+  stockSummary: (filters: ReportFilters, signal?: AbortSignal) =>
+    apiClient<StockSummary>(`/reports/stock-summary${query(filters)}`, { signal }),
 };

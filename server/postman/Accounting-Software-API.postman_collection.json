@@ -663,6 +663,13 @@
             "method": "GET",
             "url": "{{baseUrl}}/api/reports/day-book?from=2025-07-17&to=2025-07-31&page=1&limit=20"
           }
+        },
+        {
+          "name": "Stock Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/reports/stock-summary?from=2025-07-17&to=2025-07-31&warehouseId={{warehouseId}}"
+          }
         }
       ]
     },

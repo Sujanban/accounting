@@ -1,6 +1,7 @@
 const { Journal, JournalLine } = require("../models/Journal");
 const { Transaction } = require("../models/Transaction");
 const { Ledger } = require("../models/Ledger");
+const { InventoryMovement } = require("../models/InventoryMovement");
 const { ApiError } = require("../utils/apiError");
 
 const MAX_LIMIT = 100;
@@ -65,4 +66,22 @@ async function getDayBook(companyId, fiscalYearId, query) {
   return { items, meta: { page: value, limit, total, totalPages: Math.ceil(total / limit), hasNextPage: value * limit < total } };
 }
 
-module.exports = { getGeneralLedger, getTrialBalance, getJournalRegister, getDayBook };
+async function getStockSummary(companyId, fiscalYearId, query) {
+  const filters = { companyId, fiscalYearId };
+  const range = dateRange(query);
+  if (range) filters.transactionDate = range;
+  if (query.warehouseId) filters.warehouseId = query.warehouseId;
+  const rows = await InventoryMovement.aggregate([
+    { $match: filters },
+    { $group: { _id: { productId: "$productId", warehouseId: "$warehouseId" }, quantityIn: { $sum: { $cond: [{ $eq: ["$direction", "IN"] }, "$quantity", 0] } }, quantityOut: { $sum: { $cond: [{ $eq: ["$direction", "OUT"] }, "$quantity", 0] } }, stockValue: { $sum: { $cond: [{ $eq: ["$direction", "IN"] }, { $multiply: ["$quantity", "$unitCost"] }, { $multiply: [{ $multiply: ["$quantity", "$unitCost"] }, -1] }] } } } },
+    { $lookup: { from: "products", localField: "_id.productId", foreignField: "_id", as: "product" } },
+    { $unwind: "$product" },
+    { $lookup: { from: "warehouses", localField: "_id.warehouseId", foreignField: "_id", as: "warehouse" } },
+    { $unwind: "$warehouse" },
+    { $project: { _id: 0, productId: "$_id.productId", productName: "$product.name", productSku: "$product.sku", warehouseId: "$_id.warehouseId", warehouseName: "$warehouse.name", quantityIn: 1, quantityOut: 1, quantityOnHand: { $subtract: ["$quantityIn", "$quantityOut"] }, stockValue: 1 } },
+    { $sort: { productName: 1, warehouseName: 1, productId: 1 } }
+  ]);
+  return { items: rows, totals: rows.reduce((result, row) => ({ quantityIn: result.quantityIn + Number(row.quantityIn || 0), quantityOut: result.quantityOut + Number(row.quantityOut || 0), quantityOnHand: result.quantityOnHand + Number(row.quantityOnHand || 0), stockValue: result.stockValue + Number(row.stockValue || 0) }), { quantityIn: 0, quantityOut: 0, quantityOnHand: 0, stockValue: 0 }) };
+}
+
+module.exports = { getGeneralLedger, getTrialBalance, getJournalRegister, getDayBook, getStockSummary };

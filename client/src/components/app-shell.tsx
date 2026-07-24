@@ -40,6 +40,7 @@ const navigation: NavigationGroup[] = [
   { label: "Reports", icon: BarChartIcon, items: [
     { label: "General ledger", to: "/reports/general-ledger" }, { label: "Trial balance", to: "/reports/trial-balance" },
     { label: "Journal register", to: "/reports/journal-register" }, { label: "Day book", to: "/reports/day-book" },
+    { label: "Stock summary", to: "/reports/stock-summary" },
   ] },
   { label: "Company", icon: GearIcon, items: [
     { label: "Company profile", to: "/company/profile" }, { label: "Preferences", to: "/company/preferences" },
