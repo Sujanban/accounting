@@ -6,6 +6,7 @@ const DOMAIN_EVENTS = Object.freeze({
   VOUCHER_POSTED: "voucher.posted",
   INVENTORY_UPDATED: "inventory.updated",
   TRANSACTION_POSTED: "transaction.posted",
+  TRANSACTION_REVERSED: "transaction.reversed",
   VOUCHER_CREATED: "voucher.created",
   VOUCHER_POSTED: "voucher.posted"
 });

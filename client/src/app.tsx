@@ -9,6 +9,7 @@ import { MastersPage, PartyCreatePage, PartyEditPage, ProductEditPage } from "./
 import { DashboardPage } from "./pages/dashboard-page";
 import { PlaceholderPage } from "./pages/placeholder-page";
 import { SettingsPage } from "./pages/settings-page";
+import { TransactionEditPage, TransactionsPage } from "./features/transactions/transactions-page";
 
 export function App() {
   return (
@@ -20,10 +21,12 @@ export function App() {
         <Route element={<RequireOnboarding />}>
           <Route element={<AppShell />}>
             <Route index element={<DashboardPage />} />
-            <Route path="vouchers" element={<PlaceholderPage title="All vouchers" description="Review every voucher and its posting status." />} />
-            <Route path="vouchers/drafts" element={<PlaceholderPage title="Voucher drafts" />} />
-            <Route path="vouchers/:voucherType" element={<PlaceholderPage title="Vouchers" />} />
-            <Route path="vouchers/:voucherType/new" element={<PlaceholderPage title="Create voucher" description="Enter a new voucher for the active company and fiscal year." />} />
+            <Route path="vouchers" element={<TransactionsPage />} />
+            <Route path="vouchers/transactions/:transactionId" element={<TransactionsPage />} />
+            <Route path="vouchers/transactions/:transactionId/edit" element={<TransactionEditPage />} />
+            <Route path="vouchers/drafts" element={<TransactionsPage drafts />} />
+            <Route path="vouchers/:voucherType" element={<TransactionsPage />} />
+            <Route path="vouchers/:voucherType/new" element={<TransactionsPage create />} />
             <Route path="masters/parties/new" element={<PartyCreatePage />} />
             <Route path="masters/parties/:partyId/edit" element={<PartyEditPage />} />
             <Route path="masters/products/:productId/edit" element={<ProductEditPage />} />
