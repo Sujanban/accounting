@@ -83,6 +83,14 @@ export type StockLedger = {
 };
 export type ProfitLoss = { income: Array<{ ledgerId: string; ledgerName: string; amount: number }>; expenses: Array<{ ledgerId: string; ledgerName: string; amount: number }>; totals: { income: number; expenses: number; netProfit: number } };
 export type BalanceSheet = { assets: Array<{ ledgerId: string; ledgerName: string; amount: number }>; liabilities: Array<{ ledgerId: string; ledgerName: string; amount: number }>; equity: Array<{ ledgerId: string; ledgerName: string; amount: number }>; totals: { assets: number; liabilities: number; equity: number; currentEarnings: number; totalEquity: number; liabilitiesAndEquity: number }; isBalanced: boolean };
+export type ContactStatement = {
+  contact: { id: string; contactCode: string; name: string; role: "CUSTOMER" | "SUPPLIER" };
+  ledger: { id: string; name: string };
+  openingBalance: number;
+  closingBalance: number;
+  entries: Array<{ journalId: string; transactionDate: string; voucherNumber: string | null; narration: string | null; debit: number; credit: number; runningBalance: number }>;
+  meta: ReportPageMeta;
+};
 
 const query = (values: ReportFilters) => {
   const params = new URLSearchParams();
@@ -109,6 +117,8 @@ export const reportKeys = {
     [...reportKeys.all, "profit-loss", filters] as const,
   balanceSheet: (filters: ReportFilters) =>
     [...reportKeys.all, "balance-sheet", filters] as const,
+  contactStatement: (role: "customer" | "supplier", contactId: string, filters: ReportFilters) =>
+    [...reportKeys.all, `${role}-statement`, contactId, filters] as const,
 };
 
 export const reportsApi = {
@@ -139,4 +149,6 @@ export const reportsApi = {
     apiClient<ProfitLoss>(`/reports/profit-loss${query(filters)}`, { signal }),
   balanceSheet: (filters: ReportFilters, signal?: AbortSignal) =>
     apiClient<BalanceSheet>(`/reports/balance-sheet${query(filters)}`, { signal }),
+  contactStatement: (role: "customer" | "supplier", contactId: string, filters: ReportFilters, signal?: AbortSignal) =>
+    apiClient<ContactStatement>(`/reports/${role}-statement${query({ ...filters, contactId } as ReportFilters & { contactId: string })}`, { signal }),
 };

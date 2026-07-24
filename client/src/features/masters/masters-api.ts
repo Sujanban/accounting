@@ -107,6 +107,7 @@ export type ContactInput = {
   paymentTermId?: string | null;
   notes?: string | null;
 };
+export type ContactLedgerMappingInput = { role: "CUSTOMER" | "SUPPLIER"; ledgerId: string };
 export type UnitInput = Pick<Unit, "name" | "symbol" | "decimalAllowed">;
 export type CategoryInput = Pick<
   ProductCategory,
@@ -191,6 +192,11 @@ export const mastersApi = {
     apiClient<Contact>(`/contacts/${id}`, { method: "DELETE" }),
   restoreContact: (id: string) =>
     apiClient<Contact>(`/contacts/${id}/restore`, { method: "POST" }),
+  createContactLedgerMapping: (id: string, input: ContactLedgerMappingInput) =>
+    apiClient<{ id: string; contactId: string; fiscalYearId: string; role: "CUSTOMER" | "SUPPLIER"; ledgerId: string }>(`/contacts/${id}/ledger-mappings`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
   units: (isActive = "true", signal?: AbortSignal) =>
     apiClient<Unit[]>(`/units${query({ isActive })}`, { signal }),
   createUnit: (input: UnitInput) =>

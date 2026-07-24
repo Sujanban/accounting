@@ -45,4 +45,12 @@ module.exports = {
     "getBalanceSheet",
     "Balance sheet fetched successfully.",
   ),
+  getCustomerStatement: handler(
+    "getCustomerStatement",
+    "Customer statement fetched successfully.",
+  ),
+  getSupplierStatement: handler(
+    "getSupplierStatement",
+    "Supplier statement fetched successfully.",
+  ),
 };

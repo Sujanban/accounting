@@ -4,6 +4,7 @@ const ALLOWED_FILTERS = new Set(["from", "to", "page", "limit"]);
 const GENERAL_LEDGER_FILTERS = new Set([...ALLOWED_FILTERS, "ledgerId"]);
 const STOCK_SUMMARY_FILTERS = new Set([...ALLOWED_FILTERS, "warehouseId"]);
 const STOCK_LEDGER_FILTERS = new Set([...ALLOWED_FILTERS, "productId", "warehouseId"]);
+const CONTACT_STATEMENT_FILTERS = new Set([...ALLOWED_FILTERS, "contactId"]);
 
 const isDate = (value) =>
   typeof value === "string" &&
@@ -85,9 +86,18 @@ function validateStockLedgerQuery(query) {
   return errors;
 }
 
+function validateContactStatementQuery(query) {
+  const errors = validateReportQuery(query, CONTACT_STATEMENT_FILTERS);
+  if (!mongoose.isObjectIdOrHexString(query.contactId)) {
+    errors.push({ field: "contactId", message: "Contact must be a valid identifier." });
+  }
+  return errors;
+}
+
 module.exports = {
   validateGeneralLedgerQuery,
   validateListReportQuery,
   validateStockSummaryQuery,
   validateStockLedgerQuery,
+  validateContactStatementQuery,
 };

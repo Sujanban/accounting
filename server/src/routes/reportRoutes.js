@@ -12,6 +12,7 @@ const {
   validateListReportQuery,
   validateStockSummaryQuery,
   validateStockLedgerQuery,
+  validateContactStatementQuery,
 } = require("../validators/reportValidators");
 const controller = require("../controllers/reportController");
 const reportRouter = express.Router();
@@ -61,5 +62,15 @@ reportRouter.get(
   "/balance-sheet",
   validateQuery(validateListReportQuery),
   controller.getBalanceSheet,
+);
+reportRouter.get(
+  "/customer-statement",
+  validateQuery(validateContactStatementQuery),
+  controller.getCustomerStatement,
+);
+reportRouter.get(
+  "/supplier-statement",
+  validateQuery(validateContactStatementQuery),
+  controller.getSupplierStatement,
 );
 module.exports = { reportRouter };

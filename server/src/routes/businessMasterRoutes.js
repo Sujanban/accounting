@@ -5,7 +5,8 @@ const { requireAuth, resolveActiveCompany, resolveActiveFiscalYear, requireRoles
 const { requireCompletedOnboarding } = require("../middleware/onboarding");
 const { validate } = require("../middleware/validate");
 const { getContacts, getContact, postContact, patchContact, archiveContactRecord, restoreContactRecord } = require("../controllers/contactController");
-const { validateCreateContact, validateUpdateContact, validateUnit, validateCategory, validateTaxRate, validatePaymentTerm, validateContactGroup, validateWarehouse, validatePriceList, validateProduct, validateCatalogUpdate } = require("../validators/businessMasterValidators");
+const { getContactLedgerMappings, postContactLedgerMapping } = require("../controllers/contactLedgerController");
+const { validateCreateContact, validateUpdateContact, validateContactLedgerMapping, validateUnit, validateCategory, validateTaxRate, validatePaymentTerm, validateContactGroup, validateWarehouse, validatePriceList, validateProduct, validateCatalogUpdate } = require("../validators/businessMasterValidators");
 const catalogController = require("../controllers/catalogController");
 const { postAttachmentUpload, getAttachments, deleteAttachment, getAttachmentDownload } = require("../controllers/attachmentController");
 
@@ -18,6 +19,8 @@ businessMasterRouter.use(requireAuth, resolveActiveCompany, resolveActiveFiscalY
 businessMasterRouter.get("/contacts", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES", "STAFF"), getContacts);
 businessMasterRouter.get("/contacts/:id", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES", "STAFF"), getContact);
 businessMasterRouter.post("/contacts", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES"), validate(validateCreateContact), postContact);
+businessMasterRouter.get("/contacts/:id/ledger-mappings", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "STAFF"), getContactLedgerMappings);
+businessMasterRouter.post("/contacts/:id/ledger-mappings", requireRoles("OWNER", "ADMIN", "ACCOUNTANT"), validate(validateContactLedgerMapping), postContactLedgerMapping);
 businessMasterRouter.patch("/contacts/:id", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES"), validate(validateUpdateContact), patchContact);
 businessMasterRouter.delete("/contacts/:id", requireRoles("OWNER", "ADMIN", "ACCOUNTANT"), archiveContactRecord);
 businessMasterRouter.post("/contacts/:id/restore", requireRoles("OWNER", "ADMIN", "ACCOUNTANT"), restoreContactRecord);

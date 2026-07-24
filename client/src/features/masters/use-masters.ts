@@ -9,6 +9,7 @@ import {
   type CategoryInput,
   type ContactGroupInput,
   type ContactInput,
+  type ContactLedgerMappingInput,
   type PaymentTermInput,
   type PriceListInput,
   type ProductInput,
@@ -83,6 +84,14 @@ export const useArchiveContact = () =>
   useMasterMutation((id: string) => mastersApi.archiveContact(id));
 export const useRestoreContact = () =>
   useMasterMutation((id: string) => mastersApi.restoreContact(id));
+export const useCreateContactLedgerMapping = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: ContactLedgerMappingInput }) => mastersApi.createContactLedgerMapping(id, input),
+    retry: false,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["reports"] }),
+  });
+};
 export const useCreateUnit = () =>
   useMasterMutation((input: UnitInput) => mastersApi.createUnit(input));
 export const useCreateCategory = () =>

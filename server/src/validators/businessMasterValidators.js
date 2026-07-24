@@ -21,6 +21,14 @@ const contactFields = new Set([
   "contactCode", "name", "displayName", "roles", "contactGroupId", "panNumber", "vatNumber", "phone", "mobile", "email", "website", "billingAddress", "shippingAddress", "creditLimit", "paymentTermId", "notes"
 ]);
 
+function validateContactLedgerMapping(body) {
+  const errors = [];
+  rejectUnknown(body, new Set(["role", "ledgerId"]), errors);
+  if (!body.role || !["CUSTOMER", "SUPPLIER"].includes(body.role)) errors.push({ field: "role", message: "Role must be CUSTOMER or SUPPLIER." });
+  if (!mongoose.isObjectIdOrHexString(body.ledgerId)) errors.push({ field: "ledgerId", message: "Ledger must be a valid identifier." });
+  return errors;
+}
+
 function validateContact(body, { partial = false } = {}) {
   const errors = [];
   rejectUnknown(body, contactFields, errors);
@@ -105,6 +113,7 @@ function validateCatalog(resource, body, { partial = false } = {}) {
 module.exports = {
   validateCreateContact: (body) => validateContact(body),
   validateUpdateContact: (body) => validateContact(body, { partial: true }),
+  validateContactLedgerMapping,
   validateUnit: (body) => validateCatalog("units", body),
   validateCategory: (body) => validateCatalog("categories", body),
   validateTaxRate: (body) => validateCatalog("tax-rates", body),

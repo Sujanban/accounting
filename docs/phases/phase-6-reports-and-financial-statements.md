@@ -25,10 +25,10 @@ Implemented in the initial delivery:
 - Balance Sheet calculated as of the selected date from ledger opening balances, journals, account categories, and current earnings.
 - Dashboard widgets for current fiscal-year net profit/loss, total assets, and Trial Balance status.
 - CSV export for Trial Balance, Profit & Loss, and Balance Sheet, with safe RFC 4180-style escaping for spreadsheet-ready values.
+- Fiscal-year and role-specific contact-to-ledger mappings for customer and supplier reporting, preventing a current-year mapping from rewriting historical statements.
+- Read-only Customer Statement and Supplier Statement APIs and report screens with company/fiscal-year isolation, allowlisted date/pagination filters, running balances, printing, and CSV export.
 
-Remaining: financial statements, customer/supplier and inventory reporting, exports, dashboard reporting, templates, and scheduled reports.
-
-Known design dependency: customer and supplier statements require a fiscal-year-aware contact-to-ledger mapping. The current contact model exposes a single ledger reference but does not assign or version that relationship, so those statements remain blocked until that accounting design is completed.
+Remaining: cash-flow, sales/purchase reporting, PDF/Excel export, dashboard reporting, templates, scheduled reports, and their remaining frontend delivery.
 
 Prerequisites
 

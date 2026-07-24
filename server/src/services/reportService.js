@@ -4,6 +4,8 @@ const { Ledger } = require("../models/Ledger");
 const { InventoryMovement } = require("../models/InventoryMovement");
 const { Product } = require("../models/Product");
 const { AccountGroup } = require("../models/AccountGroup");
+const { Contact } = require("../models/Contact");
+const { ContactLedger } = require("../models/ContactLedger");
 const { ApiError } = require("../utils/apiError");
 
 const MAX_LIMIT = 100;
@@ -175,4 +177,64 @@ async function getBalanceSheet(companyId, fiscalYearId, query) {
   return { assets: categories.Assets, liabilities: categories.Liabilities, equity: categories.Equity, totals, isBalanced: Math.abs(totals.assets - totals.liabilitiesAndEquity) < 0.000001 };
 }
 
-module.exports = { getGeneralLedger, getTrialBalance, getJournalRegister, getDayBook, getStockSummary, getStockLedger, getProfitLoss, getBalanceSheet };
+async function getContactStatement(companyId, fiscalYearId, query, role) {
+  const contact = await Contact.findOne({ _id: query.contactId, companyId, isActive: true })
+    .select("contactCode name displayName roles")
+    .lean();
+  if (!contact) throw new ApiError(404, "Contact was not found.");
+  if (!contact.roles.includes(role)) throw new ApiError(422, `The contact is not a ${role.toLowerCase()}.`);
+
+  const mapping = await ContactLedger.findOne({ companyId, fiscalYearId, contactId: contact._id, role }).lean();
+  if (!mapping) throw new ApiError(422, "No fiscal-year ledger mapping exists for this contact statement.");
+  const ledger = await Ledger.findOne({ _id: mapping.ledgerId, companyId, fiscalYearId, isActive: true })
+    .select("name openingBalance openingBalanceType")
+    .lean();
+  if (!ledger) throw new ApiError(422, "The mapped statement ledger is unavailable.");
+
+  const range = dateRange(query);
+  const { value, limit } = page(query);
+  const beforeRange = range?.$gte ? { "journal.transactionDate": { $lt: range.$gte } } : null;
+  const basePipeline = [
+    { $match: { companyId, ledgerId: ledger._id } },
+    { $lookup: { from: "journals", localField: "journalId", foreignField: "_id", as: "journal" } },
+    { $unwind: "$journal" },
+    { $match: { "journal.companyId": companyId, "journal.fiscalYearId": fiscalYearId } }
+  ];
+  const [openingRows, lines] = await Promise.all([
+    beforeRange ? JournalLine.aggregate([...basePipeline, { $match: beforeRange }, { $group: { _id: null, debit: { $sum: "$debit" }, credit: { $sum: "$credit" } } }]) : [],
+    JournalLine.aggregate([...basePipeline, ...(range ? [{ $match: { "journal.transactionDate": range } }] : []), { $sort: { "journal.transactionDate": 1, _id: 1 } }])
+  ]);
+  const openingBalance = Number(ledger.openingBalance || 0) + Number(openingRows[0]?.debit || 0) - Number(openingRows[0]?.credit || 0);
+  let runningBalance = openingBalance;
+  const entries = lines.map((line) => {
+    runningBalance += Number(line.debit || 0) - Number(line.credit || 0);
+    return {
+      journalId: line.journalId,
+      transactionDate: line.journal.transactionDate,
+      voucherNumber: line.journal.voucherNumber,
+      narration: line.narration || line.journal.narration,
+      debit: Number(line.debit || 0),
+      credit: Number(line.credit || 0),
+      runningBalance
+    };
+  });
+  const total = entries.length;
+  return {
+    contact: { id: contact._id, contactCode: contact.contactCode, name: contact.displayName || contact.name, role },
+    ledger: { id: ledger._id, name: ledger.name },
+    openingBalance,
+    entries: entries.slice((value - 1) * limit, value * limit),
+    closingBalance: runningBalance,
+    meta: { page: value, limit, total, totalPages: Math.ceil(total / limit), hasNextPage: value * limit < total }
+  };
+}
+
+function getCustomerStatement(companyId, fiscalYearId, query) {
+  return getContactStatement(companyId, fiscalYearId, query, "CUSTOMER");
+}
+
+function getSupplierStatement(companyId, fiscalYearId, query) {
+  return getContactStatement(companyId, fiscalYearId, query, "SUPPLIER");
+}
+
+module.exports = { getGeneralLedger, getTrialBalance, getJournalRegister, getDayBook, getStockSummary, getStockLedger, getProfitLoss, getBalanceSheet, getCustomerStatement, getSupplierStatement };

@@ -5,6 +5,7 @@ const {
   validateListReportQuery,
   validateStockSummaryQuery,
   validateStockLedgerQuery,
+  validateContactStatementQuery,
 } = require("../src/validators/reportValidators");
 
 test("general ledger filters require a valid ledger and a chronological date range", () => {
@@ -19,6 +20,15 @@ test("general ledger filters require a valid ledger and a chronological date ran
       message: "The end date must be on or after the start date.",
     },
     { field: "ledgerId", message: "Ledger must be a valid identifier." },
+  ]);
+});
+
+test("contact statements require a contact and allow only documented report filters", () => {
+  assert.deepEqual(validateContactStatementQuery({}), [
+    { field: "contactId", message: "Contact must be a valid identifier." },
+  ]);
+  assert.deepEqual(validateContactStatementQuery({ contactId: "507f1f77bcf86cd799439011", role: "CUSTOMER" }), [
+    { field: "role", message: "This filter is not supported." },
   ]);
 });
 

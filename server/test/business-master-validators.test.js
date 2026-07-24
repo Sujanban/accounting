@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { validateCreateContact, validateCatalogUpdate } = require("../src/validators/businessMasterValidators");
+const { validateCreateContact, validateCatalogUpdate, validateContactLedgerMapping } = require("../src/validators/businessMasterValidators");
 
 test("validateCreateContact rejects a malformed contact group ID", () => {
   const errors = validateCreateContact({
@@ -25,6 +25,14 @@ test("validateCreateContact accepts a valid contact group ID", () => {
   });
 
   assert.deepEqual(errors, []);
+});
+
+test("contact ledger mappings accept only a statement role and ledger identifier", () => {
+  assert.deepEqual(validateContactLedgerMapping({ role: "VENDOR", ledgerId: "invalid" }), [
+    { field: "role", message: "Role must be CUSTOMER or SUPPLIER." },
+    { field: "ledgerId", message: "Ledger must be a valid identifier." }
+  ]);
+  assert.deepEqual(validateContactLedgerMapping({ role: "CUSTOMER", ledgerId: "507f1f77bcf86cd799439011" }), []);
 });
 
 test("catalog updates reject server-controlled and unknown fields", () => {

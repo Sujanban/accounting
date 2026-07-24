@@ -44,6 +44,8 @@ const navigation: NavigationGroup[] = [
     { label: "Stock ledger", to: "/reports/stock-ledger" },
     { label: "Profit & loss", to: "/reports/profit-loss" },
     { label: "Balance sheet", to: "/reports/balance-sheet" },
+    { label: "Customer statement", to: "/reports/customer-statement" },
+    { label: "Supplier statement", to: "/reports/supplier-statement" },
   ] },
   { label: "Company", icon: GearIcon, items: [
     { label: "Company profile", to: "/company/profile" }, { label: "Preferences", to: "/company/preferences" },

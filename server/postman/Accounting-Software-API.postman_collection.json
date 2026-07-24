@@ -365,6 +365,22 @@
           }
         },
         {
+          "name": "Create Contact Ledger Mapping",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"role\": \"CUSTOMER\", \"ledgerId\": \"{{ledgerId}}\" }" },
+            "url": "{{baseUrl}}/api/contacts/{{contactId}}/ledger-mappings"
+          }
+        },
+        {
+          "name": "List Contact Ledger Mappings",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/contacts/{{contactId}}/ledger-mappings"
+          }
+        },
+        {
           "name": "Update Contact",
           "request": {
             "method": "PATCH",
@@ -691,6 +707,20 @@
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/api/reports/balance-sheet?to=2025-07-31"
+          }
+        },
+        {
+          "name": "Customer Statement",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/reports/customer-statement?contactId={{customerContactId}}&from=2025-07-17&to=2025-07-31&page=1&limit=20"
+          }
+        },
+        {
+          "name": "Supplier Statement",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/reports/supplier-statement?contactId={{supplierContactId}}&from=2025-07-17&to=2025-07-31&page=1&limit=20"
           }
         }
       ]

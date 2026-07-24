@@ -7,7 +7,7 @@ import { LoadingScreen } from "../../components/loading-screen";
 import { ApiClientError } from "../../lib/query-client";
 import { downloadCsv } from "../../lib/csv";
 import { useLedgers } from "../accounting/use-accounting";
-import { useProducts, useWarehouses } from "../masters/use-masters";
+import { useContacts, useCreateContactLedgerMapping, useProducts, useWarehouses } from "../masters/use-masters";
 import type { ReportFilters } from "./reports-api";
 import {
   useDayBook,
@@ -17,6 +17,7 @@ import {
   useStockLedger,
   useProfitLoss,
   useBalanceSheet,
+  useContactStatement,
   useTrialBalance,
 } from "./use-reports";
 
@@ -62,6 +63,14 @@ const reportMetadata: Record<string, { title: string; description: string }> = {
   "balance-sheet": {
     title: "Balance sheet",
     description: "Review assets, liabilities, equity, and current earnings as of the selected date.",
+  },
+  "customer-statement": {
+    title: "Customer statement",
+    description: "Review receivable activity and the running balance for one customer.",
+  },
+  "supplier-statement": {
+    title: "Supplier statement",
+    description: "Review payable activity and the running balance for one supplier.",
   },
 };
 
@@ -449,6 +458,19 @@ function BalanceSheetReport() {
   return <><ReportFiltersForm filters={filters} onApply={setFilters} showFrom={false} />{report.isLoading ? <LoadingScreen fullScreen={false} label="Loading balance sheet" description="Calculating account balances…" /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle="Balance sheet"><Button className="no-print report-export" variant="outline" onClick={() => downloadCsv("balance-sheet.csv", ["Category", "Ledger", "Amount"], [...report.data.assets.map((entry) => ["Asset", entry.ledgerName, entry.amount]), ...report.data.liabilities.map((entry) => ["Liability", entry.ledgerName, entry.amount]), ...report.data.equity.map((entry) => ["Equity", entry.ledgerName, entry.amount]), ["Equity", "Current earnings", report.data.totals.currentEarnings], ["", "Total assets", report.data.totals.assets], ["", "Total liabilities and equity", report.data.totals.liabilitiesAndEquity]])}>Export CSV</Button><div className={`report-balance ${report.data.isBalanced ? "report-balance--balanced" : "report-balance--unbalanced"}`}>{report.data.isBalanced ? "Balanced" : "Out of balance"}</div><div className="report-summary"><span>Assets<strong>{money.format(report.data.totals.assets)}</strong></span><span>Liabilities & equity<strong>{money.format(report.data.totals.liabilitiesAndEquity)}</strong></span><span>Current earnings<strong>{money.format(report.data.totals.currentEarnings)}</strong></span></div>{renderSection("Assets", report.data.assets, report.data.totals.assets)}{renderSection("Liabilities", report.data.liabilities, report.data.totals.liabilities)}{renderSection("Equity", report.data.equity, report.data.totals.equity)}<table className="accounting-table"><tbody><tr><th>Current earnings</th><td>{money.format(report.data.totals.currentEarnings)}</td></tr><tr><th>Total equity</th><td>{money.format(report.data.totals.totalEquity)}</td></tr><tr><th>Total liabilities & equity</th><td>{money.format(report.data.totals.liabilitiesAndEquity)}</td></tr></tbody></table></ReportFrame> : null}</>;
 }
 
+function ContactStatementReport({ role }: { role: "customer" | "supplier" }) {
+  const [filters, setFilters] = useState<ReportFilters>({ page: 1, limit: 20 });
+  const [contactId, setContactId] = useState("");
+  const [ledgerId, setLedgerId] = useState("");
+  const contacts = useContacts({ role: role.toUpperCase(), page: 1, isActive: "true" });
+  const ledgers = useLedgers({ isActive: true });
+  const createMapping = useCreateContactLedgerMapping();
+  const report = useContactStatement(role, contactId, filters);
+  const roleLabel = role === "customer" ? "customer" : "supplier";
+  const mappingMissing = report.isError && errorMessage(report.error) === "No fiscal-year ledger mapping exists for this contact statement.";
+  return <><ReportFiltersForm filters={filters} onApply={setFilters}><label>{roleLabel[0].toUpperCase() + roleLabel.slice(1)}<AppSelect value={contactId} onChange={(event) => { setContactId(event.target.value); setLedgerId(""); }} required><option value="">Select a {roleLabel}</option>{contacts.data?.items.map((contact) => <option key={contact.id} value={contact.id}>{contact.displayName || contact.name} ({contact.contactCode})</option>)}</AppSelect></label></ReportFiltersForm>{contacts.isLoading ? <LoadingScreen fullScreen={false} label={`Loading ${roleLabel}s`} description={`Preparing your ${roleLabel} selector…`} /> : !contactId ? <Text color="gray">Select a {roleLabel} and apply filters to view the statement.</Text> : report.isLoading ? <LoadingScreen fullScreen={false} label={`Loading ${roleLabel} statement`} description="Calculating entries and balances…" /> : mappingMissing ? <Card size="3" className="report-filters"><Heading size="4">Set up the {roleLabel} ledger</Heading><Text as="p" color="gray" mt="2">This {roleLabel} needs an active-fiscal-year ledger before its statement can be generated.</Text><form className="accounting-filters" onSubmit={(event) => { event.preventDefault(); createMapping.mutate({ id: contactId, input: { role: role.toUpperCase() as "CUSTOMER" | "SUPPLIER", ledgerId } }); }}><label>Ledger<AppSelect value={ledgerId} onChange={(event) => setLedgerId(event.target.value)} required><option value="">Select a ledger</option>{ledgers.data?.map((ledger) => <option key={ledger.id} value={ledger.id}>{ledger.name}</option>)}</AppSelect></label><div className="report-filters__actions"><Button type="submit" disabled={!ledgerId || createMapping.isPending}> {createMapping.isPending ? "Saving…" : "Save ledger mapping"}</Button></div></form>{createMapping.isError ? <Text as="p" color="red" mt="2" role="alert">{errorMessage(createMapping.error)}</Text> : null}</Card> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle={`${report.data.contact.name} — ${roleLabel} statement`}><Button className="no-print report-export" variant="outline" onClick={() => downloadCsv(`${roleLabel}-statement.csv`, ["Date", "Voucher", "Narration", "Debit", "Credit", "Balance"], [...report.data.entries.map((entry) => [date(entry.transactionDate), entry.voucherNumber || "", entry.narration || "", entry.debit, entry.credit, entry.runningBalance]), ["", "", "Closing balance", "", "", report.data.closingBalance]])}>Export CSV</Button><div className="report-summary"><span>Ledger<strong>{report.data.ledger.name}</strong></span><span>Opening balance<strong>{money.format(report.data.openingBalance)}</strong></span><span>Closing balance<strong>{money.format(report.data.closingBalance)}</strong></span></div><table className="accounting-table"><thead><tr><th>Date</th><th>Voucher</th><th>Narration</th><th>Debit</th><th>Credit</th><th>Balance</th></tr></thead><tbody>{report.data.entries.map((entry) => <tr key={`${entry.journalId}-${entry.transactionDate}`}><td>{date(entry.transactionDate)}</td><td>{entry.voucherNumber || "—"}</td><td>{entry.narration || "—"}</td><td>{money.format(entry.debit)}</td><td>{money.format(entry.credit)}</td><td>{money.format(entry.runningBalance)}</td></tr>)}</tbody></table>{report.data.entries.length === 0 ? <Text as="p" color="gray" className="accounting-empty">No journal entries match these filters.</Text> : null}</ReportFrame> : null}</>;
+}
+
 export function ReportsPage() {
   const { report = "" } = useParams();
   const metadata = reportMetadata[report];
@@ -480,6 +502,10 @@ export function ReportsPage() {
         <ProfitLossReport />
       ) : report === "balance-sheet" ? (
         <BalanceSheetReport />
+      ) : report === "customer-statement" ? (
+        <ContactStatementReport role="customer" />
+      ) : report === "supplier-statement" ? (
+        <ContactStatementReport role="supplier" />
       ) : (
         <DayBookReport />
       )}

@@ -44,3 +44,9 @@ export const useBalanceSheet = (filters: ReportFilters) =>
     queryKey: reportKeys.balanceSheet(filters),
     queryFn: ({ signal }) => reportsApi.balanceSheet(filters, signal),
   });
+export const useContactStatement = (role: "customer" | "supplier", contactId: string, filters: ReportFilters) =>
+  useQuery({
+    queryKey: reportKeys.contactStatement(role, contactId, filters),
+    queryFn: ({ signal }) => reportsApi.contactStatement(role, contactId, filters, signal),
+    enabled: Boolean(contactId),
+  });
