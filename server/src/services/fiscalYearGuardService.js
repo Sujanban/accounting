@@ -30,13 +30,17 @@ async function assertFiscalYearWritable(companyId, fiscalYearId, options = {}) {
   }
 
   if (options.transactionDate) {
+    const transactionDate = new Date(options.transactionDate);
+    if (Number.isNaN(transactionDate.getTime()) || (fiscalYear.startDateAD && transactionDate < fiscalYear.startDateAD) || (fiscalYear.endDateAD && transactionDate > fiscalYear.endDateAD)) {
+      throw new ApiError(422, "The transaction date must fall within the active fiscal year.", ERROR_CODES.VALIDATION_ERROR);
+    }
     const settings = await Setting.findOne({ companyId }).lean();
 
     if (
       settings &&
       settings.fiscalLock &&
       settings.fiscalLock.lockBeforeDate &&
-      new Date(options.transactionDate) < new Date(settings.fiscalLock.lockBeforeDate)
+      transactionDate < new Date(settings.fiscalLock.lockBeforeDate)
     ) {
       throw new ApiError(
         403,

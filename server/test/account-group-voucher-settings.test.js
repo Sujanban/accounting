@@ -175,3 +175,13 @@ test("assertFiscalYearWritable rejects journal dates before fiscal lock date", a
     restore();
   }
 });
+
+test("assertFiscalYearWritable rejects a transaction date outside the fiscal year", async () => {
+  const { module: guard, restore } = loadWithMocks("../../src/services/fiscalYearGuardService", {
+    "../models/FiscalYear": { FiscalYear: { findOne: () => ({ lean: async () => ({ _id: "fy-1", isActive: true, isLocked: false, startDateAD: new Date("2026-07-16"), endDateAD: new Date("2027-07-15") }) }) } },
+    "../models/Setting": { Setting: { findOne: () => ({ lean: async () => null }) } }
+  });
+  try {
+    await assert.rejects(() => guard.assertFiscalYearWritable("company-1", "fy-1", { transactionDate: "2026-07-15" }), /must fall within the active fiscal year/);
+  } finally { restore(); }
+});

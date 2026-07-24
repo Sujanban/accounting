@@ -49,6 +49,7 @@ const transactionSchema = new mongoose.Schema(
 applySoftDeleteFields(transactionSchema);
 applyAuditFields(transactionSchema);
 transactionSchema.index({ companyId: 1, transactionDate: -1, _id: -1 });
+transactionSchema.index({ companyId: 1, fiscalYearId: 1, status: 1, transactionDate: -1, _id: -1 });
 transactionSchema.index({ companyId: 1, fiscalYearId: 1, voucherNumber: 1 }, { unique: true, partialFilterExpression: { voucherNumber: { $type: "string" } } });
 transactionSchema.index({ companyId: 1, status: 1, transactionType: 1 });
 

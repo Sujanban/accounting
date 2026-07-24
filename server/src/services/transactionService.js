@@ -14,6 +14,22 @@ const { DOMAIN_EVENTS } = require("../shared/constants/events");
 const { resolveDefaultBranch } = require("./branchService");
 
 const MAX_LIMIT = 100;
+const TRANSACTION_STATUSES = new Set(["DRAFT", "POSTED", "CANCELLED", "REVERSED"]);
+const TRANSACTION_TYPES = new Set(["JOURNAL", "RECEIPT", "PAYMENT", "CONTRA", "SALE", "PURCHASE", "EXPENSE", "OPENING_BALANCE", "INVENTORY_ADJUSTMENT", "STOCK_TRANSFER", "SALES_RETURN", "PURCHASE_RETURN", "DEBIT_NOTE", "CREDIT_NOTE"]);
+const ROLE_TRANSACTION_TYPES = Object.freeze({
+  SALES: new Set(["SALE", "RECEIPT", "SALES_RETURN"]),
+  INVENTORY_MANAGER: new Set(["PURCHASE", "PURCHASE_RETURN", "INVENTORY_ADJUSTMENT", "STOCK_TRANSFER"])
+});
+
+function assertTransactionTypeAccess(role, transactionType) {
+  const allowedTypes = ROLE_TRANSACTION_TYPES[role];
+  if (allowedTypes && !allowedTypes.has(transactionType)) throw new ApiError(403, "You do not have permission to access this transaction type.");
+}
+
+function transactionTypeFilterForRole(role) {
+  const allowedTypes = ROLE_TRANSACTION_TYPES[role];
+  return allowedTypes ? { $in: [...allowedTypes] } : null;
+}
 
 function totals(entries) {
   return entries.reduce((result, entry) => ({ debit: result.debit + Number(entry.debit || 0), credit: result.credit + Number(entry.credit || 0) }), { debit: 0, credit: 0 });
@@ -67,19 +83,23 @@ function mapTransaction(transaction) {
 }
 
 async function createDraft(companyId, fiscalYearId, payload) {
+  const { actorUserId, actorRole, ...input } = payload;
+  assertTransactionTypeAccess(actorRole, input.transactionType);
   await assertFiscalYearWritable(companyId, fiscalYearId, { transactionDate: payload.transactionDate });
   const branch = await resolveDefaultBranch(companyId);
-  const draft = await Transaction.create({ ...payload, companyId, fiscalYearId, branchId: payload.branchId || branch._id, status: "DRAFT", voucherNumber: null, createdBy: payload.actorUserId, updatedBy: payload.actorUserId });
+  const draft = await Transaction.create({ ...input, companyId, fiscalYearId, branchId: branch._id, status: "DRAFT", voucherNumber: null, createdBy: actorUserId, updatedBy: actorUserId });
   return mapTransaction(draft);
 }
 
 async function updateDraft(companyId, fiscalYearId, transactionId, payload) {
+  const { actorUserId, actorRole, ...input } = payload;
   const draft = await Transaction.findOne({ _id: transactionId, companyId, fiscalYearId });
   if (!draft) throw new ApiError(404, "Transaction was not found.");
+  assertTransactionTypeAccess(actorRole, draft.transactionType);
   if (draft.status !== "DRAFT") throw new ApiError(409, "Only draft transactions can be edited.");
-  await assertFiscalYearWritable(companyId, fiscalYearId, { transactionDate: payload.transactionDate || draft.transactionDate });
-  for (const field of ["transactionDate", "referenceNo", "narration", "items", "accountingEntries", "inventoryEntries"]) if (payload[field] !== undefined) draft[field] = payload[field];
-  draft.updatedBy = payload.actorUserId;
+  await assertFiscalYearWritable(companyId, fiscalYearId, { transactionDate: input.transactionDate || draft.transactionDate });
+  for (const field of ["transactionDate", "referenceNo", "narration", "items", "accountingEntries", "inventoryEntries"]) if (input[field] !== undefined) draft[field] = input[field];
+  draft.updatedBy = actorUserId;
   await draft.save();
   return mapTransaction(draft);
 }
@@ -128,15 +148,26 @@ async function reverseTransaction(companyId, fiscalYearId, transactionId, actorU
   return mapTransaction(posted);
 }
 
-async function getTransaction(companyId, transactionId) {
+async function getTransaction(companyId, transactionId, actorRole) {
   const transaction = await Transaction.findOne({ _id: transactionId, companyId }).lean();
   if (!transaction) throw new ApiError(404, "Transaction was not found.");
+  assertTransactionTypeAccess(actorRole, transaction.transactionType);
   return mapTransaction(transaction);
 }
 
-async function listTransactions(companyId, fiscalYearId, query = {}) {
-  const page = Math.max(1, Number.parseInt(query.page, 10) || 1); const limit = Math.min(MAX_LIMIT, Math.max(1, Number.parseInt(query.limit, 10) || 20));
+async function listTransactions(companyId, fiscalYearId, query = {}, actorRole) {
+  if (query.page !== undefined && (!/^[1-9]\d*$/.test(String(query.page)) || Number(query.page) > 100000)) throw new ApiError(422, "Page must be a positive integer within range.");
+  if (query.limit !== undefined && (!/^[1-9]\d*$/.test(String(query.limit)) || Number(query.limit) > MAX_LIMIT)) throw new ApiError(422, `Limit must be a positive integer up to ${MAX_LIMIT}.`);
+  if (query.status !== undefined && !TRANSACTION_STATUSES.has(query.status)) throw new ApiError(422, "Status is invalid.");
+  if (query.transactionType !== undefined && !TRANSACTION_TYPES.has(query.transactionType)) throw new ApiError(422, "Transaction type is invalid.");
+  if (query.branchId !== undefined && (typeof query.branchId !== "string" || !mongoose.isObjectIdOrHexString(query.branchId))) throw new ApiError(422, "Branch must be a valid identifier.");
+  const page = Number(query.page || 1); const limit = Number(query.limit || 20);
   const filters = { companyId, fiscalYearId }; if (query.status) filters.status = query.status; if (query.transactionType) filters.transactionType = query.transactionType; if (query.branchId) filters.branchId = query.branchId;
+  const roleFilter = transactionTypeFilterForRole(actorRole);
+  if (roleFilter) {
+    if (query.transactionType && !roleFilter.$in.includes(query.transactionType)) throw new ApiError(403, "You do not have permission to access this transaction type.");
+    filters.transactionType = roleFilter;
+  }
   const [transactions, total] = await Promise.all([Transaction.find(filters).sort({ transactionDate: -1, _id: -1 }).skip((page - 1) * limit).limit(limit).lean(), Transaction.countDocuments(filters)]);
   return { items: transactions.map(mapTransaction), meta: { page, limit, total, totalPages: Math.ceil(total / limit), hasNextPage: page * limit < total } };
 }
