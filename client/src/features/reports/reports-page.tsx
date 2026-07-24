@@ -20,6 +20,10 @@ import {
   useCashFlow,
   useVoucherSummary,
   useProductMovementSummary,
+  useExpenseSummary,
+  useLowStock,
+  useNegativeStock,
+  useExpenseTrend,
   useContactStatement,
   useTrialBalance,
 } from "./use-reports";
@@ -75,6 +79,10 @@ const reportMetadata: Record<string, { title: string; description: string }> = {
   "purchase-summary": { title: "Purchase summary", description: "Review posted purchase vouchers and total purchases for the selected period." },
   "sales-by-product": { title: "Sales by product", description: "Review sold stock quantities and their movement value by product." },
   "purchases-by-product": { title: "Purchases by product", description: "Review purchased stock quantities and their movement value by product." },
+  "expense-summary": { title: "Expense summary", description: "Review expenses by ledger for the selected reporting period." },
+  "low-stock": { title: "Low stock", description: "Review products at or below their configured reorder level." },
+  "negative-stock": { title: "Negative stock", description: "Review products with a calculated inventory balance below zero." },
+  "expense-trend": { title: "Expense trend", description: "Review total expenses by calendar month for the selected period." },
   "customer-statement": {
     title: "Customer statement",
     description: "Review receivable activity and the running balance for one customer.",
@@ -255,6 +263,7 @@ function GeneralLedgerReport() {
               ))}
             </tbody>
           </table>
+          <ReportPagination meta={report.data.meta} onPageChange={(page) => setFilters({ ...filters, page })} />
           {report.data.entries.length === 0 ? (
             <Text as="p" color="gray" className="accounting-empty">
               No journal entries match these filters.
@@ -495,6 +504,28 @@ function ProductMovementSummaryReport({ type }: { type: "sales" | "purchases" })
   return <><ReportFiltersForm filters={filters} onApply={setFilters} />{report.isLoading ? <LoadingScreen fullScreen={false} label={`Loading ${title.toLowerCase()}`} description="Calculating immutable inventory movements…" /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle={title}><Button className="no-print report-export" variant="outline" onClick={() => downloadCsv(`${type}-by-product.csv`, ["Product", "SKU", "Transactions", "Quantity", "Movement value"], [...report.data.items.map((item) => [item.productName, item.productSku, item.transactionCount, item.quantity, item.value]), ["Total", "", report.data.totals.transactionCount, report.data.totals.quantity, report.data.totals.value]])}>Export CSV</Button><div className="report-summary"><span>Transactions<strong>{report.data.totals.transactionCount}</strong></span><span>Quantity<strong>{money.format(report.data.totals.quantity)}</strong></span><span>Movement value<strong>{money.format(report.data.totals.value)}</strong></span></div><table className="accounting-table"><thead><tr><th>Product</th><th>SKU</th><th>Transactions</th><th>Quantity</th><th>Movement value</th></tr></thead><tbody>{report.data.items.map((item) => <tr key={item.productId}><td>{item.productName}</td><td>{item.productSku}</td><td>{item.transactionCount}</td><td>{money.format(item.quantity)}</td><td>{money.format(item.value)}</td></tr>)}</tbody><tfoot><tr><th colSpan={2}>Total</th><th>{report.data.totals.transactionCount}</th><th>{money.format(report.data.totals.quantity)}</th><th>{money.format(report.data.totals.value)}</th></tr></tfoot></table>{report.data.items.length === 0 ? <Text as="p" color="gray" className="accounting-empty">No inventory movements match these filters.</Text> : null}</ReportFrame> : null}</>;
 }
 
+function ExpenseSummaryReport() {
+  const [filters, setFilters] = useState<ReportFilters>({});
+  const report = useExpenseSummary(filters);
+  return <><ReportFiltersForm filters={filters} onApply={setFilters} />{report.isLoading ? <LoadingScreen fullScreen={false} label="Loading expense summary" description="Calculating expenses by ledger…" /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle="Expense summary"><Button className="no-print report-export" variant="outline" onClick={() => downloadCsv("expense-summary.csv", ["Ledger", "Amount"], [...report.data.items.map((item) => [item.ledgerName, item.amount]), ["Total expenses", report.data.totals.expenses]])}>Export CSV</Button><div className="report-summary"><span>Total expenses<strong>{money.format(report.data.totals.expenses)}</strong></span></div><table className="accounting-table"><thead><tr><th>Expense ledger</th><th>Amount</th></tr></thead><tbody>{report.data.items.map((item) => <tr key={item.ledgerId}><td>{item.ledgerName}</td><td>{money.format(item.amount)}</td></tr>)}</tbody><tfoot><tr><th>Total expenses</th><th>{money.format(report.data.totals.expenses)}</th></tr></tfoot></table>{report.data.items.length === 0 ? <Text as="p" color="gray" className="accounting-empty">No expenses match these filters.</Text> : null}</ReportFrame> : null}</>;
+}
+
+function LowStockReport() {
+  const report = useLowStock();
+  return report.isLoading ? <LoadingScreen fullScreen={false} label="Loading low stock" description="Calculating current inventory balances…" /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle="Low stock"><Button className="no-print report-export" variant="outline" onClick={() => downloadCsv("low-stock.csv", ["Product", "SKU", "On hand", "Reorder level", "Shortage"], [...report.data.items.map((item) => [item.productName, item.productSku, item.quantityOnHand, item.reorderLevel, item.shortage]), ["Total", "", "", "", report.data.totals.shortage]])}>Export CSV</Button><div className="report-summary"><span>Products needing attention<strong>{report.data.totals.products}</strong></span><span>Total shortage<strong>{money.format(report.data.totals.shortage)}</strong></span></div><table className="accounting-table"><thead><tr><th>Product</th><th>SKU</th><th>On hand</th><th>Reorder level</th><th>Shortage</th></tr></thead><tbody>{report.data.items.map((item) => <tr key={item.productId}><td>{item.productName}</td><td>{item.productSku}</td><td>{money.format(item.quantityOnHand)}</td><td>{money.format(item.reorderLevel)}</td><td>{money.format(item.shortage)}</td></tr>)}</tbody></table>{report.data.items.length === 0 ? <Text as="p" color="gray" className="accounting-empty">All tracked products are above their reorder levels.</Text> : null}</ReportFrame> : null;
+}
+
+function NegativeStockReport() {
+  const report = useNegativeStock();
+  return report.isLoading ? <LoadingScreen fullScreen={false} label="Loading negative stock" description="Calculating current inventory balances…" /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle="Negative stock"><Button className="no-print report-export" variant="outline" onClick={() => downloadCsv("negative-stock.csv", ["Product", "SKU", "On hand", "Deficit"], [...report.data.items.map((item) => [item.productName, item.productSku, item.quantityOnHand, item.deficit]), ["Total", "", "", report.data.totals.deficit]])}>Export CSV</Button><div className="report-summary"><span>Products with negative stock<strong>{report.data.totals.products}</strong></span><span>Total deficit<strong>{money.format(report.data.totals.deficit)}</strong></span></div><table className="accounting-table"><thead><tr><th>Product</th><th>SKU</th><th>On hand</th><th>Deficit</th></tr></thead><tbody>{report.data.items.map((item) => <tr key={item.productId}><td>{item.productName}</td><td>{item.productSku}</td><td>{money.format(item.quantityOnHand)}</td><td>{money.format(item.deficit)}</td></tr>)}</tbody></table>{report.data.items.length === 0 ? <Text as="p" color="gray" className="accounting-empty">No products have negative stock.</Text> : null}</ReportFrame> : null;
+}
+
+function ExpenseTrendReport() {
+  const [filters, setFilters] = useState<ReportFilters>({});
+  const report = useExpenseTrend(filters);
+  return <><ReportFiltersForm filters={filters} onApply={setFilters} />{report.isLoading ? <LoadingScreen fullScreen={false} label="Loading expense trend" description="Calculating monthly expenses…" /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle="Expense trend"><Button className="no-print report-export" variant="outline" onClick={() => downloadCsv("expense-trend.csv", ["Month", "Expenses"], [...report.data.items.map((item) => [item.month, item.amount]), ["Total expenses", report.data.totals.expenses]])}>Export CSV</Button><div className="report-summary"><span>Total expenses<strong>{money.format(report.data.totals.expenses)}</strong></span></div><table className="accounting-table"><thead><tr><th>Month</th><th>Expenses</th></tr></thead><tbody>{report.data.items.map((item) => <tr key={item.month}><td>{item.month}</td><td>{money.format(item.amount)}</td></tr>)}</tbody><tfoot><tr><th>Total expenses</th><th>{money.format(report.data.totals.expenses)}</th></tr></tfoot></table>{report.data.items.length === 0 ? <Text as="p" color="gray" className="accounting-empty">No expenses match these filters.</Text> : null}</ReportFrame> : null}</>;
+}
+
 function ContactStatementReport({ role }: { role: "customer" | "supplier" }) {
   const [filters, setFilters] = useState<ReportFilters>({ page: 1, limit: 20 });
   const [contactId, setContactId] = useState("");
@@ -549,6 +580,14 @@ export function ReportsPage() {
         <ProductMovementSummaryReport type="sales" />
       ) : report === "purchases-by-product" ? (
         <ProductMovementSummaryReport type="purchases" />
+      ) : report === "expense-summary" ? (
+        <ExpenseSummaryReport />
+      ) : report === "low-stock" ? (
+        <LowStockReport />
+      ) : report === "negative-stock" ? (
+        <NegativeStockReport />
+      ) : report === "expense-trend" ? (
+        <ExpenseTrendReport />
       ) : report === "customer-statement" ? (
         <ContactStatementReport role="customer" />
       ) : report === "supplier-statement" ? (

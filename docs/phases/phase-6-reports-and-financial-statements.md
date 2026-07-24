@@ -30,6 +30,11 @@ Implemented in the initial delivery:
 - Cash Flow API and report screen, calculated dynamically from Cash/Bank journal activity and classified into operating, investing, and financing activities.
 - Sales Summary and Purchase Summary APIs and report screens for posted vouchers, including date filters, totals, printing, and CSV export.
 - Sales by Product and Purchases by Product reports from immutable inventory movements, including product quantities, movement values, and transaction counts.
+- Expense Summary API and report screen with expense-ledger totals, date filters, printing, and CSV export.
+- Low Stock report from calculated inventory movements and configured product reorder levels, with printing and CSV export.
+- Negative Stock report from calculated inventory movements, with printing and CSV export.
+- Dashboard widgets for Closing Cash and Inventory Value, backed by Cash Flow and Stock Summary report data.
+- Expense Trend report with monthly expense totals, date filters, printing, and CSV export.
 
 Remaining: further sales/purchase breakdowns, PDF/Excel export, dashboard reporting, templates, scheduled reports, and their remaining frontend delivery.
 

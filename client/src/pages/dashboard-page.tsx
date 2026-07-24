@@ -2,7 +2,7 @@ import { Badge, Card, Flex, Heading, Text } from "@radix-ui/themes";
 import { ReloadIcon } from "@radix-ui/react-icons";
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button";
-import { useBalanceSheet, useProfitLoss, useTrialBalance } from "../features/reports/use-reports";
+import { useBalanceSheet, useCashFlow, useProfitLoss, useStockSummary, useTrialBalance } from "../features/reports/use-reports";
 import { useSystemHealth } from "../features/system/use-system-health";
 
 export function DashboardPage() {
@@ -10,6 +10,8 @@ export function DashboardPage() {
   const trialBalance = useTrialBalance({});
   const profitLoss = useProfitLoss({});
   const balanceSheet = useBalanceSheet({});
+  const cashFlow = useCashFlow({});
+  const stockSummary = useStockSummary({});
   const databaseReady = health.data?.database === "connected";
   const money = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -36,6 +38,8 @@ export function DashboardPage() {
         <Card size="3"><Text color="gray" size="2">Net {profitLoss.data && profitLoss.data.totals.netProfit < 0 ? "loss" : "profit"}</Text><Heading mt="2" size="6">{profitLoss.data ? money.format(Math.abs(profitLoss.data.totals.netProfit)) : "—"}</Heading><Text as="p" mt="2" size="2" color="gray"><Link to="/reports/profit-loss">View Profit & Loss</Link></Text></Card>
         <Card size="3"><Text color="gray" size="2">Assets</Text><Heading mt="2" size="6">{balanceSheet.data ? money.format(balanceSheet.data.totals.assets) : "—"}</Heading><Text as="p" mt="2" size="2" color="gray"><Link to="/reports/balance-sheet">View Balance Sheet</Link></Text></Card>
         <Card size="3"><Text color="gray" size="2">Trial balance</Text><Heading mt="2" size="6">{trialBalance.data?.isBalanced ? "Balanced" : trialBalance.data ? "Out of balance" : "—"}</Heading><Text as="p" mt="2" size="2" color="gray"><Link to="/reports/trial-balance">View Trial Balance</Link></Text></Card>
+        <Card size="3"><Text color="gray" size="2">Closing cash</Text><Heading mt="2" size="6">{cashFlow.data ? money.format(cashFlow.data.closingBalance) : "—"}</Heading><Text as="p" mt="2" size="2" color="gray"><Link to="/reports/cash-flow">View Cash Flow</Link></Text></Card>
+        <Card size="3"><Text color="gray" size="2">Inventory value</Text><Heading mt="2" size="6">{stockSummary.data ? money.format(stockSummary.data.totals.stockValue) : "—"}</Heading><Text as="p" mt="2" size="2" color="gray"><Link to="/reports/stock-summary">View Stock Summary</Link></Text></Card>
       </div>
     </Flex>
   );

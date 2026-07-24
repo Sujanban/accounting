@@ -59,3 +59,11 @@ export const useVoucherSummary = (type: "sales" | "purchase", filters: ReportFil
   useQuery({ queryKey: reportKeys.voucherSummary(type, filters), queryFn: ({ signal }) => reportsApi.voucherSummary(type, filters, signal) });
 export const useProductMovementSummary = (type: "sales" | "purchases", filters: ReportFilters) =>
   useQuery({ queryKey: reportKeys.productMovementSummary(type, filters), queryFn: ({ signal }) => reportsApi.productMovementSummary(type, filters, signal) });
+export const useExpenseSummary = (filters: ReportFilters) =>
+  useQuery({ queryKey: reportKeys.expenseSummary(filters), queryFn: ({ signal }) => reportsApi.expenseSummary(filters, signal) });
+export const useLowStock = () =>
+  useQuery({ queryKey: reportKeys.lowStock(), queryFn: ({ signal }) => reportsApi.lowStock(signal) });
+export const useNegativeStock = () =>
+  useQuery({ queryKey: reportKeys.negativeStock(), queryFn: ({ signal }) => reportsApi.negativeStock(signal) });
+export const useExpenseTrend = (filters: ReportFilters) =>
+  useQuery({ queryKey: reportKeys.expenseTrend(filters), queryFn: ({ signal }) => reportsApi.expenseTrend(filters, signal) });

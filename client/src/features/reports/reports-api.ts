@@ -87,6 +87,10 @@ export type CashFlow = { openingBalance: number; closingBalance: number; operati
 type CashFlowEntry = { journalId: string; transactionDate: string; voucherNumber: string | null; narration: string | null; amount: number };
 export type VoucherSummary = { items: Array<{ id: string; voucherNumber: string; transactionDate: string; narration: string | null; itemCount: number; amount: number }>; totals: { amount: number; count: number }; meta: ReportPageMeta };
 export type ProductMovementSummary = { items: Array<{ productId: string; productName: string; productSku: string; quantity: number; value: number; transactionCount: number }>; totals: { quantity: number; value: number; transactionCount: number } };
+export type ExpenseSummary = { items: Array<{ ledgerId: string; ledgerName: string; amount: number }>; totals: { expenses: number } };
+export type LowStock = { items: Array<{ productId: string; productName: string; productSku: string; reorderLevel: number; quantityOnHand: number; shortage: number }>; totals: { products: number; shortage: number } };
+export type NegativeStock = { items: Array<{ productId: string; productName: string; productSku: string; quantityOnHand: number; deficit: number }>; totals: { products: number; deficit: number } };
+export type ExpenseTrend = { items: Array<{ month: string; amount: number }>; totals: { expenses: number } };
 export type ContactStatement = {
   contact: { id: string; contactCode: string; name: string; role: "CUSTOMER" | "SUPPLIER" };
   ledger: { id: string; name: string };
@@ -126,6 +130,10 @@ export const reportKeys = {
   cashFlow: (filters: ReportFilters) => [...reportKeys.all, "cash-flow", filters] as const,
   voucherSummary: (type: "sales" | "purchase", filters: ReportFilters) => [...reportKeys.all, `${type}-summary`, filters] as const,
   productMovementSummary: (type: "sales" | "purchases", filters: ReportFilters) => [...reportKeys.all, `${type}-by-product`, filters] as const,
+  expenseSummary: (filters: ReportFilters) => [...reportKeys.all, "expense-summary", filters] as const,
+  lowStock: () => [...reportKeys.all, "low-stock"] as const,
+  negativeStock: () => [...reportKeys.all, "negative-stock"] as const,
+  expenseTrend: (filters: ReportFilters) => [...reportKeys.all, "expense-trend", filters] as const,
 };
 
 export const reportsApi = {
@@ -164,4 +172,9 @@ export const reportsApi = {
     apiClient<VoucherSummary>(`/reports/${type}-summary${query(filters)}`, { signal }),
   productMovementSummary: (type: "sales" | "purchases", filters: ReportFilters, signal?: AbortSignal) =>
     apiClient<ProductMovementSummary>(`/reports/${type}-by-product${query(filters)}`, { signal }),
+  expenseSummary: (filters: ReportFilters, signal?: AbortSignal) =>
+    apiClient<ExpenseSummary>(`/reports/expense-summary${query(filters)}`, { signal }),
+  lowStock: (signal?: AbortSignal) => apiClient<LowStock>("/reports/low-stock", { signal }),
+  negativeStock: (signal?: AbortSignal) => apiClient<NegativeStock>("/reports/negative-stock", { signal }),
+  expenseTrend: (filters: ReportFilters, signal?: AbortSignal) => apiClient<ExpenseTrend>(`/reports/expense-trend${query(filters)}`, { signal }),
 };

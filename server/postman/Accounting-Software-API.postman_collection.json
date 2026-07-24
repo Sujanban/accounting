@@ -733,6 +733,22 @@
           "request": { "method": "GET", "url": "{{baseUrl}}/api/reports/purchases-by-product?from=2025-07-17&to=2025-07-31" }
         },
         {
+          "name": "Expense Summary",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/reports/expense-summary?from=2025-07-17&to=2025-07-31" }
+        },
+        {
+          "name": "Low Stock",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/reports/low-stock" }
+        },
+        {
+          "name": "Negative Stock",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/reports/negative-stock" }
+        },
+        {
+          "name": "Expense Trend",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/reports/expense-trend?from=2025-07-01&to=2025-07-31" }
+        },
+        {
           "name": "Customer Statement",
           "request": {
             "method": "GET",

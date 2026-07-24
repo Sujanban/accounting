@@ -259,6 +259,55 @@ async function getProductMovementSummary(companyId, fiscalYearId, query, transac
 function getSalesByProduct(companyId, fiscalYearId, query) { return getProductMovementSummary(companyId, fiscalYearId, query, "SALE", "OUT"); }
 function getPurchasesByProduct(companyId, fiscalYearId, query) { return getProductMovementSummary(companyId, fiscalYearId, query, "PURCHASE", "IN"); }
 
+async function getExpenseSummary(companyId, fiscalYearId, query) {
+  const profitLoss = await getProfitLoss(companyId, fiscalYearId, query);
+  return { items: profitLoss.expenses, totals: { expenses: profitLoss.totals.expenses } };
+}
+
+async function getLowStock(companyId, fiscalYearId, query) {
+  const items = await Product.aggregate([
+    { $match: { companyId, isActive: true, isService: false, reorderLevel: { $gt: 0 } } },
+    { $lookup: { from: "inventorymovements", let: { productId: "$_id" }, pipeline: [
+      { $match: { $expr: { $and: [{ $eq: ["$companyId", companyId] }, { $eq: ["$fiscalYearId", fiscalYearId] }, { $eq: ["$productId", "$$productId"] }] } } },
+      { $group: { _id: null, quantityOnHand: { $sum: { $cond: [{ $eq: ["$direction", "IN"] }, "$quantity", { $multiply: ["$quantity", -1] }] } } } }
+    ], as: "stock" } },
+    { $project: { _id: 0, productId: "$_id", productName: "$name", productSku: "$sku", reorderLevel: 1, quantityOnHand: { $ifNull: [{ $arrayElemAt: ["$stock.quantityOnHand", 0] }, 0] } } },
+    { $match: { $expr: { $lte: ["$quantityOnHand", "$reorderLevel"] } } },
+    { $addFields: { shortage: { $subtract: ["$reorderLevel", "$quantityOnHand"] } } },
+    { $sort: { shortage: -1, productName: 1, productId: 1 } }
+  ]);
+  return { items, totals: { products: items.length, shortage: items.reduce((total, item) => total + Number(item.shortage || 0), 0) } };
+}
+
+async function getNegativeStock(companyId, fiscalYearId, query) {
+  const items = await InventoryMovement.aggregate([
+    { $match: { companyId, fiscalYearId } },
+    { $group: { _id: "$productId", quantityOnHand: { $sum: { $cond: [{ $eq: ["$direction", "IN"] }, "$quantity", { $multiply: ["$quantity", -1] }] } } } },
+    { $match: { quantityOnHand: { $lt: 0 } } },
+    { $lookup: { from: "products", localField: "_id", foreignField: "_id", as: "product" } }, { $unwind: "$product" },
+    { $match: { "product.companyId": companyId, "product.isActive": true } },
+    { $project: { _id: 0, productId: "$_id", productName: "$product.name", productSku: "$product.sku", quantityOnHand: 1, deficit: { $multiply: ["$quantityOnHand", -1] } } },
+    { $sort: { deficit: -1, productName: 1, productId: 1 } }
+  ]);
+  return { items, totals: { products: items.length, deficit: items.reduce((total, item) => total + Number(item.deficit || 0), 0) } };
+}
+
+async function getExpenseTrend(companyId, fiscalYearId, query) {
+  const range = dateRange(query);
+  const journalFilters = { companyId, fiscalYearId, ...(range ? { transactionDate: range } : {}) };
+  const items = await JournalLine.aggregate([
+    { $match: { companyId } },
+    { $lookup: { from: "journals", localField: "journalId", foreignField: "_id", as: "journal" } }, { $unwind: "$journal" },
+    { $match: Object.fromEntries(Object.entries(journalFilters).map(([key, value]) => [`journal.${key}`, value])) },
+    { $lookup: { from: "ledgers", localField: "ledgerId", foreignField: "_id", as: "ledger" } }, { $unwind: "$ledger" },
+    { $lookup: { from: "accountgroups", localField: "ledger.groupId", foreignField: "_id", as: "group" } }, { $unwind: "$group" },
+    { $match: { "group.category": "Expenses" } },
+    { $group: { _id: { $dateToString: { format: "%Y-%m", date: "$journal.transactionDate", timezone: "UTC" } }, amount: { $sum: { $subtract: ["$debit", "$credit"] } } } },
+    { $project: { _id: 0, month: "$_id", amount: 1 } }, { $sort: { month: 1 } }
+  ]);
+  return { items, totals: { expenses: items.reduce((total, item) => total + Number(item.amount || 0), 0) } };
+}
+
 async function getContactStatement(companyId, fiscalYearId, query, role) {
   const contact = await Contact.findOne({ _id: query.contactId, companyId, isActive: true })
     .select("contactCode name displayName roles")
@@ -319,4 +368,4 @@ function getSupplierStatement(companyId, fiscalYearId, query) {
   return getContactStatement(companyId, fiscalYearId, query, "SUPPLIER");
 }
 
-module.exports = { getGeneralLedger, getTrialBalance, getJournalRegister, getDayBook, getStockSummary, getStockLedger, getProfitLoss, getBalanceSheet, getCashFlow, getSalesSummary, getPurchaseSummary, getSalesByProduct, getPurchasesByProduct, getCustomerStatement, getSupplierStatement };
+module.exports = { getGeneralLedger, getTrialBalance, getJournalRegister, getDayBook, getStockSummary, getStockLedger, getProfitLoss, getBalanceSheet, getCashFlow, getSalesSummary, getPurchaseSummary, getSalesByProduct, getPurchasesByProduct, getExpenseSummary, getExpenseTrend, getLowStock, getNegativeStock, getCustomerStatement, getSupplierStatement };
