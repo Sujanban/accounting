@@ -7,9 +7,9 @@ import { OnboardingPage } from "./features/onboarding/onboarding-page";
 import { RequireOnboarding } from "./features/onboarding/require-onboarding";
 import { MastersPage, PartyCreatePage, PartyEditPage, ProductEditPage } from "./features/masters/masters-page";
 import { DashboardPage } from "./pages/dashboard-page";
-import { PlaceholderPage } from "./pages/placeholder-page";
 import { SettingsPage } from "./pages/settings-page";
 import { TransactionEditPage, TransactionsPage } from "./features/transactions/transactions-page";
+import { ReportsPage } from "./features/reports/reports-page";
 
 export function App() {
   return (
@@ -39,7 +39,7 @@ export function App() {
             <Route path="accounting/account-groups/new" element={<AccountGroupCreatePage />} />
             <Route path="accounting/account-groups/:accountGroupId/edit" element={<AccountGroupEditPage />} />
             <Route path="accounting/:section" element={<AccountingPage />} />
-            <Route path="reports/:report" element={<PlaceholderPage title="Reports" />} />
+            <Route path="reports/:report" element={<ReportsPage />} />
             <Route path="company/:section" element={<SettingsPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>

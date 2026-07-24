@@ -640,28 +640,28 @@
           "name": "General Ledger",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/reports/general-ledger"
+            "url": "{{baseUrl}}/api/reports/general-ledger?ledgerId={{ledgerId}}&from=2025-07-17&to=2025-07-31&page=1&limit=20"
           }
         },
         {
           "name": "Trial Balance",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/reports/trial-balance"
+            "url": "{{baseUrl}}/api/reports/trial-balance?from=2025-07-17&to=2025-07-31"
           }
         },
         {
           "name": "Journal Register",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/reports/journal-register"
+            "url": "{{baseUrl}}/api/reports/journal-register?from=2025-07-17&to=2025-07-31&page=1&limit=20"
           }
         },
         {
           "name": "Day Book",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/reports/day-book"
+            "url": "{{baseUrl}}/api/reports/day-book?from=2025-07-17&to=2025-07-31&page=1&limit=20"
           }
         }
       ]

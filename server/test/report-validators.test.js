@@ -1,0 +1,49 @@
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const {
+  validateGeneralLedgerQuery,
+  validateListReportQuery,
+} = require("../src/validators/reportValidators");
+
+test("general ledger filters require a valid ledger and a chronological date range", () => {
+  const errors = validateGeneralLedgerQuery({
+    ledgerId: "invalid",
+    from: "2026-07-25",
+    to: "2026-07-24",
+  });
+  assert.deepEqual(errors, [
+    {
+      field: "to",
+      message: "The end date must be on or after the start date.",
+    },
+    { field: "ledgerId", message: "Ledger must be a valid identifier." },
+  ]);
+});
+
+test("list report filters reject unsupported fields and oversized limits", () => {
+  const errors = validateListReportQuery({
+    page: "0",
+    limit: "101",
+    status: "POSTED",
+  });
+  assert.deepEqual(errors, [
+    { field: "status", message: "This filter is not supported." },
+    { field: "page", message: "Page must be a positive integer." },
+    {
+      field: "limit",
+      message: "Limit must be a positive integer no greater than 100.",
+    },
+  ]);
+});
+
+test("list report filters accept the documented pagination and date controls", () => {
+  assert.deepEqual(
+    validateListReportQuery({
+      from: "2026-07-01",
+      to: "2026-07-24",
+      page: "2",
+      limit: "20",
+    }),
+    [],
+  );
+});

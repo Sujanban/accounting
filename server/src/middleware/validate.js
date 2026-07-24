@@ -6,7 +6,33 @@ function validate(schema) {
     const errors = schema(request.body || {});
 
     if (errors.length > 0) {
-      return next(new ApiError(400, "Validation failed.", ERROR_CODES.VALIDATION_ERROR, errors));
+      return next(
+        new ApiError(
+          400,
+          "Validation failed.",
+          ERROR_CODES.VALIDATION_ERROR,
+          errors,
+        ),
+      );
+    }
+
+    return next();
+  };
+}
+
+function validateQuery(schema) {
+  return function queryValidationMiddleware(request, _response, next) {
+    const errors = schema(request.query || {});
+
+    if (errors.length > 0) {
+      return next(
+        new ApiError(
+          400,
+          "Validation failed.",
+          ERROR_CODES.VALIDATION_ERROR,
+          errors,
+        ),
+      );
     }
 
     return next();
@@ -14,5 +40,6 @@ function validate(schema) {
 }
 
 module.exports = {
-  validate
+  validate,
+  validateQuery,
 };

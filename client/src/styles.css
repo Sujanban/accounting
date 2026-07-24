@@ -773,8 +773,18 @@ input {
   .voucher-detail__header .rt-Flex,
   .voucher-detail__header + .voucher-detail__summary + .voucher-detail__section + .voucher-detail__section + .voucher-detail__audit ~ * { display: none !important; }
   .app-content { padding: 0 !important; }
+  .no-print { display: none !important; }
   .voucher-detail__header, .voucher-detail__summary, .voucher-detail__section, .voucher-detail__audit { box-shadow: none !important; break-inside: avoid; }
 }
+.report-filters__actions { display: flex; align-items: end; gap: .6rem; }
+.report-result { display: grid; gap: 1rem; }
+.report-result__heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.report-summary { display: flex; flex-wrap: wrap; gap: 1rem; }
+.report-summary span { display: grid; gap: .25rem; min-width: 12rem; padding: .8rem 1rem; border: 1px solid #dce9e4; border-radius: .7rem; color: #60736f; font-size: .78rem; font-weight: 700; text-transform: uppercase; }
+.report-summary strong { color: #173b4a; font-size: 1rem; }
+.report-balance { width: fit-content; border-radius: 999px; padding: .35rem .7rem; font-size: .8rem; font-weight: 750; }
+.report-balance--balanced { color: #087f5b; background: #e8f8f1; }
+.report-balance--unbalanced { color: #9b3232; background: #fceded; }
 .accounting-table td > span {
   display: block;
   margin-top: 0.16rem;

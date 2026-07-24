@@ -2,13 +2,25 @@
 
 Version: 1.0
 
-Status: Planned
+Status: In progress
 
 ## Frontend delivery
 
-Status: Planned
+Status: In progress
 
 Implement read-only general-ledger, trial-balance, journal-register, and day-book routes with validated filters, totals, loading/empty/error states, and print-friendly layouts.
+
+### Current implementation status
+
+Implemented in the initial delivery:
+
+- Read-only, company- and active-fiscal-year-scoped APIs for General Ledger, Trial Balance, Journal Register, and Day Book.
+- Allowlisted query filters with strict date, pagination, and General Ledger identifier validation.
+- Typed TanStack Query clients and responsive report screens for the four initial reports.
+- Date filters, empty/error/loading states, Trial Balance totals and balance state, and print-friendly result layouts.
+- Postman examples aligned with the required General Ledger filter contract.
+
+Remaining: financial statements, customer/supplier and inventory reporting, exports, dashboard reporting, templates, and scheduled reports.
 
 Prerequisites
 
