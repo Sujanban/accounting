@@ -2,13 +2,13 @@
 
 Version: 1.0
 
-Status: Planned
+Status: Implemented
 
 ## Frontend delivery
 
-Status: Planned
+Status: Implemented
 
-Replace voucher-create placeholders with typed, shared form flows for sales, purchase, receipt, payment, contra, journal, expense, returns, notes, and opening balance; each uses its dedicated create/post API and protects against duplicate submission.
+Provide typed, shared form flows for sales, purchase, receipt, payment, contra, and journal vouchers. Each module uses dedicated create, list, read, update, post, and reverse APIs, protects against duplicate submission, and delegates all accounting and inventory changes to the Transaction Engine.
 
 Prerequisites
 
@@ -112,12 +112,7 @@ Voucher Modules
 ├── Payment
 ├── Contra
 ├── Journal
-├── Expense
-├── Debit Note
-├── Credit Note
-├── Sales Return
-├── Purchase Return
-└── Opening Balance
+└── shared
 ```
 
 ---
@@ -170,7 +165,6 @@ Header
 - Branch (future)
 - Company
 - Status
-- Reference Number
 - Narration
 
 Body
@@ -382,121 +376,9 @@ Inventory unaffected.
 
 ---
 
-# Module 7 — Expense Voucher
-
-Purpose
-
-Quick expense recording.
-
-Examples
-
-Fuel
-
-Office Supplies
-
-Internet
-
-Electricity
-
-Transaction Engine
-
-Expense Ledger
-
-↓
-
-Cash/Bank
-
----
-
-# Module 8 — Sales Return
-
-Purpose
-
-Reverse previous sale.
-
-Transaction Engine
-
-Increase Inventory
-
-Reverse Journal
-
----
-
-# Module 9 — Purchase Return
-
-Purpose
-
-Return purchased goods.
-
-Transaction Engine
-
-Decrease Inventory
-
-Reverse Journal
-
----
-
-# Module 10 — Debit Note
-
-Purpose
-
-Increase customer liability.
-
-Used for
-
-Additional Charges
-
-Price Difference
-
-Corrections
-
----
-
-# Module 11 — Credit Note
-
-Purpose
-
-Reduce customer liability.
-
-Used for
-
-Discount
-
-Refund
-
-Returns
-
----
-
-# Module 12 — Opening Balance
-
-Purpose
-
-Import opening balances.
-
-Supports
-
-Customers
-
-Suppliers
-
-Inventory
-
-Cash
-
-Bank
-
-Capital
-
-Runs once during implementation.
-
----
-
 # Voucher Status
 
 Draft
-
-Submitted
 
 Posted
 
@@ -524,57 +406,20 @@ History
 
 Attachments
 
-Comments
-
 Audit Timeline
 
 ---
 
 # APIs
 
-Sales
+For each supported voucher path (`/sales`, `/purchase`, `/receipt`, `/payment`, `/contra`, and `/journal`):
 
-POST /sales
-
-GET /sales
-
-PATCH /sales/:id
-
-POST /sales/:id/post
-
-Purchase
-
-POST /purchase
-
-Receipt
-
-POST /receipt
-
-Payment
-
-POST /payment
-
-Journal
-
-POST /journal
-
-Contra
-
-POST /contra
-
-Expense
-
-POST /expense
-
-Returns
-
-POST /sales-return
-
-POST /purchase-return
-
-Opening Balance
-
-POST /opening-balance
+- `GET /:voucher` — list by fiscal year with status and date-range filters
+- `POST /:voucher` — create a draft
+- `GET /:voucher/:id` — fetch a voucher of that type
+- `PATCH /:voucher/:id` — update a draft
+- `POST /:voucher/:id/post` — post a balanced draft
+- `POST /:voucher/:id/reverse` — reverse a posted voucher
 
 ---
 
@@ -596,18 +441,6 @@ payment/
 contra/
 
 journal/
-
-expense/
-
-credit-note/
-
-debit-note/
-
-sales-return/
-
-purchase-return/
-
-opening-balance/
 
 shared/
 ```
@@ -838,18 +671,6 @@ These belong to later phases.
 
 ✓ Journal Voucher completed
 
-✓ Expense Voucher completed
-
-✓ Credit Note completed
-
-✓ Debit Note completed
-
-✓ Sales Return completed
-
-✓ Purchase Return completed
-
-✓ Opening Balance completed
-
 ✓ Draft workflow completed
 
 ✓ Posting workflow completed
@@ -861,6 +682,10 @@ These belong to later phases.
 ✓ Audit timeline completed
 
 ✓ Ready for Phase 6 — Reports & Financial Statements
+
+## Approved scope note
+
+Expense vouchers, returns, debit notes, credit notes, and opening-balance vouchers are intentionally excluded from this product scope. Do not add them to the sidebar, client routes, voucher API, or Postman collection without a separately approved phase change.
 
 ---
 
@@ -909,16 +734,11 @@ Use reversal or amendment instead of editing.
 
 Build the modules in this order:
 
-1. Opening Balance
-2. Journal Voucher
-3. Receipt Voucher
-4. Payment Voucher
-5. Contra Voucher
-6. Purchase Voucher
-7. Sales Voucher
-8. Purchase Return
-9. Sales Return
-10. Debit Note
-11. Credit Note
+1. Journal Voucher
+2. Receipt Voucher
+3. Payment Voucher
+4. Contra Voucher
+5. Purchase Voucher
+6. Sales Voucher
 
 This sequence allows you to test the Transaction Engine with simpler vouchers before implementing inventory-intensive workflows like Sales and Purchase.

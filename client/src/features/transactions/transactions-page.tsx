@@ -8,12 +8,13 @@ import { useLedgers } from "../accounting/use-accounting";
 import {
   useCreateVoucherDraft,
   usePostVoucher,
-  useReverseTransaction,
+  useReverseVoucher,
   useTransaction,
   useUpdateVoucherDraft,
   useVoucherTransactions,
 } from "./use-transactions";
-import { useProducts, useWarehouses } from "../masters/use-masters";
+import { mastersApi } from "../masters/masters-api";
+import { useAttachments, useDeleteAttachment, useProducts, useUploadAttachment, useWarehouses } from "../masters/use-masters";
 import type { VoucherTransactionType } from "./transactions-api";
 
 const types = [
@@ -42,15 +43,19 @@ export function TransactionsPage({
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState(drafts ? "DRAFT" : "");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [type, setType] = useState("JOURNAL");
   const { transactionId, voucherType } = useParams();
   const routeType = types.find((item) => item.path === voucherType);
   const list = useVoucherTransactions(routeType?.value, {
     page,
     status: status || undefined,
+    fromDate: fromDate || undefined,
+    toDate: toDate || undefined,
   });
   const post = usePostVoucher();
-  const reverse = useReverseTransaction();
+  const reverse = useReverseVoucher();
   const ledgers = useLedgers({ isActive: true });
   const createDraft = useCreateVoucherDraft();
   const products = useProducts();
@@ -139,6 +144,28 @@ export function TransactionsPage({
             <option value="REVERSED">Reversed</option>
           </AppSelect>
         </label>
+        <label>
+          From date
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(event) => {
+              setFromDate(event.target.value);
+              setPage(1);
+            }}
+          />
+        </label>
+        <label>
+          To date
+          <input
+            type="date"
+            value={toDate}
+            onChange={(event) => {
+              setToDate(event.target.value);
+              setPage(1);
+            }}
+          />
+        </label>
       </Card>
       {list.isLoading ? (
         <LoadingScreen
@@ -196,7 +223,10 @@ export function TransactionsPage({
                           if (
                             window.confirm("Reverse this posted transaction?")
                           )
-                            void reverse.mutateAsync(item.id);
+                            void reverse.mutateAsync({
+                              id: item.id,
+                              type: item.transactionType as VoucherTransactionType,
+                            });
                         }}
                       >
                         Reverse
@@ -516,7 +546,7 @@ function TransactionDetail() {
   const { transactionId } = useParams();
   const transaction = useTransaction(transactionId);
   const post = usePostVoucher();
-  const reverse = useReverseTransaction();
+  const reverse = useReverseVoucher();
   const duplicate = useCreateVoucherDraft();
   const navigate = useNavigate();
   if (transaction.isLoading) {
@@ -598,6 +628,7 @@ function TransactionDetail() {
         <Text as="p" color="gray">Last updated {item.updatedAt ? new Date(item.updatedAt).toLocaleString() : "—"}</Text>
         {item.postedAt ? <Text as="p" color="gray">Posted {new Date(item.postedAt).toLocaleString()}</Text> : null}
       </Card>
+      <VoucherAttachments transactionId={item.id} />
       {item.status === "DRAFT" ? (
         <Flex direction="column" gap="2">
           {post.error instanceof Error ? (
@@ -631,13 +662,43 @@ function TransactionDetail() {
           variant="outline"
           onClick={() => {
             if (window.confirm("Reverse this posted transaction?"))
-              void reverse.mutateAsync(item.id);
+              void reverse.mutateAsync({
+                id: item.id,
+                type: item.transactionType as VoucherTransactionType,
+              });
           }}
         >
           Reverse transaction
         </Button>
       ) : null}
     </Flex>
+  );
+}
+
+function VoucherAttachments({ transactionId }: { transactionId: string }) {
+  const attachments = useAttachments("transaction", transactionId);
+  const upload = useUploadAttachment();
+  const remove = useDeleteAttachment();
+  const [file, setFile] = useState<File | null>(null);
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!file) return;
+    await upload.mutateAsync({ file, entityType: "transaction", entityId: transactionId });
+    setFile(null);
+    await attachments.refetch();
+  }
+
+  return (
+    <section className="voucher-detail__attachments">
+      <Heading size="4">Attachments</Heading>
+      <form className="voucher-attachments__form" onSubmit={(event) => void submit(event)}>
+        <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
+        <Button type="submit" variant="outline" disabled={!file} loading={upload.isPending}>Add attachment</Button>
+      </form>
+      {upload.error || remove.error ? <Text color="red" role="alert">The attachment could not be updated.</Text> : null}
+      {attachments.data?.length ? <div className="voucher-attachments__list">{attachments.data.map((attachment) => <div key={attachment.id} className="voucher-attachments__item"><a href={attachment.url} target="_blank" rel="noreferrer">{attachment.fileName}</a><Flex gap="2"><Button size="1" variant="outline" onClick={() => void mastersApi.attachmentDownload(attachment.id).then((download) => { if (download.url) window.open(download.url, "_blank", "noopener,noreferrer"); })}>Download</Button><Button size="1" variant="ghost" loading={remove.isPending} onClick={() => void remove.mutateAsync(attachment.id).then(() => attachments.refetch())}>Remove</Button></Flex></div>)}</div> : <Text color="gray">No attachments.</Text>}
+    </section>
   );
 }
 export function TransactionEditPage() {

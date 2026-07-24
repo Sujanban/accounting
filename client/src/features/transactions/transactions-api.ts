@@ -8,7 +8,7 @@ const voucherPaths: Record<VoucherTransactionType, string> = { JOURNAL: "journal
 const query = (values: Record<string, string | number | undefined>) => { const params = new URLSearchParams(); Object.entries(values).forEach(([key, value]) => { if (value !== undefined && value !== "") params.set(key, String(value)); }); return params.size ? `?${params}` : ""; };
 export const transactionsApi = {
   list: (filters: { page: number; status?: string; transactionType?: string }, signal?: AbortSignal) => apiClient<TransactionPage>(`/transactions${query(filters)}`, { signal }),
-  listVouchers: (type: VoucherTransactionType, filters: { page: number; status?: string }, signal?: AbortSignal) => apiClient<TransactionPage>(`/${voucherPaths[type]}${query(filters)}`, { signal }),
+  listVouchers: (type: VoucherTransactionType, filters: { page: number; status?: string; fromDate?: string; toDate?: string }, signal?: AbortSignal) => apiClient<TransactionPage>(`/${voucherPaths[type]}${query(filters)}`, { signal }),
   detail: (id: string, signal?: AbortSignal) => apiClient<Transaction>(`/transactions/${id}`, { signal }),
   createDraft: (input: Omit<Transaction, "id" | "voucherNumber" | "status" | "reversedById">) => apiClient<Transaction>("/transactions/draft", { method: "POST", body: JSON.stringify(input) }),
   createVoucherDraft: (type: VoucherTransactionType, input: Omit<Transaction, "id" | "voucherNumber" | "status" | "reversedById" | "transactionType" | "voucherType">) => apiClient<Transaction>(`/${voucherPaths[type]}`, { method: "POST", body: JSON.stringify(input) }),
@@ -16,5 +16,6 @@ export const transactionsApi = {
   updateVoucherDraft: (type: VoucherTransactionType, id: string, input: Partial<Omit<Transaction, "id" | "voucherNumber" | "status" | "reversedById" | "transactionType" | "voucherType">>) => apiClient<Transaction>(`/${voucherPaths[type]}/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
   post: (id: string) => apiClient<Transaction>(`/transactions/${id}/post`, { method: "POST" }),
   postVoucher: (type: VoucherTransactionType, id: string) => apiClient<Transaction>(`/${voucherPaths[type]}/${id}/post`, { method: "POST" }),
+  reverseVoucher: (type: VoucherTransactionType, id: string) => apiClient<Transaction>(`/${voucherPaths[type]}/${id}/reverse`, { method: "POST" }),
   reverse: (id: string) => apiClient<Transaction>(`/transactions/${id}/reverse`, { method: "POST" }),
 };

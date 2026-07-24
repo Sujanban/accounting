@@ -161,8 +161,25 @@ async function listTransactions(companyId, fiscalYearId, query = {}, actorRole) 
   if (query.status !== undefined && !TRANSACTION_STATUSES.has(query.status)) throw new ApiError(422, "Status is invalid.");
   if (query.transactionType !== undefined && !TRANSACTION_TYPES.has(query.transactionType)) throw new ApiError(422, "Transaction type is invalid.");
   if (query.branchId !== undefined && (typeof query.branchId !== "string" || !mongoose.isObjectIdOrHexString(query.branchId))) throw new ApiError(422, "Branch must be a valid identifier.");
+  for (const field of ["fromDate", "toDate"]) {
+    if (query[field] !== undefined && (typeof query[field] !== "string" || Number.isNaN(new Date(query[field]).getTime()))) {
+      throw new ApiError(422, `${field === "fromDate" ? "From" : "To"} date is invalid.`);
+    }
+  }
+  if (query.fromDate && query.toDate && new Date(query.fromDate) > new Date(query.toDate)) {
+    throw new ApiError(422, "From date must be on or before to date.");
+  }
   const page = Number(query.page || 1); const limit = Number(query.limit || 20);
   const filters = { companyId, fiscalYearId }; if (query.status) filters.status = query.status; if (query.transactionType) filters.transactionType = query.transactionType; if (query.branchId) filters.branchId = query.branchId;
+  if (query.fromDate || query.toDate) {
+    filters.transactionDate = {};
+    if (query.fromDate) filters.transactionDate.$gte = new Date(query.fromDate);
+    if (query.toDate) {
+      const end = new Date(query.toDate);
+      end.setUTCHours(23, 59, 59, 999);
+      filters.transactionDate.$lte = end;
+    }
+  }
   const roleFilter = transactionTypeFilterForRole(actorRole);
   if (roleFilter) {
     if (query.transactionType && !roleFilter.$in.includes(query.transactionType)) throw new ApiError(403, "You do not have permission to access this transaction type.");

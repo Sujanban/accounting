@@ -3,7 +3,7 @@ const { requireAuth, resolveActiveCompany, resolveActiveFiscalYear, requireRoles
 const { requireCompletedOnboarding } = require("../middleware/onboarding");
 const { validate } = require("../middleware/validate");
 const { validateVoucherDraft, validateVoucherUpdate } = require("../validators/voucherValidators");
-const { createVoucherController, postVoucherController, getVoucherController, listVouchersController, updateVoucherController } = require("../controllers/voucherController");
+const { createVoucherController, postVoucherController, getVoucherController, listVouchersController, updateVoucherController, reverseVoucherController } = require("../controllers/voucherController");
 
 const voucherRouter = express.Router();
 voucherRouter.use(requireAuth, resolveActiveCompany, resolveActiveFiscalYear, requireCompletedOnboarding);
@@ -23,6 +23,7 @@ for (const definition of definitions) {
   voucherRouter.get(`/${definition.path}/:id`, requireRoles(...definition.roles, "STAFF"), getVoucherController(definition));
   voucherRouter.patch(`/${definition.path}/:id`, requireRoles(...definition.roles), validate(validateVoucherUpdate), updateVoucherController(definition));
   voucherRouter.post(`/${definition.path}/:id/post`, requireRoles("OWNER", "ADMIN", "ACCOUNTANT"), postVoucherController(definition));
+  voucherRouter.post(`/${definition.path}/:id/reverse`, requireRoles("OWNER", "ADMIN", "ACCOUNTANT"), reverseVoucherController(definition));
 }
 
 module.exports = { voucherRouter };

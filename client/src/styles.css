@@ -730,6 +730,24 @@ input {
 .voucher-detail__section + .voucher-detail__audit {
   border-top: 1px dotted #b9d0c7 !important;
 }
+.voucher-detail__audit + .voucher-detail__attachments {
+  border-top: 1px dotted #b9d0c7;
+}
+.voucher-detail__attachments {
+  display: grid;
+  gap: .8rem;
+  padding: 1.35rem 1.8rem;
+}
+.voucher-attachments__form,
+.voucher-attachments__item {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.voucher-attachments__list { display: grid; gap: .55rem; }
+.voucher-attachments__item a { color: #087f5b; font-weight: 650; }
 .voucher-detail__section h4 { color: #173b4a; letter-spacing: -.01em; }
 .voucher-detail__entries td:nth-child(n+2),
 .voucher-detail__entries th:nth-child(n+2) { text-align: right; }

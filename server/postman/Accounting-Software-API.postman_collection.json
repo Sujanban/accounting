@@ -668,7 +668,7 @@
     },
     {
       "name": "Voucher Drafts",
-      "description": "Set transactionId to the ID returned by a create request before calling its matching post endpoint.",
+      "description": "Set transactionId to the ID returned by a create request before calling its matching post or reverse endpoint.",
       "item": [
         {
           "name": "Create Sales Voucher",
@@ -687,6 +687,13 @@
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/api/sales/{{transactionId}}/post"
+          }
+        },
+        {
+          "name": "Reverse Sales Voucher",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/sales/{{transactionId}}/reverse"
           }
         },
         {
@@ -709,6 +716,13 @@
           }
         },
         {
+          "name": "Reverse Purchase Voucher",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/purchase/{{transactionId}}/reverse"
+          }
+        },
+        {
           "name": "Create Receipt Voucher",
           "request": {
             "method": "POST",
@@ -725,6 +739,13 @@
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/api/receipt/{{transactionId}}/post"
+          }
+        },
+        {
+          "name": "Reverse Receipt Voucher",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/receipt/{{transactionId}}/reverse"
           }
         },
         {
@@ -747,6 +768,13 @@
           }
         },
         {
+          "name": "Reverse Payment Voucher",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/payment/{{transactionId}}/reverse"
+          }
+        },
+        {
           "name": "Create Contra Voucher",
           "request": {
             "method": "POST",
@@ -766,6 +794,13 @@
           }
         },
         {
+          "name": "Reverse Contra Voucher",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/contra/{{transactionId}}/reverse"
+          }
+        },
+        {
           "name": "Create Journal Voucher",
           "request": {
             "method": "POST",
@@ -782,6 +817,13 @@
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/api/journal/{{transactionId}}/post"
+          }
+        },
+        {
+          "name": "Reverse Journal Voucher",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/journal/{{transactionId}}/reverse"
           }
         }
       ]

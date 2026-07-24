@@ -43,4 +43,9 @@ async function updateVoucher(companyId, fiscalYearId, transactionId, actorUserId
   return transactionService.updateDraft(companyId, fiscalYearId, transactionId, { ...payload, actorUserId });
 }
 
-module.exports = { createVoucher, postVoucher, getVoucher, listVouchers, updateVoucher };
+async function reverseVoucher(companyId, fiscalYearId, transactionId, actorUserId, expectedType) {
+  await assertVoucherType(companyId, transactionId, expectedType);
+  return transactionService.reverseTransaction(companyId, fiscalYearId, transactionId, actorUserId);
+}
+
+module.exports = { createVoucher, postVoucher, getVoucher, listVouchers, updateVoucher, reverseVoucher };

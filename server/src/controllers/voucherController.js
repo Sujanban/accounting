@@ -28,4 +28,17 @@ function updateVoucherController(definition) {
   return asyncHandler(async (request, response) => sendSuccess(response, 200, `${definition.label} draft updated successfully.`, await voucherService.updateVoucher(request.auth.activeCompanyId, request.auth.activeFiscalYearId, request.params.id, request.auth.user._id, definition.transactionType, request.body)));
 }
 
-module.exports = { createVoucherController, postVoucherController, getVoucherController, listVouchersController, updateVoucherController };
+function reverseVoucherController(definition) {
+  return asyncHandler(async (request, response) => {
+    const data = await voucherService.reverseVoucher(
+      request.auth.activeCompanyId,
+      request.auth.activeFiscalYearId,
+      request.params.id,
+      request.auth.user._id,
+      definition.transactionType,
+    );
+    return sendSuccess(response, 200, `${definition.label} reversed successfully.`, data);
+  });
+}
+
+module.exports = { createVoucherController, postVoucherController, getVoucherController, listVouchersController, updateVoucherController, reverseVoucherController };
