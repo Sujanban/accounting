@@ -35,6 +35,10 @@ Implemented in the initial delivery:
 - Negative Stock report from calculated inventory movements, with printing and CSV export.
 - Dashboard widgets for Closing Cash and Inventory Value, backed by Cash Flow and Stock Summary report data.
 - Expense Trend report with monthly expense totals, date filters, printing, and CSV export.
+- Sales Trend report with monthly posted-sales totals and voucher counts, date filters, printing, and CSV export.
+- Shared Excel-compatible export action for report tables, complementing the existing CSV and print exports.
+- Shared Detailed and Compact report layout templates for on-screen review and print output.
+- Voucher-style print template for reports: document header and generated timestamp, simplified print chrome, dotted totals, and page-break-safe sections.
 
 Remaining: further sales/purchase breakdowns, PDF/Excel export, dashboard reporting, templates, scheduled reports, and their remaining frontend delivery.
 

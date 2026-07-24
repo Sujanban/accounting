@@ -308,6 +308,17 @@ async function getExpenseTrend(companyId, fiscalYearId, query) {
   return { items, totals: { expenses: items.reduce((total, item) => total + Number(item.amount || 0), 0) } };
 }
 
+async function getSalesTrend(companyId, fiscalYearId, query) {
+  const range = dateRange(query);
+  const filters = { companyId, fiscalYearId, transactionType: "SALE", status: "POSTED", ...(range ? { transactionDate: range } : {}) };
+  const items = await Transaction.aggregate([
+    { $match: filters }, { $unwind: "$accountingEntries" },
+    { $group: { _id: { $dateToString: { format: "%Y-%m", date: "$transactionDate", timezone: "UTC" } }, amount: { $sum: "$accountingEntries.debit" }, voucherIds: { $addToSet: "$_id" } } },
+    { $project: { _id: 0, month: "$_id", amount: 1, voucherCount: { $size: "$voucherIds" } } }, { $sort: { month: 1 } }
+  ]);
+  return { items, totals: { amount: items.reduce((total, item) => total + Number(item.amount || 0), 0), vouchers: items.reduce((total, item) => total + Number(item.voucherCount || 0), 0) } };
+}
+
 async function getContactStatement(companyId, fiscalYearId, query, role) {
   const contact = await Contact.findOne({ _id: query.contactId, companyId, isActive: true })
     .select("contactCode name displayName roles")
@@ -368,4 +379,4 @@ function getSupplierStatement(companyId, fiscalYearId, query) {
   return getContactStatement(companyId, fiscalYearId, query, "SUPPLIER");
 }
 
-module.exports = { getGeneralLedger, getTrialBalance, getJournalRegister, getDayBook, getStockSummary, getStockLedger, getProfitLoss, getBalanceSheet, getCashFlow, getSalesSummary, getPurchaseSummary, getSalesByProduct, getPurchasesByProduct, getExpenseSummary, getExpenseTrend, getLowStock, getNegativeStock, getCustomerStatement, getSupplierStatement };
+module.exports = { getGeneralLedger, getTrialBalance, getJournalRegister, getDayBook, getStockSummary, getStockLedger, getProfitLoss, getBalanceSheet, getCashFlow, getSalesSummary, getPurchaseSummary, getSalesByProduct, getPurchasesByProduct, getExpenseSummary, getExpenseTrend, getSalesTrend, getLowStock, getNegativeStock, getCustomerStatement, getSupplierStatement };

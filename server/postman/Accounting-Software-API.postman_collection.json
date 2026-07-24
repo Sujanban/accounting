@@ -749,6 +749,10 @@
           "request": { "method": "GET", "url": "{{baseUrl}}/api/reports/expense-trend?from=2025-07-01&to=2025-07-31" }
         },
         {
+          "name": "Sales Trend",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/reports/sales-trend?from=2025-07-01&to=2025-07-31" }
+        },
+        {
           "name": "Customer Statement",
           "request": {
             "method": "GET",

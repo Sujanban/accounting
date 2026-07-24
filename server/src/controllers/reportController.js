@@ -54,6 +54,7 @@ module.exports = {
   getLowStock: handler("getLowStock", "Low stock report fetched successfully."),
   getNegativeStock: handler("getNegativeStock", "Negative stock report fetched successfully."),
   getExpenseTrend: handler("getExpenseTrend", "Expense trend fetched successfully."),
+  getSalesTrend: handler("getSalesTrend", "Sales trend fetched successfully."),
   getCustomerStatement: handler(
     "getCustomerStatement",
     "Customer statement fetched successfully.",

@@ -91,6 +91,7 @@ export type ExpenseSummary = { items: Array<{ ledgerId: string; ledgerName: stri
 export type LowStock = { items: Array<{ productId: string; productName: string; productSku: string; reorderLevel: number; quantityOnHand: number; shortage: number }>; totals: { products: number; shortage: number } };
 export type NegativeStock = { items: Array<{ productId: string; productName: string; productSku: string; quantityOnHand: number; deficit: number }>; totals: { products: number; deficit: number } };
 export type ExpenseTrend = { items: Array<{ month: string; amount: number }>; totals: { expenses: number } };
+export type SalesTrend = { items: Array<{ month: string; amount: number; voucherCount: number }>; totals: { amount: number; vouchers: number } };
 export type ContactStatement = {
   contact: { id: string; contactCode: string; name: string; role: "CUSTOMER" | "SUPPLIER" };
   ledger: { id: string; name: string };
@@ -134,6 +135,7 @@ export const reportKeys = {
   lowStock: () => [...reportKeys.all, "low-stock"] as const,
   negativeStock: () => [...reportKeys.all, "negative-stock"] as const,
   expenseTrend: (filters: ReportFilters) => [...reportKeys.all, "expense-trend", filters] as const,
+  salesTrend: (filters: ReportFilters) => [...reportKeys.all, "sales-trend", filters] as const,
 };
 
 export const reportsApi = {
@@ -177,4 +179,5 @@ export const reportsApi = {
   lowStock: (signal?: AbortSignal) => apiClient<LowStock>("/reports/low-stock", { signal }),
   negativeStock: (signal?: AbortSignal) => apiClient<NegativeStock>("/reports/negative-stock", { signal }),
   expenseTrend: (filters: ReportFilters, signal?: AbortSignal) => apiClient<ExpenseTrend>(`/reports/expense-trend${query(filters)}`, { signal }),
+  salesTrend: (filters: ReportFilters, signal?: AbortSignal) => apiClient<SalesTrend>(`/reports/sales-trend${query(filters)}`, { signal }),
 };

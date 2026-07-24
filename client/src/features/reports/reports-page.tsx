@@ -1,5 +1,5 @@
 import { Card, Flex, Heading, Text } from "@radix-ui/themes";
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { AppSelect } from "../../components/ui/select";
@@ -24,6 +24,7 @@ import {
   useLowStock,
   useNegativeStock,
   useExpenseTrend,
+  useSalesTrend,
   useContactStatement,
   useTrialBalance,
 } from "./use-reports";
@@ -37,6 +38,7 @@ const errorMessage = (error: unknown) =>
   error instanceof ApiClientError
     ? error.message
     : "The report could not be loaded.";
+const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character] ?? character);
 const reportMetadata: Record<string, { title: string; description: string }> = {
   "general-ledger": {
     title: "General ledger",
@@ -83,6 +85,7 @@ const reportMetadata: Record<string, { title: string; description: string }> = {
   "low-stock": { title: "Low stock", description: "Review products at or below their configured reorder level." },
   "negative-stock": { title: "Negative stock", description: "Review products with a calculated inventory balance below zero." },
   "expense-trend": { title: "Expense trend", description: "Review total expenses by calendar month for the selected period." },
+  "sales-trend": { title: "Sales trend", description: "Review posted sales totals by calendar month for the selected period." },
   "customer-statement": {
     title: "Customer statement",
     description: "Review receivable activity and the running balance for one customer.",
@@ -161,17 +164,32 @@ function ReportFrame({
   children: ReactNode;
   printTitle: string;
 }) {
+  const reportRef = useRef<HTMLDivElement>(null);
+  const [template, setTemplate] = useState<"detailed" | "compact">("detailed");
+  const downloadExcel = () => {
+    const tables = reportRef.current?.querySelectorAll("table");
+    if (!tables?.length) return;
+    const filename = printTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const tableMarkup = [...tables].map((table) => {
+      const clone = table.cloneNode(true) as HTMLTableElement;
+      clone.querySelectorAll("td,th").forEach((cell) => {
+        if (/^[=+\-@]/.test(cell.textContent?.trim() ?? "")) cell.textContent = `'${cell.textContent}`;
+      });
+      return clone.outerHTML;
+    }).join("");
+    const workbook = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>table{border-collapse:collapse}th,td{border:1px solid #999;padding:6px;text-align:left}</style></head><body><h1>${escapeHtml(printTitle)}</h1>${tableMarkup}</body></html>`;
+    const url = URL.createObjectURL(new Blob([workbook], { type: "application/vnd.ms-excel;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${filename || "report"}.xls`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
   return (
-    <Card size="3" className="accounting-table-card report-result">
+    <Card ref={reportRef} size="3" className={`accounting-table-card report-result report-result--${template}`}>
       <div className="report-result__heading">
-        <Heading size="4">{printTitle}</Heading>
-        <Button
-          className="no-print"
-          variant="outline"
-          onClick={() => window.print()}
-        >
-          Print
-        </Button>
+        <div><Heading size="4">{printTitle}</Heading><Text className="report-print-meta" size="2">Generated {new Date().toLocaleString()}</Text></div>
+        <Flex className="no-print" gap="2" align="center"><label className="report-template-label">Layout<AppSelect value={template} onChange={(event) => setTemplate(event.target.value as "detailed" | "compact")}><option value="detailed">Detailed</option><option value="compact">Compact</option></AppSelect></label><Button variant="outline" onClick={downloadExcel}>Export Excel</Button><Button variant="outline" onClick={() => window.print()}>Print</Button></Flex>
       </div>
       {children}
     </Card>
@@ -526,6 +544,12 @@ function ExpenseTrendReport() {
   return <><ReportFiltersForm filters={filters} onApply={setFilters} />{report.isLoading ? <LoadingScreen fullScreen={false} label="Loading expense trend" description="Calculating monthly expenses…" /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle="Expense trend"><Button className="no-print report-export" variant="outline" onClick={() => downloadCsv("expense-trend.csv", ["Month", "Expenses"], [...report.data.items.map((item) => [item.month, item.amount]), ["Total expenses", report.data.totals.expenses]])}>Export CSV</Button><div className="report-summary"><span>Total expenses<strong>{money.format(report.data.totals.expenses)}</strong></span></div><table className="accounting-table"><thead><tr><th>Month</th><th>Expenses</th></tr></thead><tbody>{report.data.items.map((item) => <tr key={item.month}><td>{item.month}</td><td>{money.format(item.amount)}</td></tr>)}</tbody><tfoot><tr><th>Total expenses</th><th>{money.format(report.data.totals.expenses)}</th></tr></tfoot></table>{report.data.items.length === 0 ? <Text as="p" color="gray" className="accounting-empty">No expenses match these filters.</Text> : null}</ReportFrame> : null}</>;
 }
 
+function SalesTrendReport() {
+  const [filters, setFilters] = useState<ReportFilters>({});
+  const report = useSalesTrend(filters);
+  return <><ReportFiltersForm filters={filters} onApply={setFilters} />{report.isLoading ? <LoadingScreen fullScreen={false} label="Loading sales trend" description="Calculating monthly sales…" /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle="Sales trend"><Button className="no-print report-export" variant="outline" onClick={() => downloadCsv("sales-trend.csv", ["Month", "Vouchers", "Sales"], [...report.data.items.map((item) => [item.month, item.voucherCount, item.amount]), ["Total", report.data.totals.vouchers, report.data.totals.amount]])}>Export CSV</Button><div className="report-summary"><span>Posted vouchers<strong>{report.data.totals.vouchers}</strong></span><span>Total sales<strong>{money.format(report.data.totals.amount)}</strong></span></div><table className="accounting-table"><thead><tr><th>Month</th><th>Posted vouchers</th><th>Sales</th></tr></thead><tbody>{report.data.items.map((item) => <tr key={item.month}><td>{item.month}</td><td>{item.voucherCount}</td><td>{money.format(item.amount)}</td></tr>)}</tbody><tfoot><tr><th>Total</th><th>{report.data.totals.vouchers}</th><th>{money.format(report.data.totals.amount)}</th></tr></tfoot></table>{report.data.items.length === 0 ? <Text as="p" color="gray" className="accounting-empty">No posted sales match these filters.</Text> : null}</ReportFrame> : null}</>;
+}
+
 function ContactStatementReport({ role }: { role: "customer" | "supplier" }) {
   const [filters, setFilters] = useState<ReportFilters>({ page: 1, limit: 20 });
   const [contactId, setContactId] = useState("");
@@ -588,6 +612,8 @@ export function ReportsPage() {
         <NegativeStockReport />
       ) : report === "expense-trend" ? (
         <ExpenseTrendReport />
+      ) : report === "sales-trend" ? (
+        <SalesTrendReport />
       ) : report === "customer-statement" ? (
         <ContactStatementReport role="customer" />
       ) : report === "supplier-statement" ? (

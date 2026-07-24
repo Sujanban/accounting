@@ -53,6 +53,7 @@ const navigation: NavigationGroup[] = [
     { label: "Low stock", to: "/reports/low-stock" },
     { label: "Negative stock", to: "/reports/negative-stock" },
     { label: "Expense trend", to: "/reports/expense-trend" },
+    { label: "Sales trend", to: "/reports/sales-trend" },
     { label: "Customer statement", to: "/reports/customer-statement" },
     { label: "Supplier statement", to: "/reports/supplier-statement" },
   ] },

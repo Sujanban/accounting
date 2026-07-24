@@ -76,6 +76,7 @@ reportRouter.get("/expense-summary", validateQuery(validateListReportQuery), con
 reportRouter.get("/low-stock", validateQuery(validateListReportQuery), controller.getLowStock);
 reportRouter.get("/negative-stock", validateQuery(validateListReportQuery), controller.getNegativeStock);
 reportRouter.get("/expense-trend", validateQuery(validateListReportQuery), controller.getExpenseTrend);
+reportRouter.get("/sales-trend", validateQuery(validateListReportQuery), controller.getSalesTrend);
 reportRouter.get(
   "/customer-statement",
   validateQuery(validateContactStatementQuery),

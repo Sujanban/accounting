@@ -67,3 +67,5 @@ export const useNegativeStock = () =>
   useQuery({ queryKey: reportKeys.negativeStock(), queryFn: ({ signal }) => reportsApi.negativeStock(signal) });
 export const useExpenseTrend = (filters: ReportFilters) =>
   useQuery({ queryKey: reportKeys.expenseTrend(filters), queryFn: ({ signal }) => reportsApi.expenseTrend(filters, signal) });
+export const useSalesTrend = (filters: ReportFilters) =>
+  useQuery({ queryKey: reportKeys.salesTrend(filters), queryFn: ({ signal }) => reportsApi.salesTrend(filters, signal) });
