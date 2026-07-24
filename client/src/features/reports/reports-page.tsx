@@ -259,6 +259,7 @@ function TrialBalanceReport() {
         </Text>
       ) : report.data ? (
         <ReportFrame printTitle="Trial balance">
+          <Button className="no-print report-export" variant="outline" onClick={() => downloadCsv("trial-balance.csv", ["Ledger", "Debit", "Credit", "Net balance"], [...report.data.data.map((row) => [row.ledgerName, row.debit, row.credit, row.closing]), ["Total", report.data.totals.debit, report.data.totals.credit, ""]])}>Export CSV</Button>
           <div
             className={`report-balance ${report.data.isBalanced ? "report-balance--balanced" : "report-balance--unbalanced"}`}
           >
