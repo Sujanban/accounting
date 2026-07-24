@@ -81,6 +81,7 @@ export type StockLedger = {
   closingValue: number;
   entries: Array<{ id: string; transactionId: string; transactionDate: string; warehouseId: string; movementType: string; quantityIn: number; quantityOut: number; runningQuantity: number; runningValue: number }>;
 };
+export type ProfitLoss = { income: Array<{ ledgerId: string; ledgerName: string; amount: number }>; expenses: Array<{ ledgerId: string; ledgerName: string; amount: number }>; totals: { income: number; expenses: number; netProfit: number } };
 
 const query = (values: ReportFilters) => {
   const params = new URLSearchParams();
@@ -103,6 +104,8 @@ export const reportKeys = {
     [...reportKeys.all, "stock-summary", filters] as const,
   stockLedger: (productId: string, filters: ReportFilters) =>
     [...reportKeys.all, "stock-ledger", productId, filters] as const,
+  profitLoss: (filters: ReportFilters) =>
+    [...reportKeys.all, "profit-loss", filters] as const,
 };
 
 export const reportsApi = {
@@ -129,4 +132,6 @@ export const reportsApi = {
     apiClient<StockSummary>(`/reports/stock-summary${query(filters)}`, { signal }),
   stockLedger: (productId: string, filters: ReportFilters, signal?: AbortSignal) =>
     apiClient<StockLedger>(`/reports/stock-ledger${query({ ...filters, productId })}`, { signal }),
+  profitLoss: (filters: ReportFilters, signal?: AbortSignal) =>
+    apiClient<ProfitLoss>(`/reports/profit-loss${query(filters)}`, { signal }),
 };

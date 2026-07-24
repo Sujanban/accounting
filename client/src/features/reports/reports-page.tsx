@@ -14,6 +14,7 @@ import {
   useJournalRegister,
   useStockSummary,
   useStockLedger,
+  useProfitLoss,
   useTrialBalance,
 } from "./use-reports";
 
@@ -51,6 +52,10 @@ const reportMetadata: Record<string, { title: string; description: string }> = {
   "stock-ledger": {
     title: "Stock ledger",
     description: "Trace inventory movements and running quantity for one product.",
+  },
+  "profit-loss": {
+    title: "Profit & loss",
+    description: "Compare income and expenses for the selected reporting period.",
   },
 };
 
@@ -422,6 +427,12 @@ function StockLedgerReport() {
   return <><ReportFiltersForm filters={filters} onApply={setFilters}><label>Product<AppSelect value={productId} onChange={(event) => setProductId(event.target.value)} required><option value="">Select a product</option>{products.data?.filter((product) => !product.isService).map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</AppSelect></label></ReportFiltersForm>{products.isLoading ? <LoadingScreen fullScreen={false} label="Loading products" description="Preparing your product selector…" /> : !productId ? <Text color="gray">Select a product and apply filters to view its inventory movements.</Text> : report.isLoading ? <LoadingScreen fullScreen={false} label="Loading stock ledger" description="Calculating running inventory…" /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle={`${report.data.product.name} — Stock ledger`}><div className="report-summary"><span>Opening quantity<strong>{money.format(report.data.openingQuantity)}</strong></span><span>Closing quantity<strong>{money.format(report.data.closingQuantity)}</strong></span><span>Closing value<strong>{money.format(report.data.closingValue)}</strong></span></div><table className="accounting-table"><thead><tr><th>Date</th><th>Movement</th><th>In</th><th>Out</th><th>Running quantity</th><th>Running value</th></tr></thead><tbody>{report.data.entries.map((entry) => <tr key={entry.id}><td>{date(entry.transactionDate)}</td><td>{entry.movementType}</td><td>{money.format(entry.quantityIn)}</td><td>{money.format(entry.quantityOut)}</td><td>{money.format(entry.runningQuantity)}</td><td>{money.format(entry.runningValue)}</td></tr>)}</tbody></table>{report.data.entries.length === 0 ? <Text as="p" color="gray" className="accounting-empty">No inventory movements match these filters.</Text> : null}</ReportFrame> : null}</>;
 }
 
+function ProfitLossReport() {
+  const [filters, setFilters] = useState<ReportFilters>({});
+  const report = useProfitLoss(filters);
+  return <><ReportFiltersForm filters={filters} onApply={setFilters} />{report.isLoading ? <LoadingScreen fullScreen={false} label="Loading profit and loss" description="Calculating income and expenses…" /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle="Profit & loss"><div className="report-summary"><span>Total income<strong>{money.format(report.data.totals.income)}</strong></span><span>Total expenses<strong>{money.format(report.data.totals.expenses)}</strong></span><span>{report.data.totals.netProfit >= 0 ? "Net profit" : "Net loss"}<strong>{money.format(Math.abs(report.data.totals.netProfit))}</strong></span></div><table className="accounting-table"><thead><tr><th>Income</th><th>Amount</th></tr></thead><tbody>{report.data.income.map((entry) => <tr key={entry.ledgerId}><td>{entry.ledgerName}</td><td>{money.format(entry.amount)}</td></tr>)}</tbody><tfoot><tr><th>Total income</th><th>{money.format(report.data.totals.income)}</th></tr></tfoot></table><table className="accounting-table"><thead><tr><th>Expenses</th><th>Amount</th></tr></thead><tbody>{report.data.expenses.map((entry) => <tr key={entry.ledgerId}><td>{entry.ledgerName}</td><td>{money.format(entry.amount)}</td></tr>)}</tbody><tfoot><tr><th>Total expenses</th><th>{money.format(report.data.totals.expenses)}</th></tr></tfoot></table>{!report.data.income.length && !report.data.expenses.length ? <Text as="p" color="gray" className="accounting-empty">No income or expense journal entries match these filters.</Text> : null}</ReportFrame> : null}</>;
+}
+
 export function ReportsPage() {
   const { report = "" } = useParams();
   const metadata = reportMetadata[report];
@@ -449,6 +460,8 @@ export function ReportsPage() {
         <StockSummaryReport />
       ) : report === "stock-ledger" ? (
         <StockLedgerReport />
+      ) : report === "profit-loss" ? (
+        <ProfitLossReport />
       ) : (
         <DayBookReport />
       )}

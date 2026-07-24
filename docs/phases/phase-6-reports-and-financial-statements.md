@@ -21,6 +21,7 @@ Implemented in the initial delivery:
 - Postman examples aligned with the required General Ledger filter contract.
 - Stock Summary based on immutable inventory movements, with optional warehouse and date filters.
 - Stock Ledger with a product-specific, running quantity and value calculation from inventory movements.
+- Profit & Loss calculated from income and expense journal lines, grouped through the chart of accounts.
 
 Remaining: financial statements, customer/supplier and inventory reporting, exports, dashboard reporting, templates, and scheduled reports.
 
@@ -665,6 +666,8 @@ GET /reports/supplier-statement
 GET /reports/stock-summary
 
 GET /reports/stock-ledger
+
+GET /reports/profit-loss
 
 GET /reports/stock-ledger
 

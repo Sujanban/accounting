@@ -52,4 +52,9 @@ reportRouter.get(
   validateQuery(validateStockLedgerQuery),
   controller.getStockLedger,
 );
+reportRouter.get(
+  "/profit-loss",
+  validateQuery(validateListReportQuery),
+  controller.getProfitLoss,
+);
 module.exports = { reportRouter };

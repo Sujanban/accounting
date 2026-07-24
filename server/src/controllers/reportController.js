@@ -37,4 +37,8 @@ module.exports = {
     "getStockLedger",
     "Stock ledger fetched successfully.",
   ),
+  getProfitLoss: handler(
+    "getProfitLoss",
+    "Profit and loss fetched successfully.",
+  ),
 };

@@ -678,6 +678,13 @@
             "method": "GET",
             "url": "{{baseUrl}}/api/reports/stock-ledger?productId={{productId}}&from=2025-07-17&to=2025-07-31"
           }
+        },
+        {
+          "name": "Profit and Loss",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/reports/profit-loss?from=2025-07-17&to=2025-07-31"
+          }
         }
       ]
     },

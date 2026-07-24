@@ -113,4 +113,32 @@ async function getStockLedger(companyId, fiscalYearId, query) {
   return { product: { id: product._id, name: product.name, sku: product.sku }, openingQuantity: entries.length ? entries[0].runningQuantity - entries[0].quantityIn + entries[0].quantityOut : openingQuantity, closingQuantity: openingQuantity, closingValue: openingValue, entries };
 }
 
-module.exports = { getGeneralLedger, getTrialBalance, getJournalRegister, getDayBook, getStockSummary, getStockLedger };
+async function getProfitLoss(companyId, fiscalYearId, query) {
+  const range = dateRange(query);
+  const journalFilters = { companyId, fiscalYearId, ...(range ? { transactionDate: range } : {}) };
+  const rows = await JournalLine.aggregate([
+    { $match: { companyId } },
+    { $lookup: { from: "journals", localField: "journalId", foreignField: "_id", as: "journal" } },
+    { $unwind: "$journal" },
+    { $match: Object.fromEntries(Object.entries(journalFilters).map(([key, value]) => [`journal.${key}`, value])) },
+    { $lookup: { from: "ledgers", localField: "ledgerId", foreignField: "_id", as: "ledger" } },
+    { $unwind: "$ledger" },
+    { $lookup: { from: "accountgroups", localField: "ledger.groupId", foreignField: "_id", as: "group" } },
+    { $unwind: "$group" },
+    { $match: { "group.category": { $in: ["Income", "Expenses"] } } },
+    { $group: { _id: { ledgerId: "$ledger._id", category: "$group.category" }, ledgerName: { $first: "$ledger.name" }, debit: { $sum: "$debit" }, credit: { $sum: "$credit" } } },
+    { $sort: { ledgerName: 1, "_id.ledgerId": 1 } }
+  ]);
+  const income = [];
+  const expenses = [];
+  for (const row of rows) {
+    const amount = row._id.category === "Income" ? Number(row.credit || 0) - Number(row.debit || 0) : Number(row.debit || 0) - Number(row.credit || 0);
+    const entry = { ledgerId: row._id.ledgerId, ledgerName: row.ledgerName, amount };
+    if (row._id.category === "Income") income.push(entry); else expenses.push(entry);
+  }
+  const totalIncome = income.reduce((total, entry) => total + entry.amount, 0);
+  const totalExpenses = expenses.reduce((total, entry) => total + entry.amount, 0);
+  return { income, expenses, totals: { income: totalIncome, expenses: totalExpenses, netProfit: totalIncome - totalExpenses } };
+}
+
+module.exports = { getGeneralLedger, getTrialBalance, getJournalRegister, getDayBook, getStockSummary, getStockLedger, getProfitLoss };

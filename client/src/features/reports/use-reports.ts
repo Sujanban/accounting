@@ -34,3 +34,8 @@ export const useStockLedger = (productId: string, filters: ReportFilters) =>
     queryFn: ({ signal }) => reportsApi.stockLedger(productId, filters, signal),
     enabled: Boolean(productId),
   });
+export const useProfitLoss = (filters: ReportFilters) =>
+  useQuery({
+    queryKey: reportKeys.profitLoss(filters),
+    queryFn: ({ signal }) => reportsApi.profitLoss(filters, signal),
+  });

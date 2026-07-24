@@ -42,6 +42,7 @@ const navigation: NavigationGroup[] = [
     { label: "Journal register", to: "/reports/journal-register" }, { label: "Day book", to: "/reports/day-book" },
     { label: "Stock summary", to: "/reports/stock-summary" },
     { label: "Stock ledger", to: "/reports/stock-ledger" },
+    { label: "Profit & loss", to: "/reports/profit-loss" },
   ] },
   { label: "Company", icon: GearIcon, items: [
     { label: "Company profile", to: "/company/profile" }, { label: "Preferences", to: "/company/preferences" },
