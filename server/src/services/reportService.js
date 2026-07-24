@@ -61,7 +61,7 @@ async function getJournalRegister(companyId, fiscalYearId, query) {
 
 async function getDayBook(companyId, fiscalYearId, query) {
   const { value, limit } = page(query); const filters = { companyId, fiscalYearId, status: { $in: ["POSTED", "REVERSED"] } }; const range = dateRange(query); if (range) filters.transactionDate = range;
-  const [items, total] = await Promise.all([Transaction.find(filters).select("transactionType voucherType voucherNumber transactionDate referenceNo narration status postedBy postedAt journalId").sort({ transactionDate: -1, _id: -1 }).skip((value - 1) * limit).limit(limit).lean(), Transaction.countDocuments(filters)]);
+  const [items, total] = await Promise.all([Transaction.find(filters).select("transactionType voucherType voucherNumber transactionDate narration status postedBy postedAt journalId").sort({ transactionDate: -1, _id: -1 }).skip((value - 1) * limit).limit(limit).lean(), Transaction.countDocuments(filters)]);
   return { items, meta: { page: value, limit, total, totalPages: Math.ceil(total / limit), hasNextPage: value * limit < total } };
 }
 

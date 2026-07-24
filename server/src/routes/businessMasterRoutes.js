@@ -63,10 +63,10 @@ businessMasterRouter.get("/price-lists/:id", requireRoles("OWNER", "ADMIN", "ACC
 businessMasterRouter.patch("/price-lists/:id", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES"), validate(validateCatalogUpdate("price-lists")), catalogController.patchPriceList);
 businessMasterRouter.delete("/price-lists/:id", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES"), catalogController.archivePriceList);
 businessMasterRouter.post("/price-lists/:id/restore", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES"), catalogController.restorePriceList);
-businessMasterRouter.get("/attachments", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES", "STAFF"), getAttachments);
-businessMasterRouter.post("/attachments", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES"), upload.single("file"), postAttachmentUpload);
-businessMasterRouter.get("/attachments/:id/download", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES", "STAFF"), getAttachmentDownload);
-businessMasterRouter.delete("/attachments/:id", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES"), deleteAttachment);
+businessMasterRouter.get("/attachments", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES", "INVENTORY_MANAGER", "STAFF"), getAttachments);
+businessMasterRouter.post("/attachments", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES", "INVENTORY_MANAGER"), upload.single("file"), postAttachmentUpload);
+businessMasterRouter.get("/attachments/:id/download", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES", "INVENTORY_MANAGER", "STAFF"), getAttachmentDownload);
+businessMasterRouter.delete("/attachments/:id", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES", "INVENTORY_MANAGER"), deleteAttachment);
 businessMasterRouter.get("/products", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES", "INVENTORY_MANAGER", "STAFF"), catalogController.getProducts);
 businessMasterRouter.post("/products", requireRoles("OWNER", "ADMIN", "INVENTORY_MANAGER"), validate(validateProduct), catalogController.postProduct);
 businessMasterRouter.get("/products/:id", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES", "INVENTORY_MANAGER", "STAFF"), catalogController.getProduct);

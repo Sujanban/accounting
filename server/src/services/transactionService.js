@@ -15,10 +15,10 @@ const { resolveDefaultBranch } = require("./branchService");
 
 const MAX_LIMIT = 100;
 const TRANSACTION_STATUSES = new Set(["DRAFT", "POSTED", "CANCELLED", "REVERSED"]);
-const TRANSACTION_TYPES = new Set(["JOURNAL", "RECEIPT", "PAYMENT", "CONTRA", "SALE", "PURCHASE", "EXPENSE", "OPENING_BALANCE", "INVENTORY_ADJUSTMENT", "STOCK_TRANSFER", "SALES_RETURN", "PURCHASE_RETURN", "DEBIT_NOTE", "CREDIT_NOTE"]);
+const TRANSACTION_TYPES = new Set(["JOURNAL", "RECEIPT", "PAYMENT", "CONTRA", "SALE", "PURCHASE", "INVENTORY_ADJUSTMENT", "STOCK_TRANSFER"]);
 const ROLE_TRANSACTION_TYPES = Object.freeze({
-  SALES: new Set(["SALE", "RECEIPT", "SALES_RETURN"]),
-  INVENTORY_MANAGER: new Set(["PURCHASE", "PURCHASE_RETURN", "INVENTORY_ADJUSTMENT", "STOCK_TRANSFER"])
+  SALES: new Set(["SALE", "RECEIPT"]),
+  INVENTORY_MANAGER: new Set(["PURCHASE", "INVENTORY_ADJUSTMENT", "STOCK_TRANSFER"])
 });
 
 function assertTransactionTypeAccess(role, transactionType) {
@@ -79,7 +79,7 @@ async function assertStockAvailable(companyId, branchId, entries, session) {
 }
 
 function mapTransaction(transaction) {
-  return { id: transaction._id, companyId: transaction.companyId, branchId: transaction.branchId, fiscalYearId: transaction.fiscalYearId, transactionType: transaction.transactionType, voucherType: transaction.voucherType, voucherNumber: transaction.voucherNumber, transactionDate: transaction.transactionDate, referenceNo: transaction.referenceNo, narration: transaction.narration, items: transaction.items, accountingEntries: transaction.accountingEntries, inventoryEntries: transaction.inventoryEntries, status: transaction.status, journalId: transaction.journalId, reversalOfId: transaction.reversalOfId, reversedById: transaction.reversedById, postedAt: transaction.postedAt, postedBy: transaction.postedBy, createdAt: transaction.createdAt, updatedAt: transaction.updatedAt };
+  return { id: transaction._id, companyId: transaction.companyId, branchId: transaction.branchId, fiscalYearId: transaction.fiscalYearId, transactionType: transaction.transactionType, voucherType: transaction.voucherType, voucherNumber: transaction.voucherNumber, transactionDate: transaction.transactionDate, narration: transaction.narration, items: transaction.items, accountingEntries: transaction.accountingEntries, inventoryEntries: transaction.inventoryEntries, status: transaction.status, journalId: transaction.journalId, reversalOfId: transaction.reversalOfId, reversedById: transaction.reversedById, postedAt: transaction.postedAt, postedBy: transaction.postedBy, createdBy: transaction.createdBy, updatedBy: transaction.updatedBy, createdAt: transaction.createdAt, updatedAt: transaction.updatedAt };
 }
 
 async function createDraft(companyId, fiscalYearId, payload) {
@@ -98,7 +98,7 @@ async function updateDraft(companyId, fiscalYearId, transactionId, payload) {
   assertTransactionTypeAccess(actorRole, draft.transactionType);
   if (draft.status !== "DRAFT") throw new ApiError(409, "Only draft transactions can be edited.");
   await assertFiscalYearWritable(companyId, fiscalYearId, { transactionDate: input.transactionDate || draft.transactionDate });
-  for (const field of ["transactionDate", "referenceNo", "narration", "items", "accountingEntries", "inventoryEntries"]) if (input[field] !== undefined) draft[field] = input[field];
+  for (const field of ["transactionDate", "narration", "items", "accountingEntries", "inventoryEntries"]) if (input[field] !== undefined) draft[field] = input[field];
   draft.updatedBy = actorUserId;
   await draft.save();
   return mapTransaction(draft);
@@ -138,7 +138,7 @@ async function reverseTransaction(companyId, fiscalYearId, transactionId, actorU
     const original = await Transaction.findOne({ _id: transactionId, companyId, fiscalYearId }).session(session);
     if (!original) throw new ApiError(404, "Transaction was not found.");
     if (original.status !== "POSTED" || original.reversedById) throw new ApiError(409, "Only unreversed posted transactions can be reversed.");
-    const reversal = await Transaction.create([{ companyId, branchId: original.branchId, fiscalYearId, transactionType: "JOURNAL", voucherType: "JV", transactionDate: original.transactionDate, referenceNo: original.voucherNumber, narration: `Reversal of ${original.voucherNumber}`, accountingEntries: original.accountingEntries.map((entry) => ({ ledgerId: entry.ledgerId, debit: entry.credit, credit: entry.debit, narration: entry.narration })), inventoryEntries: original.inventoryEntries.map((entry) => ({ productId: entry.productId, warehouseId: entry.warehouseId, quantity: entry.quantity, unitCost: entry.unitCost, direction: entry.direction === "IN" ? "OUT" : "IN" })), reversalOfId: original._id, status: "DRAFT", createdBy: actorUserId, updatedBy: actorUserId }], { session });
+    const reversal = await Transaction.create([{ companyId, branchId: original.branchId, fiscalYearId, transactionType: "JOURNAL", voucherType: "JV", transactionDate: original.transactionDate, narration: `Reversal of ${original.voucherNumber}`, accountingEntries: original.accountingEntries.map((entry) => ({ ledgerId: entry.ledgerId, debit: entry.credit, credit: entry.debit, narration: entry.narration })), inventoryEntries: original.inventoryEntries.map((entry) => ({ productId: entry.productId, warehouseId: entry.warehouseId, quantity: entry.quantity, unitCost: entry.unitCost, direction: entry.direction === "IN" ? "OUT" : "IN" })), reversalOfId: original._id, status: "DRAFT", createdBy: actorUserId, updatedBy: actorUserId }], { session });
     posted = await postTransactionInSession(companyId, fiscalYearId, reversal[0]._id, actorUserId, session, { isReversal: true });
     original.status = "REVERSED"; original.reversedById = posted._id; original.updatedBy = actorUserId; await original.save({ session });
   }); } finally { await session.endSession(); }

@@ -1,5 +1,5 @@
-const { validateTransaction } = require("./transactionValidators");
-const FIELDS = new Set(["transactionDate", "referenceNo", "narration", "items", "accountingEntries", "inventoryEntries"]);
+const { validateTransaction, validateUpdateTransaction } = require("./transactionValidators");
+const FIELDS = new Set(["transactionDate", "narration", "items", "accountingEntries", "inventoryEntries"]);
 
 function validateVoucherDraft(body) {
   const errors = [];
@@ -8,4 +8,6 @@ function validateVoucherDraft(body) {
   return errors;
 }
 
-module.exports = { validateVoucherDraft };
+const validateVoucherUpdate = (body) => validateUpdateTransaction(body);
+
+module.exports = { validateVoucherDraft, validateVoucherUpdate };

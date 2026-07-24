@@ -23,12 +23,9 @@ type NavigationGroup = {
 
 const navigation: NavigationGroup[] = [
   { label: "Vouchers", icon: FileTextIcon, items: [
-    { label: "All vouchers", to: "/vouchers" }, { label: "Drafts", to: "/vouchers/drafts" },
     { label: "Sales", to: "/vouchers/sales" }, { label: "Purchase", to: "/vouchers/purchase" },
     { label: "Receipt", to: "/vouchers/receipt" }, { label: "Payment", to: "/vouchers/payment" },
     { label: "Contra", to: "/vouchers/contra" }, { label: "Journal", to: "/vouchers/journal" },
-    { label: "Expense", to: "/vouchers/expense" }, { label: "Adjustments", to: "/vouchers/adjustments" },
-    { label: "Opening balance", to: "/vouchers/opening-balance" },
   ] },
   { label: "Masters", icon: GearIcon, items: [
     { label: "Parties", to: "/masters/parties" }, { label: "Products & services", to: "/masters/products" },
@@ -57,7 +54,6 @@ const createActions = [
   { label: "Receipt voucher", to: "/vouchers/receipt/new" },
   { label: "Payment voucher", to: "/vouchers/payment/new" },
   { label: "Journal voucher", to: "/vouchers/journal/new" },
-  { label: "Expense voucher", to: "/vouchers/expense/new" },
 ];
 
 function CreateVoucherMenu({ onNavigate }: { onNavigate?: () => void }) {

@@ -16,4 +16,16 @@ function postVoucherController(definition) {
   });
 }
 
-module.exports = { createVoucherController, postVoucherController };
+function getVoucherController(definition) {
+  return asyncHandler(async (request, response) => sendSuccess(response, 200, `${definition.label} fetched successfully.`, await voucherService.getVoucher(request.auth.activeCompanyId, request.params.id, definition.transactionType)));
+}
+
+function listVouchersController(definition) {
+  return asyncHandler(async (request, response) => sendSuccess(response, 200, `${definition.label}s fetched successfully.`, await voucherService.listVouchers(request.auth.activeCompanyId, request.auth.activeFiscalYearId, definition.transactionType, request.query)));
+}
+
+function updateVoucherController(definition) {
+  return asyncHandler(async (request, response) => sendSuccess(response, 200, `${definition.label} draft updated successfully.`, await voucherService.updateVoucher(request.auth.activeCompanyId, request.auth.activeFiscalYearId, request.params.id, request.auth.user._id, definition.transactionType, request.body)));
+}
+
+module.exports = { createVoucherController, postVoucherController, getVoucherController, listVouchersController, updateVoucherController };

@@ -1,9 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { transactionsApi } from "./transactions-api";
+import type { VoucherTransactionType } from "./transactions-api";
 const key = ["transactions"] as const;
 export const useTransactions = (filters: { page: number; status?: string; transactionType?: string }) => useQuery({ queryKey: [...key, filters], queryFn: ({ signal }) => transactionsApi.list(filters, signal) });
+export const useVoucherTransactions = (type: VoucherTransactionType | undefined, filters: { page: number; status?: string }) => useQuery({ queryKey: [...key, "voucher", type, filters], queryFn: ({ signal }) => type ? transactionsApi.listVouchers(type, filters, signal) : transactionsApi.list(filters, signal) });
 export const useTransaction = (id?: string) => useQuery({ queryKey: [...key, "detail", id] as const, queryFn: ({ signal }) => transactionsApi.detail(id!, signal), enabled: Boolean(id) });
 export const usePostTransaction = () => { const client = useQueryClient(); return useMutation({ mutationFn: transactionsApi.post, onSuccess: () => client.invalidateQueries({ queryKey: key }) }); };
 export const useReverseTransaction = () => { const client = useQueryClient(); return useMutation({ mutationFn: transactionsApi.reverse, onSuccess: () => client.invalidateQueries({ queryKey: key }) }); };
 export const useCreateTransactionDraft = () => { const client = useQueryClient(); return useMutation({ mutationFn: transactionsApi.createDraft, onSuccess: () => client.invalidateQueries({ queryKey: key }) }); };
+export const useCreateVoucherDraft = () => { const client = useQueryClient(); return useMutation({ mutationFn: ({ type, input }: { type: VoucherTransactionType; input: Parameters<typeof transactionsApi.createVoucherDraft>[1] }) => transactionsApi.createVoucherDraft(type, input), onSuccess: () => client.invalidateQueries({ queryKey: key }) }); };
+export const usePostVoucher = () => { const client = useQueryClient(); return useMutation({ mutationFn: ({ type, id }: { type: VoucherTransactionType; id: string }) => transactionsApi.postVoucher(type, id), onSuccess: () => client.invalidateQueries({ queryKey: key }) }); };
 export const useUpdateTransactionDraft = () => { const client = useQueryClient(); return useMutation({ mutationFn: ({ id, input }: { id: string; input: Parameters<typeof transactionsApi.updateDraft>[1] }) => transactionsApi.updateDraft(id, input), onSuccess: () => client.invalidateQueries({ queryKey: key }) }); };
+export const useUpdateVoucherDraft = () => { const client = useQueryClient(); return useMutation({ mutationFn: ({ type, id, input }: { type: VoucherTransactionType; id: string; input: Parameters<typeof transactionsApi.updateVoucherDraft>[2] }) => transactionsApi.updateVoucherDraft(type, id, input), onSuccess: () => client.invalidateQueries({ queryKey: key }) }); };

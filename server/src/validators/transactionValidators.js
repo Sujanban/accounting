@@ -1,9 +1,9 @@
 const mongoose = require("mongoose");
 
-const TRANSACTION_TYPES = new Set(["JOURNAL", "RECEIPT", "PAYMENT", "CONTRA", "SALE", "PURCHASE", "EXPENSE", "OPENING_BALANCE", "INVENTORY_ADJUSTMENT", "STOCK_TRANSFER", "SALES_RETURN", "PURCHASE_RETURN", "DEBIT_NOTE", "CREDIT_NOTE"]);
+const TRANSACTION_TYPES = new Set(["JOURNAL", "RECEIPT", "PAYMENT", "CONTRA", "SALE", "PURCHASE", "INVENTORY_ADJUSTMENT", "STOCK_TRANSFER"]);
 const VOUCHER_TYPES = new Set(["JV", "RV", "PMV", "CV", "SV", "PV"]);
-const VOUCHERS_BY_TRANSACTION = Object.freeze({ JOURNAL: "JV", RECEIPT: "RV", PAYMENT: "PMV", CONTRA: "CV", SALE: "SV", PURCHASE: "PV", EXPENSE: "PMV", OPENING_BALANCE: "JV", INVENTORY_ADJUSTMENT: "JV", STOCK_TRANSFER: "JV", SALES_RETURN: "SV", PURCHASE_RETURN: "PV", DEBIT_NOTE: "JV", CREDIT_NOTE: "JV" });
-const CREATE_FIELDS = new Set(["transactionType", "voucherType", "transactionDate", "referenceNo", "narration", "items", "accountingEntries", "inventoryEntries"]);
+const VOUCHERS_BY_TRANSACTION = Object.freeze({ JOURNAL: "JV", RECEIPT: "RV", PAYMENT: "PMV", CONTRA: "CV", SALE: "SV", PURCHASE: "PV", INVENTORY_ADJUSTMENT: "JV", STOCK_TRANSFER: "JV" });
+const CREATE_FIELDS = new Set(["transactionType", "voucherType", "transactionDate", "narration", "items", "accountingEntries", "inventoryEntries"]);
 const UPDATE_FIELDS = new Set(["transactionDate", "referenceNo", "narration", "items", "accountingEntries", "inventoryEntries"]);
 
 const isValidId = (value) => typeof value === "string" && mongoose.isObjectIdOrHexString(value);
@@ -49,7 +49,6 @@ function validateTransaction(body, partial = false) {
   if (!partial && TRANSACTION_TYPES.has(body.transactionType) && body.voucherType !== VOUCHERS_BY_TRANSACTION[body.transactionType]) errors.push({ field: "voucherType", message: "Voucher type is not compatible with the transaction type." });
   if ((!partial || body.transactionDate !== undefined) && (!body.transactionDate || typeof body.transactionDate !== "string" || Number.isNaN(new Date(body.transactionDate).getTime()))) errors.push({ field: "transactionDate", message: "A valid transaction date is required." });
   for (const field of ["accountingEntries", "inventoryEntries", "items"]) if (body[field] !== undefined && (!Array.isArray(body[field]) || body[field].length > 500)) errors.push({ field, message: `${field} must be an array with at most 500 entries.` });
-  validateOptionalText(body, "referenceNo", 100, errors);
   validateOptionalText(body, "narration", 2000, errors);
   validateAccountingEntries(body.accountingEntries, errors);
   validateInventoryEntries(body.inventoryEntries, errors);

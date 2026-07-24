@@ -1,5 +1,6 @@
 const { v2: cloudinary } = require("cloudinary");
 const { Attachment } = require("../models/Attachment");
+const { Transaction } = require("../models/Transaction");
 const { Contact } = require("../models/Contact");
 const { Product } = require("../models/Product");
 const { ApiError } = require("../utils/apiError");
@@ -20,11 +21,11 @@ function uploadBuffer(buffer, options) {
   });
 }
 
-const attachmentEntities = { contact: Contact, product: Product };
+const attachmentEntities = { contact: Contact, product: Product, transaction: Transaction };
 
 async function assertAttachmentEntity(companyId, entityType, entityId) {
   const Model = attachmentEntities[entityType];
-  if (!Model) throw new ApiError(422, "Attachments can only be added to contacts or products.");
+  if (!Model) throw new ApiError(422, "Attachments can only be added to contacts, products, or transactions.");
   const entity = await Model.findOne({ _id: entityId, companyId }).select("_id").lean();
   if (!entity) throw new ApiError(404, "Attachment owner was not found.");
 }

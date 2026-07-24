@@ -29,4 +29,18 @@ async function postVoucher(companyId, fiscalYearId, transactionId, actorUserId, 
   return transaction;
 }
 
-module.exports = { createVoucher, postVoucher };
+async function getVoucher(companyId, transactionId, expectedType) {
+  const transaction = await assertVoucherType(companyId, transactionId, expectedType);
+  return transactionService.getTransaction(companyId, transaction._id);
+}
+
+async function listVouchers(companyId, fiscalYearId, expectedType, query) {
+  return transactionService.listTransactions(companyId, fiscalYearId, { ...query, transactionType: expectedType });
+}
+
+async function updateVoucher(companyId, fiscalYearId, transactionId, actorUserId, expectedType, payload) {
+  await assertVoucherType(companyId, transactionId, expectedType);
+  return transactionService.updateDraft(companyId, fiscalYearId, transactionId, { ...payload, actorUserId });
+}
+
+module.exports = { createVoucher, postVoucher, getVoucher, listVouchers, updateVoucher };
