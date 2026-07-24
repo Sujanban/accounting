@@ -57,4 +57,9 @@ reportRouter.get(
   validateQuery(validateListReportQuery),
   controller.getProfitLoss,
 );
+reportRouter.get(
+  "/balance-sheet",
+  validateQuery(validateListReportQuery),
+  controller.getBalanceSheet,
+);
 module.exports = { reportRouter };

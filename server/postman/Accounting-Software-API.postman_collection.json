@@ -685,6 +685,13 @@
             "method": "GET",
             "url": "{{baseUrl}}/api/reports/profit-loss?from=2025-07-17&to=2025-07-31"
           }
+        },
+        {
+          "name": "Balance Sheet",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/reports/balance-sheet?to=2025-07-31"
+          }
         }
       ]
     },

@@ -43,6 +43,7 @@ const navigation: NavigationGroup[] = [
     { label: "Stock summary", to: "/reports/stock-summary" },
     { label: "Stock ledger", to: "/reports/stock-ledger" },
     { label: "Profit & loss", to: "/reports/profit-loss" },
+    { label: "Balance sheet", to: "/reports/balance-sheet" },
   ] },
   { label: "Company", icon: GearIcon, items: [
     { label: "Company profile", to: "/company/profile" }, { label: "Preferences", to: "/company/preferences" },

@@ -39,3 +39,8 @@ export const useProfitLoss = (filters: ReportFilters) =>
     queryKey: reportKeys.profitLoss(filters),
     queryFn: ({ signal }) => reportsApi.profitLoss(filters, signal),
   });
+export const useBalanceSheet = (filters: ReportFilters) =>
+  useQuery({
+    queryKey: reportKeys.balanceSheet(filters),
+    queryFn: ({ signal }) => reportsApi.balanceSheet(filters, signal),
+  });

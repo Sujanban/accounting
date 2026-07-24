@@ -3,6 +3,7 @@ const { Transaction } = require("../models/Transaction");
 const { Ledger } = require("../models/Ledger");
 const { InventoryMovement } = require("../models/InventoryMovement");
 const { Product } = require("../models/Product");
+const { AccountGroup } = require("../models/AccountGroup");
 const { ApiError } = require("../utils/apiError");
 
 const MAX_LIMIT = 100;
@@ -141,4 +142,37 @@ async function getProfitLoss(companyId, fiscalYearId, query) {
   return { income, expenses, totals: { income: totalIncome, expenses: totalExpenses, netProfit: totalIncome - totalExpenses } };
 }
 
-module.exports = { getGeneralLedger, getTrialBalance, getJournalRegister, getDayBook, getStockSummary, getStockLedger, getProfitLoss };
+async function getBalanceSheet(companyId, fiscalYearId, query) {
+  const asOf = query.to ? new Date(`${query.to}T23:59:59.999Z`) : null;
+  const journalFilters = { companyId, fiscalYearId, ...(asOf ? { transactionDate: { $lte: asOf } } : {}) };
+  const movements = await JournalLine.aggregate([
+    { $match: { companyId } },
+    { $lookup: { from: "journals", localField: "journalId", foreignField: "_id", as: "journal" } },
+    { $unwind: "$journal" },
+    { $match: Object.fromEntries(Object.entries(journalFilters).map(([key, value]) => [`journal.${key}`, value])) },
+    { $group: { _id: "$ledgerId", debit: { $sum: "$debit" }, credit: { $sum: "$credit" } } }
+  ]);
+  const movementByLedger = new Map(movements.map((row) => [String(row._id), { debit: Number(row.debit || 0), credit: Number(row.credit || 0) }]));
+  const ledgers = await Ledger.find({ companyId, fiscalYearId }).select("name groupId openingBalance openingBalanceType").lean();
+  const groupIds = [...new Set(ledgers.map((ledger) => String(ledger.groupId)))];
+  const groups = await AccountGroup.find({ _id: { $in: groupIds }, companyId }).select("category").lean();
+  const categoryByGroup = new Map(groups.map((group) => [String(group._id), group.category]));
+  const categories = { Assets: [], Liabilities: [], Equity: [] };
+  let currentEarnings = 0;
+  for (const ledger of ledgers) {
+    const category = categoryByGroup.get(String(ledger.groupId));
+    const movement = movementByLedger.get(String(ledger._id)) || { debit: 0, credit: 0 };
+    const opening = Number(ledger.openingBalance || 0) * (ledger.openingBalanceType === "CREDIT" ? -1 : 1);
+    const debitBalance = opening + movement.debit - movement.credit;
+    if (category === "Assets") categories.Assets.push({ ledgerId: ledger._id, ledgerName: ledger.name, amount: debitBalance });
+    if (category === "Liabilities" || category === "Equity") categories[category].push({ ledgerId: ledger._id, ledgerName: ledger.name, amount: -debitBalance });
+    if (category === "Income") currentEarnings -= debitBalance;
+    if (category === "Expenses") currentEarnings += debitBalance;
+  }
+  const totals = { assets: categories.Assets.reduce((total, entry) => total + entry.amount, 0), liabilities: categories.Liabilities.reduce((total, entry) => total + entry.amount, 0), equity: categories.Equity.reduce((total, entry) => total + entry.amount, 0), currentEarnings };
+  totals.totalEquity = totals.equity + totals.currentEarnings;
+  totals.liabilitiesAndEquity = totals.liabilities + totals.totalEquity;
+  return { assets: categories.Assets, liabilities: categories.Liabilities, equity: categories.Equity, totals, isBalanced: Math.abs(totals.assets - totals.liabilitiesAndEquity) < 0.000001 };
+}
+
+module.exports = { getGeneralLedger, getTrialBalance, getJournalRegister, getDayBook, getStockSummary, getStockLedger, getProfitLoss, getBalanceSheet };

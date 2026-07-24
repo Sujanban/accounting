@@ -41,4 +41,8 @@ module.exports = {
     "getProfitLoss",
     "Profit and loss fetched successfully.",
   ),
+  getBalanceSheet: handler(
+    "getBalanceSheet",
+    "Balance sheet fetched successfully.",
+  ),
 };

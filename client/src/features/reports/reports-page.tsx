@@ -15,6 +15,7 @@ import {
   useStockSummary,
   useStockLedger,
   useProfitLoss,
+  useBalanceSheet,
   useTrialBalance,
 } from "./use-reports";
 
@@ -57,16 +58,22 @@ const reportMetadata: Record<string, { title: string; description: string }> = {
     title: "Profit & loss",
     description: "Compare income and expenses for the selected reporting period.",
   },
+  "balance-sheet": {
+    title: "Balance sheet",
+    description: "Review assets, liabilities, equity, and current earnings as of the selected date.",
+  },
 };
 
 function ReportFiltersForm({
   filters,
   onApply,
   children,
+  showFrom = true,
 }: {
   filters: ReportFilters;
   onApply: (filters: ReportFilters) => void;
   children?: ReactNode;
+  showFrom?: boolean;
 }) {
   const [draft, setDraft] = useState(filters);
   return (
@@ -78,7 +85,7 @@ function ReportFiltersForm({
           onApply({ ...draft, page: 1, limit: 20 });
         }}
       >
-        <label>
+        {showFrom ? <label>
           From date
           <input
             type="date"
@@ -87,7 +94,7 @@ function ReportFiltersForm({
               setDraft({ ...draft, from: event.target.value || undefined })
             }
           />
-        </label>
+        </label> : null}
         <label>
           To date
           <input
@@ -433,6 +440,13 @@ function ProfitLossReport() {
   return <><ReportFiltersForm filters={filters} onApply={setFilters} />{report.isLoading ? <LoadingScreen fullScreen={false} label="Loading profit and loss" description="Calculating income and expenses…" /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle="Profit & loss"><div className="report-summary"><span>Total income<strong>{money.format(report.data.totals.income)}</strong></span><span>Total expenses<strong>{money.format(report.data.totals.expenses)}</strong></span><span>{report.data.totals.netProfit >= 0 ? "Net profit" : "Net loss"}<strong>{money.format(Math.abs(report.data.totals.netProfit))}</strong></span></div><table className="accounting-table"><thead><tr><th>Income</th><th>Amount</th></tr></thead><tbody>{report.data.income.map((entry) => <tr key={entry.ledgerId}><td>{entry.ledgerName}</td><td>{money.format(entry.amount)}</td></tr>)}</tbody><tfoot><tr><th>Total income</th><th>{money.format(report.data.totals.income)}</th></tr></tfoot></table><table className="accounting-table"><thead><tr><th>Expenses</th><th>Amount</th></tr></thead><tbody>{report.data.expenses.map((entry) => <tr key={entry.ledgerId}><td>{entry.ledgerName}</td><td>{money.format(entry.amount)}</td></tr>)}</tbody><tfoot><tr><th>Total expenses</th><th>{money.format(report.data.totals.expenses)}</th></tr></tfoot></table>{!report.data.income.length && !report.data.expenses.length ? <Text as="p" color="gray" className="accounting-empty">No income or expense journal entries match these filters.</Text> : null}</ReportFrame> : null}</>;
 }
 
+function BalanceSheetReport() {
+  const [filters, setFilters] = useState<ReportFilters>({});
+  const report = useBalanceSheet(filters);
+  const renderSection = (title: string, entries: Array<{ ledgerId: string; ledgerName: string; amount: number }>, total: number) => <table className="accounting-table"><thead><tr><th>{title}</th><th>Amount</th></tr></thead><tbody>{entries.map((entry) => <tr key={entry.ledgerId}><td>{entry.ledgerName}</td><td>{money.format(entry.amount)}</td></tr>)}</tbody><tfoot><tr><th>Total {title.toLowerCase()}</th><th>{money.format(total)}</th></tr></tfoot></table>;
+  return <><ReportFiltersForm filters={filters} onApply={setFilters} showFrom={false} />{report.isLoading ? <LoadingScreen fullScreen={false} label="Loading balance sheet" description="Calculating account balances…" /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle="Balance sheet"><div className={`report-balance ${report.data.isBalanced ? "report-balance--balanced" : "report-balance--unbalanced"}`}>{report.data.isBalanced ? "Balanced" : "Out of balance"}</div><div className="report-summary"><span>Assets<strong>{money.format(report.data.totals.assets)}</strong></span><span>Liabilities & equity<strong>{money.format(report.data.totals.liabilitiesAndEquity)}</strong></span><span>Current earnings<strong>{money.format(report.data.totals.currentEarnings)}</strong></span></div>{renderSection("Assets", report.data.assets, report.data.totals.assets)}{renderSection("Liabilities", report.data.liabilities, report.data.totals.liabilities)}{renderSection("Equity", report.data.equity, report.data.totals.equity)}<table className="accounting-table"><tbody><tr><th>Current earnings</th><td>{money.format(report.data.totals.currentEarnings)}</td></tr><tr><th>Total equity</th><td>{money.format(report.data.totals.totalEquity)}</td></tr><tr><th>Total liabilities & equity</th><td>{money.format(report.data.totals.liabilitiesAndEquity)}</td></tr></tbody></table></ReportFrame> : null}</>;
+}
+
 export function ReportsPage() {
   const { report = "" } = useParams();
   const metadata = reportMetadata[report];
@@ -462,6 +476,8 @@ export function ReportsPage() {
         <StockLedgerReport />
       ) : report === "profit-loss" ? (
         <ProfitLossReport />
+      ) : report === "balance-sheet" ? (
+        <BalanceSheetReport />
       ) : (
         <DayBookReport />
       )}
