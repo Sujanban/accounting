@@ -14,6 +14,7 @@ Current implementation status
 
 - PAN/VAT settings are available in the existing Settings route.
 - The Localization settings tab now uses the existing server/Postman calendar and VAT calculation APIs for current BS date, AD↔BS conversion, Nepali month names, and VAT calculation.
+- New and editable vouchers accept BS dates through the same calendar API and persist the converted AD date.
 
 Prerequisites
 

@@ -15,6 +15,7 @@ import {
 } from "./use-transactions";
 import { mastersApi } from "../masters/masters-api";
 import { useAttachments, useDeleteAttachment, useProducts, useUploadAttachment, useWarehouses } from "../masters/use-masters";
+import { useAdToBs, useBsToAd } from "../settings/use-settings";
 import type { VoucherTransactionType } from "./transactions-api";
 
 const types = [
@@ -32,6 +33,76 @@ const formatVoucherType = (value: string) =>
     .split("_")
     .map((word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
     .join(" ");
+
+function NepalDateField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (date: string) => void;
+}) {
+  const [bsDate, setBsDate] = useState("");
+  const adToBs = useAdToBs();
+  const bsToAd = useBsToAd();
+  const conversionError = adToBs.error ?? bsToAd.error;
+
+  return (
+    <div className="accounting-form__wide">
+      <Flex direction="column" gap="2">
+        <label>
+          Date (AD)
+          <input
+            name="transactionDate"
+            type="date"
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            required
+          />
+        </label>
+        <Flex gap="2" align="end" wrap="wrap">
+          <label>
+            Date (BS)
+            <input
+              value={bsDate}
+              placeholder="2082-04-01"
+              onChange={(event) => setBsDate(event.target.value)}
+            />
+          </label>
+          <Button
+            type="button"
+            variant="outline"
+            loading={bsToAd.isPending}
+            disabled={!bsDate}
+            onClick={() =>
+              void bsToAd.mutateAsync(bsDate).then((result) => onChange(result.date))
+            }
+          >
+            Use BS date
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            loading={adToBs.isPending}
+            disabled={!value}
+            onClick={() => void adToBs.mutateAsync(value)}
+          >
+            Show BS equivalent
+          </Button>
+        </Flex>
+        {adToBs.data ? (
+          <Text size="2" color="gray">
+            BS equivalent: {adToBs.data.date} ({adToBs.data.monthName})
+          </Text>
+        ) : null}
+        {conversionError instanceof Error ? (
+          <Text size="2" color="red" role="alert">
+            {conversionError.message}
+          </Text>
+        ) : null}
+      </Flex>
+    </div>
+  );
+}
 
 export function TransactionsPage({
   drafts = false,
@@ -287,6 +358,9 @@ function DraftForm({
   error?: string;
   onSave: (input: any) => Promise<void>;
 }) {
+  const [transactionDate, setTransactionDate] = useState(
+    new Date().toISOString().slice(0, 10),
+  );
   const [lines, setLines] = useState([
     { ledgerId: "", debit: "", credit: "" },
     { ledgerId: "", debit: "", credit: "" },
@@ -314,7 +388,7 @@ function DraftForm({
             void onSave({
               transactionType: type,
               voucherType: selected.voucher,
-              transactionDate: form.get("transactionDate"),
+              transactionDate,
               narration: form.get("narration") || null,
               items: [],
               inventoryEntries: inventory
@@ -344,15 +418,10 @@ function DraftForm({
               ))}
             </AppSelect>
           </label>
-          <label>
-            Date
-            <input
-              name="transactionDate"
-              type="date"
-              defaultValue={new Date().toISOString().slice(0, 10)}
-              required
-            />
-          </label>
+          <NepalDateField
+            value={transactionDate}
+            onChange={setTransactionDate}
+          />
           <label className="accounting-form__wide">
             Narration
             <textarea
@@ -721,6 +790,7 @@ export function TransactionEditPage() {
       unitCost: number;
     }>
   >([]);
+  const [transactionDate, setTransactionDate] = useState("");
   if (transaction.isLoading) {
     return (
       <LoadingScreen
@@ -733,6 +803,7 @@ export function TransactionEditPage() {
   if (!transaction.data || transaction.data.status !== "DRAFT")
     return <Text color="red">Only draft transactions can be edited.</Text>;
   const draft = transaction.data;
+  const effectiveTransactionDate = transactionDate || draft.transactionDate.slice(0, 10);
   const lines = accounting.length ? accounting : draft.accountingEntries;
   const stock = inventory.length ? inventory : draft.inventoryEntries;
   return (
@@ -754,7 +825,7 @@ export function TransactionEditPage() {
                 type: draft.transactionType as VoucherTransactionType,
                 id: draft.id,
                 input: {
-                  transactionDate: String(form.get("transactionDate") || ""),
+                  transactionDate: effectiveTransactionDate,
                   narration: String(form.get("narration") || "") || null,
                   accountingEntries: lines.filter((line) => line.ledgerId),
                   inventoryEntries: stock.filter(
@@ -765,15 +836,10 @@ export function TransactionEditPage() {
               .then(() => navigate(`/vouchers/transactions/${draft.id}`));
           }}
         >
-          <label>
-            Date
-            <input
-              name="transactionDate"
-              type="date"
-              defaultValue={draft.transactionDate.slice(0, 10)}
-              required
-            />
-          </label>
+          <NepalDateField
+            value={effectiveTransactionDate}
+            onChange={setTransactionDate}
+          />
           <label className="accounting-form__wide">
             Narration
             <textarea
