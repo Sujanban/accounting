@@ -40,7 +40,7 @@ Implemented in the initial delivery:
 - Shared Detailed and Compact report layout templates for on-screen review and print output.
 - Voucher-style print template for reports: document header and generated timestamp, simplified print chrome, dotted totals, and page-break-safe sections.
 
-Remaining: further sales/purchase breakdowns, PDF/Excel export, dashboard reporting, templates, scheduled reports, and their remaining frontend delivery.
+Remaining: native PDF/XLSX export, dashboard caching, and scheduled/email report delivery. Additional sales/purchase breakdowns are deferred unless the existing API contract is extended.
 
 Prerequisites
 

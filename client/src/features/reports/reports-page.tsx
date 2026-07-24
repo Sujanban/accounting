@@ -398,6 +398,7 @@ function JournalRegisterReport() {
               ))}
             </tbody>
           </table>
+          <ReportPagination meta={report.data.meta} onPageChange={(page) => setFilters({ ...filters, page })} />
           {report.data.items.length === 0 ? (
             <Text as="p" color="gray" className="accounting-empty">
               No journals match these filters.
@@ -449,6 +450,7 @@ function DayBookReport() {
               ))}
             </tbody>
           </table>
+          <ReportPagination meta={report.data.meta} onPageChange={(page) => setFilters({ ...filters, page })} />
           {report.data.items.length === 0 ? (
             <Text as="p" color="gray" className="accounting-empty">
               No vouchers match these filters.
