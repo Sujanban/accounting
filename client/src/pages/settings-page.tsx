@@ -20,6 +20,9 @@ import {
 } from "../features/settings/settings-api";
 import {
   useActivateFiscalYear,
+  useAdToBs,
+  useBsToAd,
+  useBsMonthName,
   useCloseFiscalYear,
   useCompanyProfile,
   useFiscalYearMutation,
@@ -32,6 +35,8 @@ import {
   useUpdateSettings,
   useUpdateVat,
   useVat,
+  useVatCalculation,
+  useTodayBs,
 } from "../features/settings/use-settings";
 import { getCurrentFiscalYearDefaults } from "../lib/fiscal-year";
 import { ApiClientError } from "../lib/query-client";
@@ -132,6 +137,7 @@ export function SettingsPage() {
           <Tabs.Trigger value="company">Company</Tabs.Trigger>
           <Tabs.Trigger value="preferences">Preferences</Tabs.Trigger>
           <Tabs.Trigger value="tax">Tax</Tabs.Trigger>
+          <Tabs.Trigger value="localization">Localization</Tabs.Trigger>
           <Tabs.Trigger value="fiscal">Fiscal years</Tabs.Trigger>
         </Tabs.List>
         <Tabs.Content value="company">
@@ -387,9 +393,29 @@ export function SettingsPage() {
             <FiscalYears years={fiscalYears.data ?? []} />
           </SettingsSection>
         </Tabs.Content>
+        <Tabs.Content value="localization">
+          <LocalizationTools />
+        </Tabs.Content>
       </Tabs.Root>
     </Flex>
   );
+}
+
+function LocalizationTools() {
+  const [adDate, setAdDate] = useState(new Date().toISOString().slice(0, 10));
+  const [bsDate, setBsDate] = useState("");
+  const [vatAmount, setVatAmount] = useState("1000");
+  const [vatRate, setVatRate] = useState("13");
+  const [vatMode, setVatMode] = useState<"EXCLUSIVE" | "INCLUSIVE">("EXCLUSIVE");
+  const [month, setMonth] = useState("4");
+  const [language, setLanguage] = useState<"en" | "ne">("en");
+  const today = useTodayBs();
+  const adToBs = useAdToBs();
+  const bsToAd = useBsToAd();
+  const vatCalculation = useVatCalculation();
+  const monthName = useBsMonthName();
+  const error = (value: unknown) => value instanceof ApiClientError ? value.message : "Unable to complete the localization request.";
+  return <Flex direction="column" gap="4"><SettingsSection title="Bikram Sambat calendar" description="Convert dates while keeping the server as the calendar source of truth."><Flex direction="column" gap="3"><Text>Today in BS: <strong>{today.data ? `${today.data.date} (${today.data.monthName})` : "Loading…"}</strong></Text><form onSubmit={(event) => { event.preventDefault(); adToBs.mutate(adDate); }}><Flex direction="column" gap="2" className="settings-form"><FormTextField label="AD date" type="date" value={adDate} onChange={(event) => setAdDate(event.target.value)} required /><Button type="submit" loading={adToBs.isPending}>Convert AD to BS</Button>{adToBs.data ? <Text color="gray">BS: {adToBs.data.date} — {adToBs.data.monthName}</Text> : null}{adToBs.isError ? <Text color="red" role="alert">{error(adToBs.error)}</Text> : null}</Flex></form><form onSubmit={(event) => { event.preventDefault(); bsToAd.mutate(bsDate); }}><Flex direction="column" gap="2" className="settings-form"><FormTextField label="BS date" placeholder="2082-04-01" value={bsDate} onChange={(event) => setBsDate(event.target.value)} required /><Button type="submit" loading={bsToAd.isPending}>Convert BS to AD</Button>{bsToAd.data ? <Text color="gray">AD: {bsToAd.data.date}</Text> : null}{bsToAd.isError ? <Text color="red" role="alert">{error(bsToAd.error)}</Text> : null}</Flex></form><form onSubmit={(event) => { event.preventDefault(); monthName.mutate({ month: Number(month), language }); }}><Flex direction="column" gap="2" className="settings-form"><FormSelect label="BS month" value={month} onValueChange={setMonth} options={Array.from({ length: 12 }, (_, index) => ({ value: String(index + 1), label: String(index + 1) }))} /><FormSelect label="Language" value={language} onValueChange={(value) => setLanguage(value as "en" | "ne")} options={[{ value: "en", label: "English" }, { value: "ne", label: "Nepali" }]} /><Button type="submit" loading={monthName.isPending}>Get month name</Button>{monthName.data ? <Text color="gray">Month name: {monthName.data.name}</Text> : null}{monthName.isError ? <Text color="red" role="alert">{error(monthName.error)}</Text> : null}</Flex></form></Flex></SettingsSection><SettingsSection title="VAT calculator" description="Calculate inclusive or exclusive VAT using the server compliance rules."><form onSubmit={(event) => { event.preventDefault(); vatCalculation.mutate({ amount: Number(vatAmount), rate: Number(vatRate), mode: vatMode }); }}><Flex direction="column" gap="3" className="settings-form"><FormTextField label="Amount" type="number" value={vatAmount} onChange={(event) => setVatAmount(event.target.value)} required /><FormTextField label="VAT rate (%)" type="number" value={vatRate} onChange={(event) => setVatRate(event.target.value)} required /><FormSelect label="VAT mode" value={vatMode} onValueChange={(value) => setVatMode(value as "EXCLUSIVE" | "INCLUSIVE")} options={[{ value: "EXCLUSIVE", label: "Exclusive" }, { value: "INCLUSIVE", label: "Inclusive" }]} /><Button type="submit" loading={vatCalculation.isPending}>Calculate VAT</Button>{vatCalculation.data ? <div className="settings-summary"><Text>Taxable amount: <strong>{vatCalculation.data.taxableAmount.toFixed(2)}</strong></Text><Text>VAT amount: <strong>{vatCalculation.data.vatAmount.toFixed(2)}</strong></Text><Text>Total amount: <strong>{vatCalculation.data.totalAmount.toFixed(2)}</strong></Text></div> : null}{vatCalculation.isError ? <Text color="red" role="alert">{error(vatCalculation.error)}</Text> : null}</Flex></form></SettingsSection></Flex>;
 }
 
 function SettingsSection({

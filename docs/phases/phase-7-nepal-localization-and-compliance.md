@@ -2,13 +2,18 @@
 
 Version: 1.0
 
-Status: Planned
+Status: In progress
 
 ## Frontend delivery
 
-Status: Planned
+Status: In progress
 
 Extend company settings with PAN/VAT compliance panels, VAT calculation, AD↔BS conversion, current BS date, and Nepali month-name utilities without duplicating settings routes.
+
+Current implementation status
+
+- PAN/VAT settings are available in the existing Settings route.
+- The Localization settings tab now uses the existing server/Postman calendar and VAT calculation APIs for current BS date, AD↔BS conversion, Nepali month names, and VAT calculation.
 
 Prerequisites
 
