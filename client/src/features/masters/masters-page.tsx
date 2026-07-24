@@ -1,6 +1,6 @@
 import { Card, Dialog, Flex, Heading, Text } from "@radix-ui/themes";
 import { Cross2Icon, Pencil1Icon, TrashIcon } from "@radix-ui/react-icons";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { LoadingScreen } from "../../components/loading-screen";
 import { Button } from "../../components/ui/button";
@@ -14,6 +14,11 @@ import {
   type Attachment,
   type MasterAddress,
   type Product,
+  type Unit,
+  type ProductCategory,
+  type TaxRate,
+  type PaymentTerm,
+  type ProductInput,
   type PriceList,
   type Warehouse,
 } from "./masters-api";
@@ -42,7 +47,14 @@ import {
   useUpdateContact,
   useUploadAttachment,
   useAttachments,
+  useDeleteAttachment,
+  useArchiveCatalog,
+  useRestoreCatalog,
+  useProduct,
+  useUpdateCatalog,
+  useCatalogPage,
 } from "./use-masters";
+import { mastersApi } from "./masters-api";
 
 const roles: ContactRole[] = [
   "CUSTOMER",
@@ -179,6 +191,7 @@ function AddressFields({
 
 function AttachmentUploader({ entityType, entityId }: { entityType: string; entityId: string }) {
   const upload = useUploadAttachment();
+  const remove = useDeleteAttachment();
   const attachments = useAttachments(entityType, entityId);
   const [file, setFile] = useState<File | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -191,6 +204,23 @@ function AttachmentUploader({ entityType, entityId }: { entityType: string; enti
       void attachments.refetch();
       setSuccess(`${file.name} uploaded.`);
       setFile(null);
+    } catch {
+      setSuccess(null);
+    }
+  }
+  async function deleteAttachment(attachment: Attachment) {
+    try {
+      await remove.mutateAsync(attachment.id);
+      await attachments.refetch();
+      setSuccess(`${attachment.fileName} deleted.`);
+    } catch {
+      setSuccess(null);
+    }
+  }
+  async function downloadAttachment(attachment: Attachment) {
+    try {
+      const download = await mastersApi.attachmentDownload(attachment.id);
+      if (download.url) window.open(download.url, "_blank", "noopener,noreferrer");
     } catch {
       setSuccess(null);
     }
@@ -208,8 +238,8 @@ function AttachmentUploader({ entityType, entityId }: { entityType: string; enti
           <Button type="submit" disabled={!file} loading={upload.isPending}>Upload attachment</Button>
         </div>
       </form>
-      <Status error={upload.error} success={success} />
-      {attachments.data?.length ? <div className="attachment-list">{attachments.data.map((attachment) => <div key={attachment.id} className="attachment-list__item">{attachment.mimeType.startsWith("image/") && attachment.url ? <button type="button" className="attachment-list__button" onClick={() => setSelectedAttachment(attachment)}><img src={attachment.url} alt={attachment.fileName} /></button> : null}{attachment.url ? <button type="button" className="attachment-list__name" onClick={() => setSelectedAttachment(attachment)}>{attachment.fileName}</button> : <span>{attachment.fileName}</span>}</div>)}</div> : null}
+      <Status error={upload.error ?? remove.error} success={success} />
+      {attachments.data?.length ? <div className="attachment-list">{attachments.data.map((attachment) => <div key={attachment.id} className="attachment-list__item">{attachment.mimeType.startsWith("image/") && attachment.url ? <button type="button" className="attachment-list__button" onClick={() => setSelectedAttachment(attachment)}><img src={attachment.url} alt={attachment.fileName} /></button> : null}<div className="attachment-list__meta">{attachment.url ? <button type="button" className="attachment-list__name" onClick={() => setSelectedAttachment(attachment)}>{attachment.fileName}</button> : <span>{attachment.fileName}</span>}<Button type="button" size="1" variant="outline" onClick={() => void downloadAttachment(attachment)}>Download</Button><Button type="button" size="1" variant="ghost" className="table-icon-button" aria-label={`Delete ${attachment.fileName}`} loading={remove.isPending} onClick={() => void deleteAttachment(attachment)}><TrashIcon className="table-action-icon" /></Button></div></div>)}</div> : null}
       <Dialog.Root open={Boolean(selectedAttachment)} onOpenChange={(open) => { if (!open) setSelectedAttachment(null); }}>
         <Dialog.Content maxWidth="720px">
           <Dialog.Title>{selectedAttachment?.fileName}</Dialog.Title>
@@ -411,12 +441,14 @@ function PartiesPage() {
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("");
   const [status, setStatus] = useState<"all" | "true" | "false">("all");
+  const [page, setPage] = useState(1);
   const [success, setSuccess] = useState<string | null>(null);
   const [contactToArchive, setContactToArchive] = useState<Contact | null>(null);
   const contacts = useContacts({
     search: search || undefined,
     role: role || undefined,
     isActive: status,
+    page,
   });
   const archive = useArchiveContact();
   const restore = useRestoreContact();
@@ -456,12 +488,12 @@ function PartiesPage() {
             <input
               value={search}
               placeholder="Name, code, phone"
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
           </label>
           <label>
             Role
-            <AppSelect value={role} onChange={(e) => setRole(e.target.value)}>
+            <AppSelect value={role} onChange={(e) => { setRole(e.target.value); setPage(1); }}>
               <option value="">All roles</option>
               {roles.map((item) => (
                 <option value={item} key={item}>
@@ -474,9 +506,10 @@ function PartiesPage() {
             Status
             <AppSelect
               value={status}
-              onChange={(event) =>
-                setStatus(event.target.value as "all" | "true" | "false")
-              }
+              onChange={(event) => {
+                setStatus(event.target.value as "all" | "true" | "false");
+                setPage(1);
+              }}
             >
               <option value="all">All statuses</option>
               <option value="true">Active</option>
@@ -486,6 +519,7 @@ function PartiesPage() {
         </div>
       </Card>
       <Content loading={contacts.isLoading} error={contacts.error}>
+        <>
         <Card size="3" className="accounting-table-card">
           <table className="accounting-table">
             <thead>
@@ -557,6 +591,16 @@ function PartiesPage() {
             </tbody>
           </table>
         </Card>
+        {contacts.data?.meta.totalPages && contacts.data.meta.totalPages > 1 ? (
+          <Flex justify="between" align="center" gap="3" wrap="wrap">
+            <Text color="gray">Page {contacts.data.meta.page} of {contacts.data.meta.totalPages} · {contacts.data.meta.total} parties</Text>
+            <Flex gap="2">
+              <Button type="button" variant="outline" disabled={page <= 1 || contacts.isFetching} onClick={() => setPage((value) => Math.max(1, value - 1))}>Previous</Button>
+              <Button type="button" variant="outline" disabled={!contacts.data.meta.hasNextPage || contacts.isFetching} onClick={() => setPage((value) => value + 1)}>Next</Button>
+            </Flex>
+          </Flex>
+        ) : null}
+        </>
       </Content>
       <Dialog.Root
         open={Boolean(contactToArchive)}
@@ -651,12 +695,117 @@ export function PartyEditPage() {
   );
 }
 
-type CatalogProps<T> = {
+export function ProductEditPage() {
+  const navigate = useNavigate();
+  const { productId } = useParams();
+  const product = useProduct(productId);
+  const units = useUnits();
+  const categories = useCategories();
+  const taxes = useTaxRates();
+  const update = useUpdateCatalog<ProductInput>("products");
+  const [error, setError] = useState<unknown>(null);
+
+  async function save(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!productId) return;
+    const form = new FormData(event.currentTarget);
+    const nullable = (key: string) => String(form.get(key) ?? "").trim() || null;
+    const input: ProductInput = {
+      sku: String(form.get("sku") ?? "").trim(),
+      name: String(form.get("name") ?? "").trim(),
+      barcode: nullable("barcode"),
+      unitId: String(form.get("unitId") ?? ""),
+      categoryId: nullable("categoryId"),
+      purchasePrice: Number(form.get("purchasePrice") ?? 0),
+      sellingPrice: Number(form.get("sellingPrice") ?? 0),
+      taxId: nullable("taxId"),
+      reorderLevel: Number(form.get("reorderLevel") ?? 0),
+      minimumStock: Number(form.get("minimumStock") ?? 0),
+      description: nullable("description"),
+      isService: form.get("isService") === "true",
+    };
+    try {
+      await update.mutateAsync({ id: productId, input });
+      navigate("/masters/products", { replace: true });
+    } catch (requestError) {
+      setError(requestError);
+    }
+  }
+
+  return (
+    <Flex direction="column" gap="5">
+      <Header title="Edit product or service" description="Update reusable catalog details and related files." />
+      <Status error={error ?? product.error ?? units.error ?? categories.error ?? taxes.error} />
+      <Content loading={product.isLoading || units.isLoading || categories.isLoading || taxes.isLoading} error={product.error ?? units.error ?? categories.error ?? taxes.error}>
+        {product.data ? <>
+          <Card size="3">
+            <form className="accounting-form" onSubmit={(event) => void save(event)}>
+              <label>SKU<RequiredMark /><input name="sku" defaultValue={product.data.sku} required /></label>
+              <label>Name<RequiredMark /><input name="name" defaultValue={product.data.name} required minLength={2} /></label>
+              <label>Barcode<input name="barcode" defaultValue={product.data.barcode ?? ""} /></label>
+              <label>Unit<RequiredMark /><AppSelect name="unitId" defaultValue={product.data.unitId} required>{units.data?.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</AppSelect></label>
+              <label>Category<AppSelect name="categoryId" defaultValue={product.data.categoryId ?? ""}><option value="">No category</option>{categories.data?.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</AppSelect></label>
+              <label>Purchase price<input name="purchasePrice" type="number" min="0" step="any" defaultValue={product.data.purchasePrice} /></label>
+              <label>Selling price<input name="sellingPrice" type="number" min="0" step="any" defaultValue={product.data.sellingPrice} /></label>
+              <label>Tax rate<AppSelect name="taxId" defaultValue={product.data.taxId ?? ""}><option value="">No tax rate</option>{taxes.data?.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</AppSelect></label>
+              <label>Reorder level<input name="reorderLevel" type="number" min="0" defaultValue={product.data.reorderLevel} /></label>
+              <label>Minimum stock<input name="minimumStock" type="number" min="0" defaultValue={product.data.minimumStock} /></label>
+              <label>Type<AppSelect name="isService" defaultValue={String(product.data.isService)}><option value="false">Product</option><option value="true">Service</option></AppSelect></label>
+              <label className="accounting-form__wide">Description<textarea name="description" rows={2} defaultValue={product.data.description ?? ""} /></label>
+              <div className="accounting-form__actions accounting-form__wide"><Button type="button" variant="outline" onClick={() => navigate("/masters/products")}>Cancel</Button><Button type="submit" loading={update.isPending}>Save product</Button></div>
+            </form>
+          </Card>
+          <AttachmentUploader entityType="product" entityId={product.data.id} />
+        </> : null}
+      </Content>
+    </Flex>
+  );
+}
+
+type EditableCatalogRecord = Record<string, unknown> & { id: string; isActive: boolean };
+
+function CatalogEditPage({ type, item, categories, contactGroups }: { type: CatalogResource; item: EditableCatalogRecord; categories: { id: string; name: string; isActive: boolean }[]; contactGroups: { id: string; name: string; isActive: boolean }[] }) {
+  const navigate = useNavigate();
+  const update = useUpdateCatalog<Record<string, unknown>>(type);
+  const [error, setError] = useState<unknown>(null);
+  const value = (field: string) => String(item[field] ?? "");
+  const boolean = (field: string) => String(Boolean(item[field]));
+  const title = { units: "unit", categories: "product category", "tax-rates": "tax rate", "payment-terms": "payment term", "contact-groups": "contact group", warehouses: "warehouse", "price-lists": "price list", products: "product" }[type];
+
+  async function save(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const input = Object.fromEntries(form.entries()) as Record<string, unknown>;
+    for (const field of ["parentId", "description", "address"]) if (input[field] === "") input[field] = null;
+    for (const field of ["percentage", "dueDays"]) if (input[field] !== undefined) input[field] = Number(input[field]);
+    for (const field of ["decimalAllowed", "isDefault"]) if (input[field] !== undefined) input[field] = input[field] === "true";
+    try {
+      await update.mutateAsync({ id: item.id, input });
+      navigate(`/masters/${type}`, { replace: true });
+    } catch (requestError) {
+      setError(requestError);
+    }
+  }
+
+  const fields = () => {
+    if (type === "units") return <><label>Name<RequiredMark /><input name="name" defaultValue={value("name")} required minLength={2} /></label><label>Symbol<RequiredMark /><input name="symbol" defaultValue={value("symbol")} required /></label><label>Precision<AppSelect name="decimalAllowed" defaultValue={boolean("decimalAllowed")}><option value="true">Decimals allowed</option><option value="false">Whole numbers only</option></AppSelect></label></>;
+    if (type === "categories") return <><label>Code<RequiredMark /><input name="categoryCode" defaultValue={value("categoryCode")} required /></label><label>Name<RequiredMark /><input name="name" defaultValue={value("name")} required minLength={2} /></label><label>Parent<AppSelect name="parentId" defaultValue={value("parentId")}><option value="">No parent</option>{categories.filter((entry) => entry.isActive && entry.id !== item.id).map((entry) => <option key={entry.id} value={entry.id}>{entry.name}</option>)}</AppSelect></label><label className="accounting-form__wide">Description<textarea name="description" rows={2} defaultValue={value("description")} /></label></>;
+    if (type === "tax-rates") return <><label>Code<RequiredMark /><input name="taxCode" defaultValue={value("taxCode")} required /></label><label>Name<RequiredMark /><input name="name" defaultValue={value("name")} required minLength={2} /></label><label>Percentage<RequiredMark /><input name="percentage" type="number" min="0" max="100" step="any" defaultValue={value("percentage")} required /></label><label>Type<AppSelect name="type" defaultValue={value("type")}><option value="VAT">VAT</option><option value="EXEMPT">Exempt</option><option value="ZERO_RATED">Zero rated</option></AppSelect></label><label>Effective date<RequiredMark /><input name="effectiveDate" type="date" defaultValue={value("effectiveDate").slice(0, 10)} required /></label><label>Default<AppSelect name="isDefault" defaultValue={boolean("isDefault")}><option value="false">No</option><option value="true">Yes</option></AppSelect></label></>;
+    if (type === "payment-terms") return <><label>Name<RequiredMark /><input name="name" defaultValue={value("name")} required minLength={2} /></label><label>Due days<RequiredMark /><input name="dueDays" type="number" min="0" max="3650" defaultValue={value("dueDays")} required /></label><label className="accounting-form__wide">Description<textarea name="description" rows={2} defaultValue={value("description")} /></label></>;
+    if (type === "contact-groups") return <><label>Name<RequiredMark /><input name="name" defaultValue={value("name")} required minLength={2} /></label><label>Parent<AppSelect name="parentId" defaultValue={value("parentId")}><option value="">No parent</option>{contactGroups.filter((entry) => entry.isActive && entry.id !== item.id).map((entry) => <option key={entry.id} value={entry.id}>{entry.name}</option>)}</AppSelect></label><label className="accounting-form__wide">Description<textarea name="description" rows={2} defaultValue={value("description")} /></label></>;
+    if (type === "warehouses") return <><label>Code<RequiredMark /><input name="warehouseCode" defaultValue={value("warehouseCode")} required /></label><label>Name<RequiredMark /><input name="name" defaultValue={value("name")} required minLength={2} /></label><label>Address<input name="address" defaultValue={value("address")} /></label><label>Default<AppSelect name="isDefault" defaultValue={boolean("isDefault")}><option value="false">No</option><option value="true">Yes</option></AppSelect></label><label className="accounting-form__wide">Description<textarea name="description" rows={2} defaultValue={value("description")} /></label></>;
+    return <><label>Name<RequiredMark /><input name="name" defaultValue={value("name")} required minLength={2} /></label><label>Currency<RequiredMark /><input name="currency" defaultValue={value("currency")} required minLength={3} maxLength={3} /></label><label>Default<AppSelect name="isDefault" defaultValue={boolean("isDefault")}><option value="false">No</option><option value="true">Yes</option></AppSelect></label><label className="accounting-form__wide">Description<textarea name="description" rows={2} defaultValue={value("description")} /></label></>;
+  };
+
+  return <Flex direction="column" gap="5"><Header title={`Edit ${title}`} description={`Update this reusable ${title}.`} /><Status error={error} /><Card size="3"><form className="accounting-form" onSubmit={(event) => void save(event)}>{fields()}<div className="accounting-form__actions accounting-form__wide"><Button type="button" variant="outline" onClick={() => navigate(`/masters/${type}`)}>Cancel</Button><Button type="submit" loading={update.isPending}>Save changes</Button></div></form></Card></Flex>;
+}
+
+type CatalogResource = "units" | "categories" | "tax-rates" | "payment-terms" | "contact-groups" | "warehouses" | "price-lists" | "products";
+type CatalogProps<T extends { id: string; isActive: boolean }> = {
   title: string;
   description: string;
   loading: boolean;
   error: unknown;
-  items: T[] | undefined;
   create: {
     mutateAsync: (input: any) => Promise<unknown>;
     isPending: boolean;
@@ -672,12 +821,11 @@ type CatalogProps<T> = {
   createPage?: boolean;
   masterType: string;
 };
-function Catalog<T>({
+function Catalog<T extends { id: string; isActive: boolean }>({
   title,
   description,
   loading,
   error,
-  items,
   create,
   columns,
   row,
@@ -686,14 +834,13 @@ function Catalog<T>({
   masterType,
 }: CatalogProps<T>) {
   const navigate = useNavigate();
+  const archive = useArchiveCatalog<T>(masterType as CatalogResource);
+  const restore = useRestoreCatalog<T>(masterType as CatalogResource);
   const [search, setSearch] = useState("");
-  const filteredItems = useMemo(
-    () =>
-      items?.filter((item) =>
-        JSON.stringify(item).toLowerCase().includes(search.trim().toLowerCase()),
-      ),
-    [items, search],
-  );
+  const [status, setStatus] = useState<"true" | "false" | "all">("all");
+  const [page, setPage] = useState(1);
+  const [mutationError, setMutationError] = useState<unknown>(null);
+  const paged = useCatalogPage<T>(masterType as CatalogResource, { page, limit: 20, search: search || undefined, isActive: status });
   const singularTitle = {
     units: "Unit",
     categories: "Product category",
@@ -701,6 +848,21 @@ function Catalog<T>({
     "payment-terms": "Payment term",
     products: "Product or service",
   }[masterType] ?? title;
+  async function archiveItem(item: T) {
+    if (!window.confirm(`Archive ${singularTitle.toLowerCase()}? It will no longer be available for new entries.`)) return;
+    try {
+      await archive.mutateAsync(item.id);
+    } catch (requestError) {
+      setMutationError(requestError);
+    }
+  }
+  async function restoreItem(item: T) {
+    try {
+      await restore.mutateAsync(item.id);
+    } catch (requestError) {
+      setMutationError(requestError);
+    }
+  }
   return (
     <Flex direction="column" gap="5">
       <Header
@@ -708,7 +870,7 @@ function Catalog<T>({
         description={createPage ? `Create a new ${singularTitle.toLowerCase()}.` : description}
         action={!createPage ? <Button onClick={() => navigate(`/masters/${masterType}/new`)}>Add {singularTitle}</Button> : undefined}
       />
-      <Status error={error ?? create.error} />
+      <Status error={error ?? paged.error ?? create.error ?? mutationError} />
       {!createPage ? (
         <Card size="3">
           <div className="accounting-filters">
@@ -717,13 +879,21 @@ function Catalog<T>({
               <input
                 value={search}
                 placeholder={`Search ${title.toLowerCase()}`}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => { setSearch(event.target.value); setPage(1); }}
               />
+            </label>
+            <label>
+              Status
+              <AppSelect value={status} onChange={(event) => { setStatus(event.target.value as "true" | "false" | "all"); setPage(1); }}>
+                <option value="all">All statuses</option>
+                <option value="true">Active</option>
+                <option value="false">Archived</option>
+              </AppSelect>
             </label>
           </div>
         </Card>
       ) : null}
-      <Content loading={loading} error={error}>
+      <Content loading={loading || paged.isLoading} error={error ?? paged.error}>
         {createPage ? (
           <Card size="3">
             {form((event) => {
@@ -756,20 +926,38 @@ function Catalog<T>({
             }, create.isPending, () => navigate(`/masters/${masterType}`))}
           </Card>
         ) : null}
-        {!createPage ? <Card size="3" className="accounting-table-card">
+        {!createPage ? <>
+        <Card size="3" className="accounting-table-card">
           <table className="accounting-table">
             <thead>
               <tr>
                 {columns.map((column) => (
                   <th key={column}>{column}</th>
                 ))}
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
-              {filteredItems?.map((item) => row(item))}
-              {!filteredItems?.length ? (
+              {paged.data?.items.map((item) => (
+                <tr key={item.id} className={item.isActive ? undefined : "archived-party-row"}>
+                  {row(item)}
+                  <td>
+                    {item.isActive ? (
+                      <div className="accounting-table__actions">
+                        <Button type="button" size="1" variant="ghost" className="table-icon-button" aria-label={`Edit ${singularTitle}`} onClick={() => navigate(`/masters/${masterType}/${item.id}/edit`)}><Pencil1Icon className="table-action-icon" /></Button>
+                        <Button type="button" size="1" variant="ghost" className="table-icon-button" aria-label={`Archive ${singularTitle}`} disabled={archive.isPending || restore.isPending} onClick={() => void archiveItem(item)}>
+                          <TrashIcon className="table-action-icon" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button type="button" size="1" variant="outline" disabled={archive.isPending || restore.isPending} onClick={() => void restoreItem(item)}>Restore</Button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {!paged.data?.items.length ? (
                 <tr>
-                  <td colSpan={columns.length}>
+                  <td colSpan={columns.length + 1}>
                     <Text color="gray">No {title.toLowerCase()} match your filters.</Text>
                   </td>
                 </tr>
@@ -777,21 +965,22 @@ function Catalog<T>({
             </tbody>
           </table>
         </Card>
-        : null}
+        {paged.data?.meta.totalPages && paged.data.meta.totalPages > 1 ? <Flex justify="between" align="center" gap="3" wrap="wrap"><Text color="gray">Page {paged.data.meta.page} of {paged.data.meta.totalPages} · {paged.data.meta.total} records</Text><Flex gap="2"><Button type="button" variant="outline" disabled={page <= 1 || paged.isFetching} onClick={() => setPage((value) => Math.max(1, value - 1))}>Previous</Button><Button type="button" variant="outline" disabled={!paged.data.meta.hasNextPage || paged.isFetching} onClick={() => setPage((value) => value + 1)}>Next</Button></Flex></Flex> : null}
+        </> : null}
       </Content>
     </Flex>
   );
 }
 
-function MastersCatalogPage({ type, createPage }: { type: string; createPage?: boolean }) {
-  const units = useUnits(),
-    categories = useCategories(),
-    contactGroups = useContactGroups(),
-    warehouses = useWarehouses(),
-    priceLists = usePriceLists(),
-    taxes = useTaxRates(),
-    terms = usePaymentTerms(),
-    products = useProducts();
+function MastersCatalogPage({ type, createPage, editId }: { type: string; createPage?: boolean; editId?: string }) {
+  const units = useUnits("all"),
+    categories = useCategories("all"),
+    contactGroups = useContactGroups("all"),
+    warehouses = useWarehouses("all"),
+    priceLists = usePriceLists("all"),
+    taxes = useTaxRates("all"),
+    terms = usePaymentTerms("all"),
+    products = useProducts("all");
   const unitCreate = useCreateUnit(),
     categoryCreate = useCreateCategory(),
     contactGroupCreate = useCreateContactGroup(),
@@ -800,6 +989,20 @@ function MastersCatalogPage({ type, createPage }: { type: string; createPage?: b
     taxCreate = useCreateTaxRate(),
     termCreate = useCreatePaymentTerm(),
     productCreate = useCreateProduct();
+  const records = {
+    units: units.data,
+    categories: categories.data,
+    "tax-rates": taxes.data,
+    "payment-terms": terms.data,
+    "contact-groups": contactGroups.data,
+    warehouses: warehouses.data,
+    "price-lists": priceLists.data,
+  } as Record<string, EditableCatalogRecord[] | undefined>;
+  if (editId) {
+    const item = records[type]?.find((entry) => entry.id === editId);
+    if (!item) return <Content loading={units.isLoading || categories.isLoading || taxes.isLoading || terms.isLoading || contactGroups.isLoading || warehouses.isLoading || priceLists.isLoading} error={units.error ?? categories.error ?? taxes.error ?? terms.error ?? contactGroups.error ?? warehouses.error ?? priceLists.error}><Text color="red" role="alert">The master record was not found.</Text></Content>;
+    return <CatalogEditPage type={type as CatalogResource} item={item} categories={categories.data ?? []} contactGroups={contactGroups.data ?? []} />;
+  }
   const simpleForm =
     (fields: React.ReactNode) =>
     (
@@ -821,25 +1024,24 @@ function MastersCatalogPage({ type, createPage }: { type: string; createPage?: b
         </div>
       </form>
     );
-  if (type === "contact-groups") return <Catalog<ContactGroup> title="Contact groups" description="Organize customers and suppliers into reusable groups." loading={contactGroups.isLoading} error={contactGroups.error} items={contactGroups.data} create={contactGroupCreate} columns={["Name", "Parent", "Description"]} row={(x) => <tr key={x.id}><td>{x.name}</td><td>{contactGroups.data?.find((group) => group.id === x.parentId)?.name ?? "—"}</td><td>{x.description ?? "—"}</td></tr>} form={simpleForm(<><label>Name<input name="name" placeholder="Wholesale customers" required /></label><label>Parent<AppSelect name="parentId" defaultValue=""><option value="">No parent</option>{contactGroups.data?.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</AppSelect></label><label className="accounting-form__wide">Description<textarea name="description" rows={2} placeholder="Optional group description" /></label></>)} masterType={type} createPage={createPage} />;
-  if (type === "warehouses") return <Catalog<Warehouse> title="Warehouses" description="Maintain locations used for inventory operations." loading={warehouses.isLoading} error={warehouses.error} items={warehouses.data} create={warehouseCreate} columns={["Code", "Name", "Address", "Default"]} row={(x) => <tr key={x.id}><td>{x.warehouseCode}</td><td>{x.name}</td><td>{x.address ?? "—"}</td><td>{x.isDefault ? "Yes" : "No"}</td></tr>} form={simpleForm(<><label>Code<input name="warehouseCode" placeholder="MAIN" required /></label><label>Name<input name="name" placeholder="Main warehouse" required /></label><label>Address<input name="address" placeholder="Kathmandu" /></label><label>Default<AppSelect name="isDefault" defaultValue="false"><option value="false">No</option><option value="true">Yes</option></AppSelect></label><label className="accounting-form__wide">Description<textarea name="description" rows={2} placeholder="Optional warehouse description" /></label></>)} masterType={type} createPage={createPage} />;
-  if (type === "price-lists") return <Catalog<PriceList> title="Price lists" description="Define reusable pricing strategies for sales." loading={priceLists.isLoading} error={priceLists.error} items={priceLists.data} create={priceListCreate} columns={["Name", "Currency", "Default", "Description"]} row={(x) => <tr key={x.id}><td>{x.name}</td><td>{x.currency}</td><td>{x.isDefault ? "Yes" : "No"}</td><td>{x.description ?? "—"}</td></tr>} form={simpleForm(<><label>Name<input name="name" placeholder="Retail" required /></label><label>Currency<input name="currency" placeholder="NPR" defaultValue="NPR" required /></label><label>Default<AppSelect name="isDefault" defaultValue="false"><option value="false">No</option><option value="true">Yes</option></AppSelect></label><label className="accounting-form__wide">Description<textarea name="description" rows={2} placeholder="Optional price list description" /></label></>)} masterType={type} createPage={createPage} />;
+  if (type === "contact-groups") return <Catalog<ContactGroup> title="Contact groups" description="Organize customers and suppliers into reusable groups." loading={contactGroups.isLoading} error={contactGroups.error} create={contactGroupCreate} columns={["Name", "Parent", "Description"]} row={(x) => <><td>{x.name}</td><td>{contactGroups.data?.find((group) => group.id === x.parentId)?.name ?? "—"}</td><td>{x.description ?? "—"}</td></>} form={simpleForm(<><label>Name<input name="name" placeholder="Wholesale customers" required /></label><label>Parent<AppSelect name="parentId" defaultValue=""><option value="">No parent</option>{contactGroups.data?.filter((group) => group.isActive).map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</AppSelect></label><label className="accounting-form__wide">Description<textarea name="description" rows={2} placeholder="Optional group description" /></label></>)} masterType={type} createPage={createPage} />;
+  if (type === "warehouses") return <Catalog<Warehouse> title="Warehouses" description="Maintain locations used for inventory operations." loading={warehouses.isLoading} error={warehouses.error} create={warehouseCreate} columns={["Code", "Name", "Address", "Default"]} row={(x) => <><td>{x.warehouseCode}</td><td>{x.name}</td><td>{x.address ?? "—"}</td><td>{x.isDefault ? "Yes" : "No"}</td></>} form={simpleForm(<><label>Code<input name="warehouseCode" placeholder="MAIN" required /></label><label>Name<input name="name" placeholder="Main warehouse" required /></label><label>Address<input name="address" placeholder="Kathmandu" /></label><label>Default<AppSelect name="isDefault" defaultValue="false"><option value="false">No</option><option value="true">Yes</option></AppSelect></label><label className="accounting-form__wide">Description<textarea name="description" rows={2} placeholder="Optional warehouse description" /></label></>)} masterType={type} createPage={createPage} />;
+  if (type === "price-lists") return <Catalog<PriceList> title="Price lists" description="Define reusable pricing strategies for sales." loading={priceLists.isLoading} error={priceLists.error} create={priceListCreate} columns={["Name", "Currency", "Default", "Description"]} row={(x) => <><td>{x.name}</td><td>{x.currency}</td><td>{x.isDefault ? "Yes" : "No"}</td><td>{x.description ?? "—"}</td></>} form={simpleForm(<><label>Name<input name="name" placeholder="Retail" required /></label><label>Currency<input name="currency" placeholder="NPR" defaultValue="NPR" required /></label><label>Default<AppSelect name="isDefault" defaultValue="false"><option value="false">No</option><option value="true">Yes</option></AppSelect></label><label className="accounting-form__wide">Description<textarea name="description" rows={2} placeholder="Optional price list description" /></label></>)} masterType={type} createPage={createPage} />;
   if (type === "units")
     return (
-      <Catalog
+      <Catalog<Unit>
         title="Units"
         description="Define the units of measure used by products and services."
         loading={units.isLoading}
         error={units.error}
-        items={units.data}
         create={unitCreate}
         columns={["Name", "Symbol", "Precision"]}
         row={(x) => (
-          <tr key={x.id}>
+          <>
             <td>{x.name}</td>
             <td>{x.symbol}</td>
             <td>{x.decimalAllowed ? "Decimals allowed" : "Whole numbers"}</td>
-          </tr>
+          </>
         )}
         form={simpleForm(
           <>
@@ -866,23 +1068,22 @@ function MastersCatalogPage({ type, createPage }: { type: string; createPage?: b
     );
   if (type === "categories")
     return (
-      <Catalog
+      <Catalog<ProductCategory>
         title="Product categories"
         description="Organize products in a reusable hierarchy."
         loading={categories.isLoading}
         error={categories.error}
-        items={categories.data}
         create={categoryCreate}
         columns={["Code", "Name", "Parent", "Description"]}
         row={(x) => (
-          <tr key={x.id}>
+          <>
             <td>{x.categoryCode}</td>
             <td>{x.name}</td>
             <td>
               {categories.data?.find((p) => p.id === x.parentId)?.name ?? "—"}
             </td>
             <td>{x.description ?? "—"}</td>
-          </tr>
+          </>
         )}
         form={simpleForm(
           <>
@@ -898,7 +1099,7 @@ function MastersCatalogPage({ type, createPage }: { type: string; createPage?: b
               Parent
               <AppSelect name="parentId" defaultValue="">
                 <option value="">No parent</option>
-                {categories.data?.map((x) => (
+                {categories.data?.filter((x) => x.isActive).map((x) => (
                   <option key={x.id} value={x.id}>
                     {x.name}
                   </option>
@@ -917,22 +1118,21 @@ function MastersCatalogPage({ type, createPage }: { type: string; createPage?: b
     );
   if (type === "tax-rates")
     return (
-      <Catalog
+      <Catalog<TaxRate>
         title="Tax rates"
         description="Maintain reusable tax configurations for product pricing."
         loading={taxes.isLoading}
         error={taxes.error}
-        items={taxes.data}
         create={taxCreate}
         columns={["Code", "Name", "Rate", "Type", "Effective from"]}
         row={(x) => (
-          <tr key={x.id}>
+          <>
             <td>{x.taxCode}</td>
             <td>{x.name}</td>
             <td>{x.percentage}%</td>
             <td>{x.type}</td>
             <td>{new Date(x.effectiveDate).toLocaleDateString()}</td>
-          </tr>
+          </>
         )}
         form={simpleForm(
           <>
@@ -976,20 +1176,19 @@ function MastersCatalogPage({ type, createPage }: { type: string; createPage?: b
     );
   if (type === "payment-terms")
     return (
-      <Catalog
+      <Catalog<PaymentTerm>
         title="Payment terms"
         description="Set standard payment due dates for your business parties."
         loading={terms.isLoading}
         error={terms.error}
-        items={terms.data}
         create={termCreate}
         columns={["Name", "Due days", "Description"]}
         row={(x) => (
-          <tr key={x.id}>
+          <>
             <td>{x.name}</td>
             <td>{x.dueDays}</td>
             <td>{x.description ?? "—"}</td>
-          </tr>
+          </>
         )}
         form={simpleForm(
           <>
@@ -1017,17 +1216,16 @@ function MastersCatalogPage({ type, createPage }: { type: string; createPage?: b
       description="Maintain the catalog used by future sales and purchase transactions."
       loading={products.isLoading}
       error={products.error}
-      items={products.data}
       create={productCreate}
       columns={["SKU", "Name", "Type", "Selling price", "Unit"]}
       row={(x) => (
-        <tr key={x.id}>
+        <>
           <td>{x.sku}</td>
           <td>{x.name}</td>
           <td>{x.isService ? "Service" : "Product"}</td>
           <td>{x.sellingPrice.toLocaleString()}</td>
           <td>{units.data?.find((u) => u.id === x.unitId)?.symbol ?? "—"}</td>
-        </tr>
+        </>
       )}
       form={simpleForm(
         <>
@@ -1049,7 +1247,7 @@ function MastersCatalogPage({ type, createPage }: { type: string; createPage?: b
               <option value="" disabled>
                 Select a unit
               </option>
-              {units.data?.map((x) => (
+              {units.data?.filter((x) => x.isActive).map((x) => (
                 <option key={x.id} value={x.id}>
                   {x.name}
                 </option>
@@ -1060,7 +1258,7 @@ function MastersCatalogPage({ type, createPage }: { type: string; createPage?: b
             Category
             <AppSelect name="categoryId" defaultValue="">
               <option value="">No category</option>
-              {categories.data?.map((x) => (
+              {categories.data?.filter((x) => x.isActive).map((x) => (
                 <option key={x.id} value={x.id}>
                   {x.name}
                 </option>
@@ -1091,7 +1289,7 @@ function MastersCatalogPage({ type, createPage }: { type: string; createPage?: b
             Tax rate
             <AppSelect name="taxId" defaultValue="">
               <option value="">No tax rate</option>
-              {taxes.data?.map((x) => (
+              {taxes.data?.filter((x) => x.isActive).map((x) => (
                 <option key={x.id} value={x.id}>
                   {x.name}
                 </option>
@@ -1126,11 +1324,11 @@ function MastersCatalogPage({ type, createPage }: { type: string; createPage?: b
 }
 
 export function MastersPage() {
-  const { masterType = "parties" } = useParams();
+  const { masterType = "parties", masterId } = useParams();
   const location = useLocation();
   return masterType === "parties" ? (
     <PartiesPage />
   ) : (
-    <MastersCatalogPage type={masterType} createPage={location.pathname.endsWith("/new")} />
+    <MastersCatalogPage type={masterType} createPage={location.pathname.endsWith("/new")} editId={location.pathname.endsWith("/edit") ? masterId : undefined} />
   );
 }

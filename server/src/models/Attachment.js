@@ -9,7 +9,9 @@ const schema = new mongoose.Schema({
   mimeType: { type: String, required: true, trim: true },
   sizeBytes: { type: Number, required: true, min: 0 },
   storageKey: { type: String, required: true, trim: true },
-  url: { type: String, required: true, trim: true },
+  resourceType: { type: String, enum: ["image", "raw"], default: null },
+  format: { type: String, default: null, trim: true },
+  url: { type: String, default: null, trim: true },
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 applySoftDeleteFields(schema); applyAuditFields(schema);

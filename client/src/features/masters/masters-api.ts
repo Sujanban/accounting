@@ -87,6 +87,7 @@ export type Product = {
   isService: boolean;
   isActive: boolean;
 };
+export type PaginatedMasters<T> = { items: T[]; meta: { page: number; limit: number; total: number; totalPages: number; hasNextPage: boolean } };
 
 export type ContactInput = {
   contactCode: string;
@@ -142,14 +143,14 @@ export const masterKeys = {
   all: ["masters"] as const,
   contacts: (filters: { search?: string; role?: string; page?: number; isActive?: "true" | "false" | "all" }) =>
     [...masterKeys.all, "contacts", filters] as const,
-  units: () => [...masterKeys.all, "units"] as const,
-  categories: () => [...masterKeys.all, "categories"] as const,
-  taxRates: () => [...masterKeys.all, "tax-rates"] as const,
-  paymentTerms: () => [...masterKeys.all, "payment-terms"] as const,
-  contactGroups: () => [...masterKeys.all, "contact-groups"] as const,
-  warehouses: () => [...masterKeys.all, "warehouses"] as const,
-  priceLists: () => [...masterKeys.all, "price-lists"] as const,
-  products: () => [...masterKeys.all, "products"] as const,
+  units: (isActive = "true") => [...masterKeys.all, "units", isActive] as const,
+  categories: (isActive = "true") => [...masterKeys.all, "categories", isActive] as const,
+  taxRates: (isActive = "true") => [...masterKeys.all, "tax-rates", isActive] as const,
+  paymentTerms: (isActive = "true") => [...masterKeys.all, "payment-terms", isActive] as const,
+  contactGroups: (isActive = "true") => [...masterKeys.all, "contact-groups", isActive] as const,
+  warehouses: (isActive = "true") => [...masterKeys.all, "warehouses", isActive] as const,
+  priceLists: (isActive = "true") => [...masterKeys.all, "price-lists", isActive] as const,
+  products: (isActive = "true") => [...masterKeys.all, "products", isActive] as const,
 };
 
 function query(values: Record<string, string | number | undefined>) {
@@ -190,39 +191,39 @@ export const mastersApi = {
     apiClient<Contact>(`/contacts/${id}`, { method: "DELETE" }),
   restoreContact: (id: string) =>
     apiClient<Contact>(`/contacts/${id}/restore`, { method: "POST" }),
-  units: (signal?: AbortSignal) =>
-    apiClient<Unit[]>("/units", { signal }),
+  units: (isActive = "true", signal?: AbortSignal) =>
+    apiClient<Unit[]>(`/units${query({ isActive })}`, { signal }),
   createUnit: (input: UnitInput) =>
     apiClient<Unit>("/units", {
       method: "POST",
       body: JSON.stringify(input),
     }),
-  categories: (signal?: AbortSignal) =>
-    apiClient<ProductCategory[]>("/categories", { signal }),
+  categories: (isActive = "true", signal?: AbortSignal) =>
+    apiClient<ProductCategory[]>(`/categories${query({ isActive })}`, { signal }),
   createCategory: (input: CategoryInput) =>
     apiClient<ProductCategory>("/categories", {
       method: "POST",
       body: JSON.stringify(input),
     }),
-  taxRates: (signal?: AbortSignal) =>
-    apiClient<TaxRate[]>("/tax-rates", { signal }),
+  taxRates: (isActive = "true", signal?: AbortSignal) =>
+    apiClient<TaxRate[]>(`/tax-rates${query({ isActive })}`, { signal }),
   createTaxRate: (input: TaxRateInput) =>
     apiClient<TaxRate>("/tax-rates", {
       method: "POST",
       body: JSON.stringify(input),
     }),
-  paymentTerms: (signal?: AbortSignal) =>
-    apiClient<PaymentTerm[]>("/payment-terms", { signal }),
+  paymentTerms: (isActive = "true", signal?: AbortSignal) =>
+    apiClient<PaymentTerm[]>(`/payment-terms${query({ isActive })}`, { signal }),
   createPaymentTerm: (input: PaymentTermInput) =>
     apiClient<PaymentTerm>("/payment-terms", {
       method: "POST",
       body: JSON.stringify(input),
     }),
-  contactGroups: (signal?: AbortSignal) => apiClient<ContactGroup[]>("/contact-groups", { signal }),
+  contactGroups: (isActive = "true", signal?: AbortSignal) => apiClient<ContactGroup[]>(`/contact-groups${query({ isActive })}`, { signal }),
   createContactGroup: (input: ContactGroupInput) => apiClient<ContactGroup>("/contact-groups", { method: "POST", body: JSON.stringify(input) }),
-  warehouses: (signal?: AbortSignal) => apiClient<Warehouse[]>("/warehouses", { signal }),
+  warehouses: (isActive = "true", signal?: AbortSignal) => apiClient<Warehouse[]>(`/warehouses${query({ isActive })}`, { signal }),
   createWarehouse: (input: WarehouseInput) => apiClient<Warehouse>("/warehouses", { method: "POST", body: JSON.stringify(input) }),
-  priceLists: (signal?: AbortSignal) => apiClient<PriceList[]>("/price-lists", { signal }),
+  priceLists: (isActive = "true", signal?: AbortSignal) => apiClient<PriceList[]>(`/price-lists${query({ isActive })}`, { signal }),
   createPriceList: (input: PriceListInput) => apiClient<PriceList>("/price-lists", { method: "POST", body: JSON.stringify(input) }),
   uploadAttachment: (file: File, entityType: string, entityId: string) => {
     const body = new FormData();
@@ -232,11 +233,24 @@ export const mastersApi = {
     return apiClient<Attachment>("/attachments", { method: "POST", body });
   },
   attachments: (entityType: string, entityId: string, signal?: AbortSignal) => apiClient<Attachment[]>(`/attachments?${new URLSearchParams({ entityType, entityId })}`, { signal }),
-  products: (signal?: AbortSignal) =>
-    apiClient<Product[]>("/products", { signal }),
+  deleteAttachment: (id: string) => apiClient<void>(`/attachments/${id}`, { method: "DELETE" }),
+  attachmentDownload: (id: string) => apiClient<{ url: string | null; fileName: string }>(`/attachments/${id}/download`),
+  products: (isActive = "true", signal?: AbortSignal) =>
+    apiClient<Product[]>(`/products${query({ isActive })}`, { signal }),
+  product: (id: string, signal?: AbortSignal) => apiClient<Product>(`/products/${id}`, { signal }),
   createProduct: (input: ProductInput) =>
     apiClient<Product>("/products", {
       method: "POST",
       body: JSON.stringify(input),
     }),
 };
+
+type CatalogResource = "units" | "categories" | "tax-rates" | "payment-terms" | "contact-groups" | "warehouses" | "price-lists" | "products";
+export const catalogPage = <T>(resource: CatalogResource, filters: { page: number; limit: number; search?: string; isActive?: "true" | "false" | "all" }, signal?: AbortSignal) =>
+  apiClient<PaginatedMasters<T>>(`/${resource}${query(filters)}`, { signal });
+export const updateCatalog = <T>(resource: CatalogResource, id: string, input: Partial<T>) =>
+  apiClient<T>(`/${resource}/${id}`, { method: "PATCH", body: JSON.stringify(input) });
+export const archiveCatalog = <T>(resource: CatalogResource, id: string) =>
+  apiClient<T>(`/${resource}/${id}`, { method: "DELETE" });
+export const restoreCatalog = <T>(resource: CatalogResource, id: string) =>
+  apiClient<T>(`/${resource}/${id}/restore`, { method: "POST" });

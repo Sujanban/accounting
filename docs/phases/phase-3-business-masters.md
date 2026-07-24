@@ -2,11 +2,11 @@
 
 Version: 1.0
 
-Status: In progress
+Status: Complete
 
 ## Frontend delivery
 
-Status: In progress
+Status: Complete
 
 Implement `/masters/parties`, `/masters/products`, `/masters/categories`, `/masters/units`, `/masters/tax-rates`, and `/masters/payment-terms` with typed feature APIs, query hooks, create forms, contacts update/archive behavior, and list loading/empty/error states.
 
@@ -14,16 +14,18 @@ Implement `/masters/parties`, `/masters/products`, `/masters/categories`, `/mast
 
 Implemented:
 
-- Typed frontend API clients and TanStack Query hooks for contacts, products, categories, units, tax rates, and payment terms.
-- List and dedicated create pages for `/masters/parties`, `/masters/products`, `/masters/categories`, `/masters/units`, `/masters/tax-rates`, and `/masters/payment-terms`.
+- Typed frontend API clients and TanStack Query hooks for contacts, products, categories, units, tax rates, payment terms, contact groups, warehouses, and price lists.
+- List and dedicated create pages for `/masters/parties`, `/masters/products`, `/masters/categories`, `/masters/units`, `/masters/tax-rates`, `/masters/payment-terms`, `/masters/contact-groups`, `/masters/warehouses`, and `/masters/price-lists`.
 - Contact create, detail, update, archive, restore, search, role/status filtering, and server-side pagination.
 - Contact input validation, audit metadata, company isolation, and soft-delete behavior.
+- Cloudinary-backed party attachment upload, metadata storage, listing, and preview for images and PDFs.
+- Product barcode, reorder-level, and minimum-stock fields in the create workflow.
 
-Remaining:
+Completed in the final delivery:
 
-- Contact groups, warehouses, price lists, and attachments.
-- Edit/archive/restore workflows for catalog masters other than contacts.
-- Pagination controls in the frontend and the remaining Phase 3 completion criteria below.
+- Edit/archive/restore workflows for every catalog master.
+- Product detail/edit, product attachments, attachment deletion, and authenticated download delivery.
+- Server-side pagination, search, status filtering, and frontend pagination controls for catalog lists.
 
 Prerequisites
 
@@ -934,19 +936,23 @@ Those belong to later phases.
 
 - [x] Contact management implemented, including archive and restore.
 
-- [ ] Contact groups implemented.
+- [x] Contact groups implemented with list/create delivery.
 
 - [x] Product categories, products, units, tax rates, and payment terms have list/create delivery.
 
-- [ ] Edit/archive/restore workflows completed for all catalog masters.
+- [x] Edit/archive/restore workflows completed for all catalog masters.
 
-- [ ] Warehouses, price lists, and attachments implemented.
+- [x] Warehouses and price lists implemented with list/create delivery.
+
+- [x] Party attachment upload, metadata storage, listing, and preview implemented.
+
+- [x] Product attachments, attachment deletion, and access-controlled download delivery implemented.
 
 - [x] Contact search, server-side pagination, soft delete, audit metadata, and company isolation implemented.
 
-- [ ] Frontend pagination controls and all Phase 3 completion criteria implemented.
+- [x] Frontend pagination controls and all Phase 3 completion criteria implemented.
 
-- [ ] Ready for Phase 4 — Transaction Engine.
+- [x] Ready for Phase 4 — Transaction Engine.
 
 ---
 

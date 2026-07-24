@@ -5,7 +5,7 @@ import { AccountGroupCreatePage, AccountGroupEditPage, AccountingPage, LedgerCre
 import { RequireAuth } from "./features/auth/require-auth";
 import { OnboardingPage } from "./features/onboarding/onboarding-page";
 import { RequireOnboarding } from "./features/onboarding/require-onboarding";
-import { MastersPage, PartyCreatePage, PartyEditPage } from "./features/masters/masters-page";
+import { MastersPage, PartyCreatePage, PartyEditPage, ProductEditPage } from "./features/masters/masters-page";
 import { DashboardPage } from "./pages/dashboard-page";
 import { PlaceholderPage } from "./pages/placeholder-page";
 import { SettingsPage } from "./pages/settings-page";
@@ -26,6 +26,8 @@ export function App() {
             <Route path="vouchers/:voucherType/new" element={<PlaceholderPage title="Create voucher" description="Enter a new voucher for the active company and fiscal year." />} />
             <Route path="masters/parties/new" element={<PartyCreatePage />} />
             <Route path="masters/parties/:partyId/edit" element={<PartyEditPage />} />
+            <Route path="masters/products/:productId/edit" element={<ProductEditPage />} />
+            <Route path="masters/:masterType/:masterId/edit" element={<MastersPage />} />
             <Route path="masters/:masterType/new" element={<MastersPage />} />
             <Route path="masters/:masterType" element={<MastersPage />} />
             <Route path="accounting/voucher-numbering/:voucherSequenceId/edit" element={<VoucherSequenceEditPage />} />
