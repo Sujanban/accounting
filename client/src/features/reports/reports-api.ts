@@ -7,6 +7,7 @@ export type ReportFilters = {
   limit?: number;
   warehouseId?: string;
   productId?: string;
+  branchId?: string;
 };
 export type ReportPageMeta = {
   page: number;

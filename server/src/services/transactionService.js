@@ -119,7 +119,8 @@ async function createDraft(companyId, fiscalYearId, payload) {
   assertTransactionTypeAccess(actorRole, input.transactionType);
   if (input.taxDetails && !["SALE", "PURCHASE"].includes(input.transactionType)) throw new ApiError(422, "Tax details are only supported for sales and purchase transactions.");
   await assertFiscalYearWritable(companyId, fiscalYearId, { transactionDate: payload.transactionDate });
-  const branch = await resolveDefaultBranch(companyId);
+  const branch = input.branchId ? await require("../models/Branch").Branch.findOne({ _id: input.branchId, companyId, isActive: true }) : await resolveDefaultBranch(companyId);
+  if (!branch) throw new ApiError(422, "A valid active branch is required.");
   const draft = await Transaction.create({ ...input, companyId, fiscalYearId, branchId: branch._id, status: "DRAFT", voucherNumber: null, createdBy: actorUserId, updatedBy: actorUserId });
   return mapTransaction(draft);
 }
@@ -132,6 +133,7 @@ async function updateDraft(companyId, fiscalYearId, transactionId, payload) {
   if (draft.status !== "DRAFT") throw new ApiError(409, "Only draft transactions can be edited.");
   await assertFiscalYearWritable(companyId, fiscalYearId, { transactionDate: input.transactionDate || draft.transactionDate });
   if (input.taxDetails !== undefined && !["SALE", "PURCHASE"].includes(draft.transactionType)) throw new ApiError(422, "Tax details are only supported for sales and purchase transactions.");
+  if (input.branchId !== undefined) { const branch = await require("../models/Branch").Branch.findOne({ _id: input.branchId, companyId, isActive: true }); if (!branch) throw new ApiError(422, "A valid active branch is required."); draft.branchId = branch._id; }
   for (const field of ["transactionDate", "narration", "items", "taxDetails", "accountingEntries", "inventoryEntries"]) if (input[field] !== undefined) draft[field] = input[field];
   draft.updatedBy = actorUserId;
   await draft.save();

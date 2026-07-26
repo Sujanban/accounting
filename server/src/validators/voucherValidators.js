@@ -1,5 +1,5 @@
 const { validateTransaction, validateUpdateTransaction } = require("./transactionValidators");
-const FIELDS = new Set(["transactionDate", "narration", "items", "taxDetails", "accountingEntries", "inventoryEntries"]);
+const FIELDS = new Set(["branchId", "transactionDate", "narration", "items", "taxDetails", "accountingEntries", "inventoryEntries"]);
 
 function validateVoucherDraft(body, transactionType = "JOURNAL") {
   const errors = [];

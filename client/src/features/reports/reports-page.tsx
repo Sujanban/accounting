@@ -8,6 +8,7 @@ import { ApiClientError } from "../../lib/query-client";
 import { downloadCsv } from "../../lib/csv";
 import { useLedgers } from "../accounting/use-accounting";
 import { useContacts, useCreateContactLedgerMapping, useProducts, useWarehouses } from "../masters/use-masters";
+import { useBranches } from "../enterprise/use-enterprise";
 import type { ReportFilters } from "./reports-api";
 import {
   useDayBook,
@@ -110,6 +111,7 @@ function ReportFiltersForm({
   showFrom?: boolean;
 }) {
   const [draft, setDraft] = useState(filters);
+  const branches = useBranches();
   return (
     <Card size="3" className="report-filters no-print">
       <form
@@ -139,6 +141,7 @@ function ReportFiltersForm({
             }
           />
         </label>
+        <label>Branch<AppSelect value={draft.branchId ?? ""} onChange={(event) => setDraft({ ...draft, branchId: event.target.value || undefined })}><option value="">All branches</option>{branches.data?.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</AppSelect></label>
         {children}
         <div className="report-filters__actions">
           <Button type="submit">Apply filters</Button>

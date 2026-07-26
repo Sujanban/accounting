@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const ALLOWED_FILTERS = new Set(["from", "to", "page", "limit"]);
+const ALLOWED_FILTERS = new Set(["from", "to", "page", "limit", "branchId"]);
 const GENERAL_LEDGER_FILTERS = new Set([...ALLOWED_FILTERS, "ledgerId"]);
 const STOCK_SUMMARY_FILTERS = new Set([...ALLOWED_FILTERS, "warehouseId"]);
 const STOCK_LEDGER_FILTERS = new Set([...ALLOWED_FILTERS, "productId", "warehouseId"]);
@@ -47,6 +47,7 @@ function validateReportQuery(query, allowedFilters) {
       field: "limit",
       message: "Limit must be a positive integer no greater than 100.",
     });
+  if (query.branchId !== undefined && !mongoose.isObjectIdOrHexString(query.branchId)) errors.push({ field: "branchId", message: "Branch must be a valid identifier." });
 
   return errors;
 }

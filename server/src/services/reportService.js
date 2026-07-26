@@ -33,12 +33,12 @@ async function getGeneralLedger(companyId, fiscalYearId, query) {
   const lines = await JournalLine.aggregate([
     { $match: { companyId, ledgerId: ledger._id } },
     { $lookup: { from: "journals", localField: "journalId", foreignField: "_id", as: "journal" } },
-    { $unwind: "$journal" }, { $match: { "journal.companyId": companyId, "journal.fiscalYearId": fiscalYearId, ...(range ? { "journal.transactionDate": range } : {}) } },
+    { $unwind: "$journal" }, { $match: { "journal.companyId": companyId, "journal.fiscalYearId": fiscalYearId, ...(query.branchId ? { "journal.branchId": query.branchId } : {}), ...(range ? { "journal.transactionDate": range } : {}) } },
     { $sort: { "journal.transactionDate": 1, _id: 1 } }
   ]);
   const openingLines = range && range.$gte ? await JournalLine.aggregate([
     { $match: { companyId, ledgerId: ledger._id } }, { $lookup: { from: "journals", localField: "journalId", foreignField: "_id", as: "journal" } }, { $unwind: "$journal" },
-    { $match: { "journal.companyId": companyId, "journal.fiscalYearId": fiscalYearId, "journal.transactionDate": { $lt: range.$gte } } }, { $group: { _id: null, debit: { $sum: "$debit" }, credit: { $sum: "$credit" } } }
+    { $match: { "journal.companyId": companyId, "journal.fiscalYearId": fiscalYearId, ...(query.branchId ? { "journal.branchId": query.branchId } : {}), "journal.transactionDate": { $lt: range.$gte } } }, { $group: { _id: null, debit: { $sum: "$debit" }, credit: { $sum: "$credit" } } }
   ]) : [];
   let runningBalance = Number(ledger.openingBalance || 0) + Number(openingLines[0]?.debit || 0) - Number(openingLines[0]?.credit || 0);
   const entries = lines.map((line) => { runningBalance += Number(line.debit || 0) - Number(line.credit || 0); return { journalId: line.journalId, transactionDate: line.journal.transactionDate, voucherNumber: line.journal.voucherNumber, debit: line.debit, credit: line.credit, narration: line.narration || line.journal.narration, runningBalance }; });
@@ -48,7 +48,7 @@ async function getGeneralLedger(companyId, fiscalYearId, query) {
 
 async function getTrialBalance(companyId, fiscalYearId, query) {
   const range = dateRange(query);
-  const journalDateMatch = { companyId, fiscalYearId, ...(range ? { transactionDate: range } : {}) };
+  const journalDateMatch = { companyId, fiscalYearId, ...(query.branchId ? { branchId: query.branchId } : {}), ...(range ? { transactionDate: range } : {}) };
   const rows = await JournalLine.aggregate([
     { $match: { companyId } }, { $lookup: { from: "journals", localField: "journalId", foreignField: "_id", as: "journal" } }, { $unwind: "$journal" }, { $match: Object.fromEntries(Object.entries(journalDateMatch).map(([key, value]) => [`journal.${key}`, value])) },
     { $group: { _id: "$ledgerId", debit: { $sum: "$debit" }, credit: { $sum: "$credit" } } }, { $lookup: { from: "ledgers", localField: "_id", foreignField: "_id", as: "ledger" } }, { $unwind: "$ledger" }, { $sort: { "ledger.name": 1 } }
@@ -59,19 +59,19 @@ async function getTrialBalance(companyId, fiscalYearId, query) {
 }
 
 async function getJournalRegister(companyId, fiscalYearId, query) {
-  const { value, limit } = page(query); const filters = { companyId, fiscalYearId }; const range = dateRange(query); if (range) filters.transactionDate = range;
+  const { value, limit } = page(query); const filters = { companyId, fiscalYearId }; if (query.branchId) filters.branchId = query.branchId; const range = dateRange(query); if (range) filters.transactionDate = range;
   const [items, total] = await Promise.all([Journal.find(filters).sort({ transactionDate: -1, _id: -1 }).skip((value - 1) * limit).limit(limit).lean(), Journal.countDocuments(filters)]);
   return { items, meta: { page: value, limit, total, totalPages: Math.ceil(total / limit), hasNextPage: value * limit < total } };
 }
 
 async function getDayBook(companyId, fiscalYearId, query) {
-  const { value, limit } = page(query); const filters = { companyId, fiscalYearId, status: { $in: ["POSTED", "REVERSED"] } }; const range = dateRange(query); if (range) filters.transactionDate = range;
+  const { value, limit } = page(query); const filters = { companyId, fiscalYearId, status: { $in: ["POSTED", "REVERSED"] } }; if (query.branchId) filters.branchId = query.branchId; const range = dateRange(query); if (range) filters.transactionDate = range;
   const [items, total] = await Promise.all([Transaction.find(filters).select("transactionType voucherType voucherNumber transactionDate narration status postedBy postedAt journalId").sort({ transactionDate: -1, _id: -1 }).skip((value - 1) * limit).limit(limit).lean(), Transaction.countDocuments(filters)]);
   return { items, meta: { page: value, limit, total, totalPages: Math.ceil(total / limit), hasNextPage: value * limit < total } };
 }
 
 async function getStockSummary(companyId, fiscalYearId, query) {
-  const filters = { companyId, fiscalYearId };
+  const filters = { companyId, fiscalYearId }; if (query.branchId) filters.branchId = query.branchId;
   const range = dateRange(query);
   if (range) filters.transactionDate = range;
   if (query.warehouseId) filters.warehouseId = query.warehouseId;
@@ -90,7 +90,7 @@ async function getStockSummary(companyId, fiscalYearId, query) {
 
 async function getStockLedger(companyId, fiscalYearId, query) {
   const range = dateRange(query);
-  const filters = { companyId, fiscalYearId, productId: query.productId };
+  const filters = { companyId, fiscalYearId, productId: query.productId }; if (query.branchId) filters.branchId = query.branchId;
   if (query.warehouseId) filters.warehouseId = query.warehouseId;
   const product = await Product.findOne({ _id: query.productId, companyId }).select("name sku").lean();
   if (!product) throw new ApiError(404, "Product was not found.");
@@ -118,7 +118,7 @@ async function getStockLedger(companyId, fiscalYearId, query) {
 
 async function getProfitLoss(companyId, fiscalYearId, query) {
   const range = dateRange(query);
-  const journalFilters = { companyId, fiscalYearId, ...(range ? { transactionDate: range } : {}) };
+  const journalFilters = { companyId, fiscalYearId, ...(query.branchId ? { branchId: query.branchId } : {}), ...(range ? { transactionDate: range } : {}) };
   const rows = await JournalLine.aggregate([
     { $match: { companyId } },
     { $lookup: { from: "journals", localField: "journalId", foreignField: "_id", as: "journal" } },
@@ -146,7 +146,7 @@ async function getProfitLoss(companyId, fiscalYearId, query) {
 
 async function getBalanceSheet(companyId, fiscalYearId, query) {
   const asOf = query.to ? new Date(`${query.to}T23:59:59.999Z`) : null;
-  const journalFilters = { companyId, fiscalYearId, ...(asOf ? { transactionDate: { $lte: asOf } } : {}) };
+  const journalFilters = { companyId, fiscalYearId, ...(query.branchId ? { branchId: query.branchId } : {}), ...(asOf ? { transactionDate: { $lte: asOf } } : {}) };
   const movements = await JournalLine.aggregate([
     { $match: { companyId } },
     { $lookup: { from: "journals", localField: "journalId", foreignField: "_id", as: "journal" } },
@@ -194,7 +194,7 @@ async function getCashFlow(companyId, fiscalYearId, query) {
     { $match: { companyId, ledgerId: { $in: cashLedgerIds } } },
     { $lookup: { from: "journals", localField: "journalId", foreignField: "_id", as: "journal" } },
     { $unwind: "$journal" },
-    { $match: { "journal.companyId": companyId, "journal.fiscalYearId": fiscalYearId } }
+    { $match: { "journal.companyId": companyId, "journal.fiscalYearId": fiscalYearId, ...(query.branchId ? { "journal.branchId": query.branchId } : {}) } }
   ];
   const [beforeRows, cashRows] = await Promise.all([
     range?.$gte ? JournalLine.aggregate([...basePipeline, { $match: { "journal.transactionDate": { $lt: range.$gte } } }, { $group: { _id: null, debit: { $sum: "$debit" }, credit: { $sum: "$credit" } } }]) : [],
@@ -223,7 +223,7 @@ async function getCashFlow(companyId, fiscalYearId, query) {
 
 async function getVoucherSummary(companyId, fiscalYearId, query, transactionType) {
   const { value, limit } = page(query);
-  const filters = { companyId, fiscalYearId, transactionType, status: "POSTED" };
+  const filters = { companyId, fiscalYearId, transactionType, status: "POSTED" }; if (query.branchId) filters.branchId = query.branchId;
   const range = dateRange(query);
   if (range) filters.transactionDate = range;
   const [items, total] = await Promise.all([
@@ -243,7 +243,7 @@ function getSalesSummary(companyId, fiscalYearId, query) { return getVoucherSumm
 function getPurchaseSummary(companyId, fiscalYearId, query) { return getVoucherSummary(companyId, fiscalYearId, query, "PURCHASE"); }
 
 async function getProductMovementSummary(companyId, fiscalYearId, query, transactionType, direction) {
-  const filters = { companyId, fiscalYearId, movementType: transactionType, direction };
+  const filters = { companyId, fiscalYearId, movementType: transactionType, direction }; if (query.branchId) filters.branchId = query.branchId;
   const range = dateRange(query);
   if (range) filters.transactionDate = range;
   const items = await InventoryMovement.aggregate([
@@ -260,7 +260,7 @@ function getSalesByProduct(companyId, fiscalYearId, query) { return getProductMo
 function getPurchasesByProduct(companyId, fiscalYearId, query) { return getProductMovementSummary(companyId, fiscalYearId, query, "PURCHASE", "IN"); }
 
 async function getVatRegister(companyId, fiscalYearId, query, transactionType) {
-  const { value, limit } = page(query); const filters = { companyId, fiscalYearId, transactionType, status: "POSTED", taxDetails: { $ne: null } }; const range = dateRange(query); if (range) filters.transactionDate = range;
+  const { value, limit } = page(query); const filters = { companyId, fiscalYearId, transactionType, status: "POSTED", taxDetails: { $ne: null } }; if (query.branchId) filters.branchId = query.branchId; const range = dateRange(query); if (range) filters.transactionDate = range;
   const [items, total] = await Promise.all([Transaction.find(filters).select("voucherNumber transactionDate taxDetails taxInvoice").sort({ transactionDate: -1, _id: -1 }).skip((value - 1) * limit).limit(limit).lean(), Transaction.countDocuments(filters)]);
   const rows = items.map((item) => ({ id: item._id, voucherNumber: item.voucherNumber, taxInvoiceNumber: item.taxInvoice?.number || null, transactionDate: item.transactionDate, partyName: item.taxDetails.customerName || null, panNumber: item.taxDetails.customerPan || null, taxableAmount: Number(item.taxDetails.taxableAmount), vatAmount: Number(item.taxDetails.vatAmount), totalAmount: Number(item.taxDetails.totalAmount) }));
   const totals = rows.reduce((result, item) => ({ taxableAmount: result.taxableAmount + item.taxableAmount, vatAmount: result.vatAmount + item.vatAmount, totalAmount: result.totalAmount + item.totalAmount }), { taxableAmount: 0, vatAmount: 0, totalAmount: 0 });

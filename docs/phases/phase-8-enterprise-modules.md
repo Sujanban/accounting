@@ -2,11 +2,22 @@
 
 Version: 1.0
 
-Status: Planned
+Status: In progress
 
 ## Frontend delivery
 
-Status: Planned
+Status: In progress
+
+## Current implementation status
+
+Phase 8 is in progress. The multi-branch and multi-warehouse foundation is delivered:
+
+- Default branches, branch creation/update/archive, and branch-scoped warehouse creation are available through the enterprise API.
+- `/company/branches` provides branch and warehouse management.
+- Voucher creation persists a selected active branch and limits inventory warehouses to that branch.
+- Operational reports expose a branch filter for journals, day book, stock, voucher, product-movement, and VAT-register reports.
+
+Remaining branch work: extend the filter to financial statements and contact statements, then complete warehouse lifecycle management. The next Phase 8 module after the branch foundation is Approval Workflow.
 
 Implement company branch and warehouse routes, including warehouse filtering by branch and the selectors required by subsequent product and voucher forms.
 

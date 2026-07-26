@@ -18,6 +18,7 @@ import { mastersApi } from "../masters/masters-api";
 import { useAttachments, useDeleteAttachment, useProducts, useUploadAttachment, useWarehouses } from "../masters/use-masters";
 import { useAdToBs, useBsToAd, useVat } from "../settings/use-settings";
 import type { VoucherTransactionType } from "./transactions-api";
+import { useBranches, useBranchWarehouses } from "../enterprise/use-enterprise";
 
 const types = [
   { value: "JOURNAL", voucher: "JV", path: "journal" },
@@ -132,9 +133,10 @@ export function TransactionsPage({
   const createDraft = useCreateVoucherDraft();
   const products = useProducts();
   const warehouses = useWarehouses();
+  const branches = useBranches();
   const vat = useVat();
   if (transactionId) return <TransactionDetail />;
-  if (create && (ledgers.isLoading || products.isLoading || warehouses.isLoading || vat.isLoading)) {
+  if (create && (ledgers.isLoading || products.isLoading || warehouses.isLoading || branches.isLoading || vat.isLoading)) {
     return (
       <Flex direction="column" gap="5">
         <Heading size="7">New {formatVoucherType(routeType?.value ?? type)} voucher</Heading>
@@ -154,6 +156,7 @@ export function TransactionsPage({
         ledgers={ledgers.data ?? []}
         products={products.data ?? []}
         warehouses={warehouses.data ?? []}
+        branches={branches.data ?? []}
         defaultVatRate={vat.data?.defaultVatRate ?? 13}
         defaultVatMode={vat.data?.vatMode ?? "EXCLUSIVE"}
         pending={createDraft.isPending}
@@ -349,6 +352,7 @@ function DraftForm({
   ledgers,
   products,
   warehouses,
+  branches,
   defaultVatRate,
   defaultVatMode,
   pending,
@@ -360,6 +364,7 @@ function DraftForm({
   ledgers: Array<{ id: string; name: string }>;
   products: Array<{ id: string; name: string; isService: boolean }>;
   warehouses: Array<{ id: string; name: string }>;
+  branches: Array<{ id: string; name: string; isDefault: boolean }>;
   defaultVatRate: number;
   defaultVatMode: "EXCLUSIVE" | "INCLUSIVE";
   pending: boolean;
@@ -382,6 +387,8 @@ function DraftForm({
       direction: "IN" | "OUT";
     }>
   >([]);
+  const [branchId, setBranchId] = useState(branches.find((branch) => branch.isDefault)?.id ?? "");
+  const branchWarehouses = useBranchWarehouses(branchId);
   const [includeTaxInvoice, setIncludeTaxInvoice] = useState(false);
   const [tax, setTax] = useState({ customerName: "", customerPan: "", taxableAmount: "", vatRate: String(defaultVatRate), mode: defaultVatMode });
   const selected = types.find((item) => item.value === type)!;
@@ -403,6 +410,7 @@ function DraftForm({
               transactionType: type,
               voucherType: selected.voucher,
               transactionDate,
+              branchId: branchId || undefined,
               narration: form.get("narration") || null,
               items: [],
               ...(type === "SALE" && includeTaxInvoice ? { taxDetails: { customerName: tax.customerName || null, customerPan: tax.customerPan || null, taxableAmount, vatRate, vatAmount, totalAmount, mode: tax.mode } } : {}),
@@ -437,6 +445,7 @@ function DraftForm({
             value={transactionDate}
             onChange={setTransactionDate}
           />
+          <label>Branch<AppSelect value={branchId} onChange={(event) => setBranchId(event.target.value)}><option value="">Default branch</option>{branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</AppSelect></label>
           <label className="accounting-form__wide">
             Narration
             <textarea
@@ -569,7 +578,7 @@ function DraftForm({
                   }
                 >
                   <option value="">Warehouse</option>
-                  {warehouses.map((warehouse) => (
+                  {(branchWarehouses.data ?? warehouses).map((warehouse) => (
                     <option key={warehouse.id} value={warehouse.id}>
                       {warehouse.name}
                     </option>
@@ -838,6 +847,7 @@ export function TransactionEditPage() {
   const ledgers = useLedgers({ isActive: true });
   const products = useProducts();
   const warehouses = useWarehouses();
+  const branches = useBranches();
   const [accounting, setAccounting] = useState<
     Array<{ ledgerId: string; debit: number; credit: number }>
   >([]);
@@ -851,6 +861,7 @@ export function TransactionEditPage() {
     }>
   >([]);
   const [transactionDate, setTransactionDate] = useState("");
+  const [branchId, setBranchId] = useState("");
   if (transaction.isLoading) {
     return (
       <LoadingScreen
@@ -864,6 +875,7 @@ export function TransactionEditPage() {
     return <Text color="red">Only draft transactions can be edited.</Text>;
   const draft = transaction.data;
   const effectiveTransactionDate = transactionDate || draft.transactionDate.slice(0, 10);
+  const effectiveBranchId = branchId || draft.branchId || "";
   const lines = accounting.length ? accounting : draft.accountingEntries;
   const stock = inventory.length ? inventory : draft.inventoryEntries;
   return (
@@ -886,6 +898,7 @@ export function TransactionEditPage() {
                 id: draft.id,
                 input: {
                   transactionDate: effectiveTransactionDate,
+                  branchId: effectiveBranchId || undefined,
                   narration: String(form.get("narration") || "") || null,
                   accountingEntries: lines.filter((line) => line.ledgerId),
                   inventoryEntries: stock.filter(
@@ -900,6 +913,7 @@ export function TransactionEditPage() {
             value={effectiveTransactionDate}
             onChange={setTransactionDate}
           />
+          <label>Branch<AppSelect value={effectiveBranchId} onChange={(event) => setBranchId(event.target.value)}><option value="">Default branch</option>{branches.data?.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</AppSelect></label>
           <label className="accounting-form__wide">
             Narration
             <textarea

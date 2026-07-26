@@ -3,8 +3,8 @@ const mongoose = require("mongoose");
 const TRANSACTION_TYPES = new Set(["JOURNAL", "RECEIPT", "PAYMENT", "CONTRA", "SALE", "PURCHASE", "INVENTORY_ADJUSTMENT", "STOCK_TRANSFER"]);
 const VOUCHER_TYPES = new Set(["JV", "RV", "PMV", "CV", "SV", "PV"]);
 const VOUCHERS_BY_TRANSACTION = Object.freeze({ JOURNAL: "JV", RECEIPT: "RV", PAYMENT: "PMV", CONTRA: "CV", SALE: "SV", PURCHASE: "PV", INVENTORY_ADJUSTMENT: "JV", STOCK_TRANSFER: "JV" });
-const CREATE_FIELDS = new Set(["transactionType", "voucherType", "transactionDate", "narration", "items", "taxDetails", "accountingEntries", "inventoryEntries"]);
-const UPDATE_FIELDS = new Set(["transactionDate", "referenceNo", "narration", "items", "taxDetails", "accountingEntries", "inventoryEntries"]);
+const CREATE_FIELDS = new Set(["transactionType", "voucherType", "branchId", "transactionDate", "narration", "items", "taxDetails", "accountingEntries", "inventoryEntries"]);
+const UPDATE_FIELDS = new Set(["branchId", "transactionDate", "referenceNo", "narration", "items", "taxDetails", "accountingEntries", "inventoryEntries"]);
 
 const isValidId = (value) => typeof value === "string" && mongoose.isObjectIdOrHexString(value);
 const isFiniteNumber = (value) => typeof value === "number" && Number.isFinite(value);
@@ -64,6 +64,7 @@ function validateTransaction(body, partial = false) {
   for (const field of Object.keys(body)) if (!fields.has(field)) errors.push({ field, message: "This field cannot be modified." });
   if (!partial && !TRANSACTION_TYPES.has(body.transactionType)) errors.push({ field: "transactionType", message: "A valid transaction type is required." });
   if (!partial && !VOUCHER_TYPES.has(body.voucherType)) errors.push({ field: "voucherType", message: "A valid voucher type is required." });
+  if (body.branchId !== undefined && !isValidId(body.branchId)) errors.push({ field: "branchId", message: "Branch must be a valid identifier." });
   if (!partial && TRANSACTION_TYPES.has(body.transactionType) && body.voucherType !== VOUCHERS_BY_TRANSACTION[body.transactionType]) errors.push({ field: "voucherType", message: "Voucher type is not compatible with the transaction type." });
   if ((!partial || body.transactionDate !== undefined) && (!body.transactionDate || typeof body.transactionDate !== "string" || Number.isNaN(new Date(body.transactionDate).getTime()))) errors.push({ field: "transactionDate", message: "A valid transaction date is required." });
   for (const field of ["accountingEntries", "inventoryEntries", "items"]) if (body[field] !== undefined && (!Array.isArray(body[field]) || body[field].length > 500)) errors.push({ field, message: `${field} must be an array with at most 500 entries.` });
