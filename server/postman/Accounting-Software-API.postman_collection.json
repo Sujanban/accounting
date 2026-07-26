@@ -562,6 +562,21 @@
           }
         },
         {
+          "name": "Get Tax Invoice",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/localization/tax-invoices/{{transactionId}}"
+          }
+        },
+        {
+          "name": "Preview Opening Balances",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{ \"entries\": [{ \"ledgerId\": \"{{ledgerId}}\", \"amount\": 1000, \"balanceType\": \"DEBIT\" }, { \"ledgerId\": \"{{creditLedgerId}}\", \"amount\": 1000, \"balanceType\": \"CREDIT\" }] }" }, "url": "{{baseUrl}}/api/localization/opening-balances/preview" }
+        },
+        {
+          "name": "Generate Opening Balances",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{ \"entries\": [{ \"ledgerId\": \"{{ledgerId}}\", \"amount\": 1000, \"balanceType\": \"DEBIT\" }, { \"ledgerId\": \"{{creditLedgerId}}\", \"amount\": 1000, \"balanceType\": \"CREDIT\" }] }" }, "url": "{{baseUrl}}/api/localization/opening-balances/generate" }
+        },
+        {
           "name": "AD to BS",
           "request": {
             "method": "GET",
@@ -779,7 +794,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{ \"transactionDate\": \"2025-07-17\", \"narration\": \"Example voucher\", \"accountingEntries\": [] }"
+              "raw": "{ \"transactionDate\": \"2025-07-17\", \"narration\": \"Example taxable sale\", \"taxDetails\": { \"customerName\": \"Example Customer\", \"customerPan\": \"123456789\", \"taxableAmount\": 1000, \"vatRate\": 13, \"vatAmount\": 130, \"totalAmount\": 1130, \"mode\": \"EXCLUSIVE\" }, \"accountingEntries\": [] }"
             },
             "url": "{{baseUrl}}/api/sales"
           }

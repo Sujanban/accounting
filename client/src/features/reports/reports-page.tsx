@@ -27,6 +27,7 @@ import {
   useSalesTrend,
   useContactStatement,
   useTrialBalance,
+  useVatRegister,
 } from "./use-reports";
 
 const money = new Intl.NumberFormat(undefined, {
@@ -78,6 +79,8 @@ const reportMetadata: Record<string, { title: string; description: string }> = {
   },
   "sales-summary": { title: "Sales summary", description: "Review posted sales vouchers and total sales for the selected period." },
   "purchase-summary": { title: "Purchase summary", description: "Review posted purchase vouchers and total purchases for the selected period." },
+  "vat-sales-register": { title: "VAT sales register", description: "Review taxable sales, VAT collected, and issued tax invoices." },
+  "vat-purchase-register": { title: "VAT purchase register", description: "Review taxable purchases and input VAT." },
   "sales-by-product": { title: "Sales by product", description: "Review sold stock quantities and their movement value by product." },
   "purchases-by-product": { title: "Purchases by product", description: "Review purchased stock quantities and their movement value by product." },
   "expense-summary": { title: "Expense summary", description: "Review expenses by ledger for the selected reporting period." },
@@ -535,6 +538,11 @@ function VoucherSummaryReport({ type }: { type: "sales" | "purchase" }) {
   return <><ReportFiltersForm filters={filters} onApply={setFilters} />{report.isLoading ? <LoadingScreen fullScreen={false} label={`Loading ${type} summary`} description={`Retrieving posted ${type} vouchers…`} /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle={`${title} summary`}><Button className="no-print report-export" variant="outline" onClick={() => downloadCsv(`${type}-summary.csv`, ["Date", "Voucher", "Narration", "Items", "Amount"], [...report.data.items.map((item) => [date(item.transactionDate), item.voucherNumber, item.narration || "", item.itemCount, item.amount]), ["", "", "Total", report.data.totals.count, report.data.totals.amount]])}>Export CSV</Button><div className="report-summary"><span>Posted vouchers<strong>{report.data.totals.count}</strong></span><span>Total {type}<strong>{money.format(report.data.totals.amount)}</strong></span></div><table className="accounting-table"><thead><tr><th>Date</th><th>Voucher</th><th>Narration</th><th>Items</th><th>Amount</th></tr></thead><tbody>{report.data.items.map((item) => <tr key={item.id}><td>{date(item.transactionDate)}</td><td>{item.voucherNumber}</td><td>{item.narration || "—"}</td><td>{item.itemCount}</td><td>{money.format(item.amount)}</td></tr>)}</tbody><tfoot><tr><th colSpan={3}>Total</th><th>{report.data.totals.count}</th><th>{money.format(report.data.totals.amount)}</th></tr></tfoot></table><ReportPagination meta={report.data.meta} onPageChange={(page) => setFilters({ ...filters, page })} />{report.data.items.length === 0 ? <Text as="p" color="gray" className="accounting-empty">No posted {type} vouchers match these filters.</Text> : null}</ReportFrame> : null}</>;
 }
 
+function VatRegisterReport({ type }: { type: "sales" | "purchase" }) {
+  const [filters, setFilters] = useState<ReportFilters>({ page: 1, limit: 20 }); const report = useVatRegister(type, filters); const title = type === "sales" ? "VAT sales register" : "VAT purchase register";
+  return <><ReportFiltersForm filters={filters} onApply={setFilters} />{report.isLoading ? <LoadingScreen fullScreen={false} label={`Loading ${title}`} description="Preparing VAT transactions…" /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle={title}><div className="report-summary"><span>Taxable amount<strong>{money.format(report.data.totals.taxableAmount)}</strong></span><span>VAT<strong>{money.format(report.data.totals.vatAmount)}</strong></span><span>Total<strong>{money.format(report.data.totals.totalAmount)}</strong></span></div><table className="accounting-table"><thead><tr><th>Date</th><th>Voucher</th><th>Tax invoice</th><th>Party</th><th>PAN</th><th>Taxable</th><th>VAT</th><th>Total</th></tr></thead><tbody>{report.data.items.map((item) => <tr key={item.id}><td>{date(item.transactionDate)}</td><td>{item.voucherNumber}</td><td>{item.taxInvoiceNumber || "—"}</td><td>{item.partyName || "—"}</td><td>{item.panNumber || "—"}</td><td>{money.format(item.taxableAmount)}</td><td>{money.format(item.vatAmount)}</td><td>{money.format(item.totalAmount)}</td></tr>)}</tbody></table>{report.data.items.length === 0 ? <Text as="p" color="gray" className="accounting-empty">No taxable {type} vouchers match these filters.</Text> : null}</ReportFrame> : null}</>;
+}
+
 function ProductMovementSummaryReport({ type }: { type: "sales" | "purchases" }) {
   const [filters, setFilters] = useState<ReportFilters>({});
   const report = useProductMovementSummary(type, filters);
@@ -620,6 +628,10 @@ export function ReportsPage() {
         <VoucherSummaryReport type="sales" />
       ) : report === "purchase-summary" ? (
         <VoucherSummaryReport type="purchase" />
+      ) : report === "vat-sales-register" ? (
+        <VatRegisterReport type="sales" />
+      ) : report === "vat-purchase-register" ? (
+        <VatRegisterReport type="purchase" />
       ) : report === "sales-by-product" ? (
         <ProductMovementSummaryReport type="sales" />
       ) : report === "purchases-by-product" ? (

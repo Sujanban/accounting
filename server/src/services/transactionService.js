@@ -79,12 +79,45 @@ async function assertStockAvailable(companyId, branchId, entries, session) {
 }
 
 function mapTransaction(transaction) {
-  return { id: transaction._id, companyId: transaction.companyId, branchId: transaction.branchId, fiscalYearId: transaction.fiscalYearId, transactionType: transaction.transactionType, voucherType: transaction.voucherType, voucherNumber: transaction.voucherNumber, transactionDate: transaction.transactionDate, narration: transaction.narration, items: transaction.items, accountingEntries: transaction.accountingEntries, inventoryEntries: transaction.inventoryEntries, status: transaction.status, journalId: transaction.journalId, reversalOfId: transaction.reversalOfId, reversedById: transaction.reversedById, postedAt: transaction.postedAt, postedBy: transaction.postedBy, createdBy: transaction.createdBy, updatedBy: transaction.updatedBy, createdAt: transaction.createdAt, updatedAt: transaction.updatedAt };
+  return { id: transaction._id, companyId: transaction.companyId, branchId: transaction.branchId, fiscalYearId: transaction.fiscalYearId, transactionType: transaction.transactionType, voucherType: transaction.voucherType, voucherNumber: transaction.voucherNumber, transactionDate: transaction.transactionDate, narration: transaction.narration, items: transaction.items, taxDetails: transaction.taxDetails, taxInvoice: transaction.taxInvoice, accountingEntries: transaction.accountingEntries, inventoryEntries: transaction.inventoryEntries, status: transaction.status, journalId: transaction.journalId, reversalOfId: transaction.reversalOfId, reversedById: transaction.reversedById, postedAt: transaction.postedAt, postedBy: transaction.postedBy, createdBy: transaction.createdBy, updatedBy: transaction.updatedBy, createdAt: transaction.createdAt, updatedAt: transaction.updatedAt };
+}
+
+function taxInvoiceNumber(fiscalYear, sequence) {
+  return `TI-${fiscalYear.name.replace(/[^A-Za-z0-9]/g, "-")}-${String(sequence).padStart(6, "0")}`;
+}
+
+async function issueTaxInvoice(companyId, fiscalYearId, transaction, session) {
+  if (transaction.transactionType !== "SALE" || !transaction.taxDetails) return;
+  const { Company } = require("../models/Company");
+  const { FiscalYear } = require("../models/FiscalYear");
+  const company = await Company.findById(companyId).select("panNumber vatRegistered vatNumber").session(session).lean();
+  if (!company?.vatRegistered || !company.vatNumber || !company.panNumber) throw new ApiError(422, "A VAT-registered company with PAN and VAT numbers is required to issue a tax invoice.");
+  const fiscalYear = await FiscalYear.findOneAndUpdate(
+    { _id: fiscalYearId, companyId, isLocked: false },
+    { $inc: { taxInvoiceSequence: 1 } },
+    { new: true, session },
+  ).lean();
+  if (!fiscalYear) throw new ApiError(409, "The fiscal year is no longer available for tax invoice issuance.");
+  const details = transaction.taxDetails;
+  transaction.taxInvoice = {
+    number: taxInvoiceNumber(fiscalYear, fiscalYear.taxInvoiceSequence),
+    issuedAt: new Date(),
+    companyPan: company.panNumber,
+    companyVatNumber: company.vatNumber,
+    customerName: details.customerName || null,
+    customerPan: details.customerPan || null,
+    taxableAmount: Number(details.taxableAmount),
+    vatRate: Number(details.vatRate),
+    vatAmount: Number(details.vatAmount),
+    totalAmount: Number(details.totalAmount),
+    mode: details.mode,
+  };
 }
 
 async function createDraft(companyId, fiscalYearId, payload) {
   const { actorUserId, actorRole, ...input } = payload;
   assertTransactionTypeAccess(actorRole, input.transactionType);
+  if (input.taxDetails && !["SALE", "PURCHASE"].includes(input.transactionType)) throw new ApiError(422, "Tax details are only supported for sales and purchase transactions.");
   await assertFiscalYearWritable(companyId, fiscalYearId, { transactionDate: payload.transactionDate });
   const branch = await resolveDefaultBranch(companyId);
   const draft = await Transaction.create({ ...input, companyId, fiscalYearId, branchId: branch._id, status: "DRAFT", voucherNumber: null, createdBy: actorUserId, updatedBy: actorUserId });
@@ -98,7 +131,8 @@ async function updateDraft(companyId, fiscalYearId, transactionId, payload) {
   assertTransactionTypeAccess(actorRole, draft.transactionType);
   if (draft.status !== "DRAFT") throw new ApiError(409, "Only draft transactions can be edited.");
   await assertFiscalYearWritable(companyId, fiscalYearId, { transactionDate: input.transactionDate || draft.transactionDate });
-  for (const field of ["transactionDate", "narration", "items", "accountingEntries", "inventoryEntries"]) if (input[field] !== undefined) draft[field] = input[field];
+  if (input.taxDetails !== undefined && !["SALE", "PURCHASE"].includes(draft.transactionType)) throw new ApiError(422, "Tax details are only supported for sales and purchase transactions.");
+  for (const field of ["transactionDate", "narration", "items", "taxDetails", "accountingEntries", "inventoryEntries"]) if (input[field] !== undefined) draft[field] = input[field];
   draft.updatedBy = actorUserId;
   await draft.save();
   return mapTransaction(draft);
@@ -113,6 +147,7 @@ async function postTransactionInSession(companyId, fiscalYearId, transactionId, 
   await assertActiveLedgers(companyId, fiscalYearId, transaction.accountingEntries, session);
   await validateInventoryEntries(companyId, transaction.branchId, transaction.inventoryEntries, session);
   await assertStockAvailable(companyId, transaction.branchId, transaction.inventoryEntries, session);
+  await issueTaxInvoice(companyId, fiscalYearId, transaction, session);
   const voucherNumber = await getNextVoucherNumber(companyId, fiscalYearId, transaction.voucherType, session);
   const journal = await Journal.create([{ companyId, branchId: transaction.branchId, fiscalYearId, transactionId: transaction._id, voucherNumber, transactionDate: transaction.transactionDate, narration: transaction.narration, totalDebit: result.debit, totalCredit: result.credit, isReversal, createdBy: actorUserId, updatedBy: actorUserId }], { session });
   await JournalLine.insertMany(transaction.accountingEntries.map((entry) => ({ companyId, journalId: journal[0]._id, ledgerId: entry.ledgerId, debit: Number(entry.debit || 0), credit: Number(entry.credit || 0), narration: entry.narration, createdBy: actorUserId, updatedBy: actorUserId })), { session });

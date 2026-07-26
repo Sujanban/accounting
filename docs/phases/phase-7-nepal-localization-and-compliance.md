@@ -2,11 +2,11 @@
 
 Version: 1.0
 
-Status: In progress
+Status: Complete
 
 ## Frontend delivery
 
-Status: In progress
+Status: Complete
 
 Extend company settings with PAN/VAT compliance panels, VAT calculation, AD↔BS conversion, current BS date, and Nepali month-name utilities without duplicating settings routes.
 
@@ -17,6 +17,8 @@ Current implementation status
 - New and editable vouchers accept BS dates through the same calendar API and persist the converted AD date.
 - Closing a fiscal year now uses the compliance close endpoint, which verifies posted journal totals balance before locking the year.
 - Fiscal-year setup can derive both AD boundary dates from its BS dates through the centralized calendar API.
+- Sales drafts can now carry validated VAT details through a compact tax-invoice panel; posting a taxable sale atomically assigns an immutable, fiscal-year-aware tax invoice number. The issued invoice is shown on the voucher detail screen, available through the localization API, and documented in the Postman collection.
+- Opening balances now have a compact preview-and-generate screen at `/accounting/opening-balances`, backed by a one-time, balanced, pre-journal API workflow.
 
 Prerequisites
 

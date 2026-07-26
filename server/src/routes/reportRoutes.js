@@ -72,6 +72,8 @@ reportRouter.get("/sales-summary", validateQuery(validateListReportQuery), contr
 reportRouter.get("/purchase-summary", validateQuery(validateListReportQuery), controller.getPurchaseSummary);
 reportRouter.get("/sales-by-product", validateQuery(validateListReportQuery), controller.getSalesByProduct);
 reportRouter.get("/purchases-by-product", validateQuery(validateListReportQuery), controller.getPurchasesByProduct);
+reportRouter.get("/vat-sales-register", validateQuery(validateListReportQuery), controller.getVatSalesRegister);
+reportRouter.get("/vat-purchase-register", validateQuery(validateListReportQuery), controller.getVatPurchaseRegister);
 reportRouter.get("/expense-summary", validateQuery(validateListReportQuery), controller.getExpenseSummary);
 reportRouter.get("/low-stock", validateQuery(validateListReportQuery), controller.getLowStock);
 reportRouter.get("/negative-stock", validateQuery(validateListReportQuery), controller.getNegativeStock);

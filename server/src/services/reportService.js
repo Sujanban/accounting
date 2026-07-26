@@ -259,6 +259,16 @@ async function getProductMovementSummary(companyId, fiscalYearId, query, transac
 function getSalesByProduct(companyId, fiscalYearId, query) { return getProductMovementSummary(companyId, fiscalYearId, query, "SALE", "OUT"); }
 function getPurchasesByProduct(companyId, fiscalYearId, query) { return getProductMovementSummary(companyId, fiscalYearId, query, "PURCHASE", "IN"); }
 
+async function getVatRegister(companyId, fiscalYearId, query, transactionType) {
+  const { value, limit } = page(query); const filters = { companyId, fiscalYearId, transactionType, status: "POSTED", taxDetails: { $ne: null } }; const range = dateRange(query); if (range) filters.transactionDate = range;
+  const [items, total] = await Promise.all([Transaction.find(filters).select("voucherNumber transactionDate taxDetails taxInvoice").sort({ transactionDate: -1, _id: -1 }).skip((value - 1) * limit).limit(limit).lean(), Transaction.countDocuments(filters)]);
+  const rows = items.map((item) => ({ id: item._id, voucherNumber: item.voucherNumber, taxInvoiceNumber: item.taxInvoice?.number || null, transactionDate: item.transactionDate, partyName: item.taxDetails.customerName || null, panNumber: item.taxDetails.customerPan || null, taxableAmount: Number(item.taxDetails.taxableAmount), vatAmount: Number(item.taxDetails.vatAmount), totalAmount: Number(item.taxDetails.totalAmount) }));
+  const totals = rows.reduce((result, item) => ({ taxableAmount: result.taxableAmount + item.taxableAmount, vatAmount: result.vatAmount + item.vatAmount, totalAmount: result.totalAmount + item.totalAmount }), { taxableAmount: 0, vatAmount: 0, totalAmount: 0 });
+  return { items: rows, totals, meta: { page: value, limit, total, totalPages: Math.ceil(total / limit), hasNextPage: value * limit < total } };
+}
+function getVatSalesRegister(companyId, fiscalYearId, query) { return getVatRegister(companyId, fiscalYearId, query, "SALE"); }
+function getVatPurchaseRegister(companyId, fiscalYearId, query) { return getVatRegister(companyId, fiscalYearId, query, "PURCHASE"); }
+
 async function getExpenseSummary(companyId, fiscalYearId, query) {
   const profitLoss = await getProfitLoss(companyId, fiscalYearId, query);
   return { items: profitLoss.expenses, totals: { expenses: profitLoss.totals.expenses } };
@@ -379,4 +389,4 @@ function getSupplierStatement(companyId, fiscalYearId, query) {
   return getContactStatement(companyId, fiscalYearId, query, "SUPPLIER");
 }
 
-module.exports = { getGeneralLedger, getTrialBalance, getJournalRegister, getDayBook, getStockSummary, getStockLedger, getProfitLoss, getBalanceSheet, getCashFlow, getSalesSummary, getPurchaseSummary, getSalesByProduct, getPurchasesByProduct, getExpenseSummary, getExpenseTrend, getSalesTrend, getLowStock, getNegativeStock, getCustomerStatement, getSupplierStatement };
+module.exports = { getGeneralLedger, getTrialBalance, getJournalRegister, getDayBook, getStockSummary, getStockLedger, getProfitLoss, getBalanceSheet, getCashFlow, getSalesSummary, getPurchaseSummary, getSalesByProduct, getPurchasesByProduct, getVatSalesRegister, getVatPurchaseRegister, getExpenseSummary, getExpenseTrend, getSalesTrend, getLowStock, getNegativeStock, getCustomerStatement, getSupplierStatement };

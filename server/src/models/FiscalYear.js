@@ -38,7 +38,13 @@ const fiscalYearSchema = new mongoose.Schema(
     isLocked: {
       type: Boolean,
       default: false
-    }
+    },
+    taxInvoiceSequence: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    openingBalancesAppliedAt: { type: Date, default: null }
   },
   {
     timestamps: true

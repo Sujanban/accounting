@@ -11,6 +11,9 @@ localizationRouter.patch("/pan", requireRoles("OWNER", "ADMIN"), validate(valida
 localizationRouter.get("/vat", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "STAFF"), controller.getVat);
 localizationRouter.patch("/vat", requireRoles("OWNER", "ADMIN"), validate(validateVat), controller.patchVat);
 localizationRouter.get("/vat/calculate", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES"), controller.calculateVat);
+localizationRouter.get("/tax-invoices/:transactionId", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES", "STAFF"), controller.getTaxInvoice);
+localizationRouter.post("/opening-balances/preview", requireRoles("OWNER", "ADMIN", "ACCOUNTANT"), controller.previewOpeningBalances);
+localizationRouter.post("/opening-balances/generate", requireRoles("OWNER", "ADMIN", "ACCOUNTANT"), controller.generateOpeningBalances);
 localizationRouter.get("/calendar/ad-to-bs", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES", "STAFF"), controller.adToBs);
 localizationRouter.get("/calendar/bs-to-ad", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES", "STAFF"), controller.bsToAd);
 localizationRouter.get("/calendar/today", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "SALES", "STAFF"), controller.todayBs);

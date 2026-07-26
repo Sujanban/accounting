@@ -64,6 +64,7 @@ export const useCashFlow = (filters: ReportFilters) =>
   });
 export const useVoucherSummary = (type: "sales" | "purchase", filters: ReportFilters) =>
   useQuery({ queryKey: reportKeys.voucherSummary(type, filters), queryFn: ({ signal }) => reportsApi.voucherSummary(type, filters, signal) });
+export const useVatRegister = (type: "sales" | "purchase", filters: ReportFilters) => useQuery({ queryKey: reportKeys.vatRegister(type, filters), queryFn: ({ signal }) => reportsApi.vatRegister(type, filters, signal) });
 export const useProductMovementSummary = (type: "sales" | "purchases", filters: ReportFilters) =>
   useQuery({ queryKey: reportKeys.productMovementSummary(type, filters), queryFn: ({ signal }) => reportsApi.productMovementSummary(type, filters, signal) });
 export const useExpenseSummary = (filters: ReportFilters) =>

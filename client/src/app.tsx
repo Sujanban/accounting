@@ -10,6 +10,7 @@ import { DashboardPage } from "./pages/dashboard-page";
 import { SettingsPage } from "./pages/settings-page";
 import { TransactionEditPage, TransactionsPage } from "./features/transactions/transactions-page";
 import { ReportsPage } from "./features/reports/reports-page";
+import { OpeningBalancesPage } from "./pages/opening-balances-page";
 
 export function App() {
   return (
@@ -34,6 +35,7 @@ export function App() {
             <Route path="masters/:masterType/new" element={<MastersPage />} />
             <Route path="masters/:masterType" element={<MastersPage />} />
             <Route path="accounting/voucher-numbering/:voucherSequenceId/edit" element={<VoucherSequenceEditPage />} />
+            <Route path="accounting/opening-balances" element={<OpeningBalancesPage />} />
             <Route path="accounting/ledgers/new" element={<LedgerCreatePage />} />
             <Route path="accounting/ledgers/:ledgerId/edit" element={<LedgerEditPage />} />
             <Route path="accounting/account-groups/new" element={<AccountGroupCreatePage />} />

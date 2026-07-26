@@ -3,8 +3,8 @@ const mongoose = require("mongoose");
 const TRANSACTION_TYPES = new Set(["JOURNAL", "RECEIPT", "PAYMENT", "CONTRA", "SALE", "PURCHASE", "INVENTORY_ADJUSTMENT", "STOCK_TRANSFER"]);
 const VOUCHER_TYPES = new Set(["JV", "RV", "PMV", "CV", "SV", "PV"]);
 const VOUCHERS_BY_TRANSACTION = Object.freeze({ JOURNAL: "JV", RECEIPT: "RV", PAYMENT: "PMV", CONTRA: "CV", SALE: "SV", PURCHASE: "PV", INVENTORY_ADJUSTMENT: "JV", STOCK_TRANSFER: "JV" });
-const CREATE_FIELDS = new Set(["transactionType", "voucherType", "transactionDate", "narration", "items", "accountingEntries", "inventoryEntries"]);
-const UPDATE_FIELDS = new Set(["transactionDate", "referenceNo", "narration", "items", "accountingEntries", "inventoryEntries"]);
+const CREATE_FIELDS = new Set(["transactionType", "voucherType", "transactionDate", "narration", "items", "taxDetails", "accountingEntries", "inventoryEntries"]);
+const UPDATE_FIELDS = new Set(["transactionDate", "referenceNo", "narration", "items", "taxDetails", "accountingEntries", "inventoryEntries"]);
 
 const isValidId = (value) => typeof value === "string" && mongoose.isObjectIdOrHexString(value);
 const isFiniteNumber = (value) => typeof value === "number" && Number.isFinite(value);
@@ -40,6 +40,24 @@ function validateInventoryEntries(entries, errors) {
   });
 }
 
+function validateTaxDetails(taxDetails, errors) {
+  if (taxDetails === undefined) return;
+  if (!taxDetails || typeof taxDetails !== "object" || Array.isArray(taxDetails)) {
+    errors.push({ field: "taxDetails", message: "Tax details must be an object." });
+    return;
+  }
+  const allowed = new Set(["customerName", "customerPan", "taxableAmount", "vatRate", "vatAmount", "totalAmount", "mode"]);
+  for (const field of Object.keys(taxDetails)) if (!allowed.has(field)) errors.push({ field: `taxDetails.${field}`, message: "This tax detail cannot be submitted." });
+  if (taxDetails.customerName !== undefined && (typeof taxDetails.customerName !== "string" || taxDetails.customerName.trim().length > 200)) errors.push({ field: "taxDetails.customerName", message: "Customer name must be text with at most 200 characters." });
+  if (taxDetails.customerPan !== undefined && taxDetails.customerPan !== null && !/^\d{9}$/.test(String(taxDetails.customerPan).trim())) errors.push({ field: "taxDetails.customerPan", message: "Customer PAN must contain 9 digits." });
+  for (const field of ["taxableAmount", "vatRate", "vatAmount", "totalAmount"]) if (!isFiniteNumber(taxDetails[field]) || taxDetails[field] < 0 || (field === "vatRate" && taxDetails[field] > 100)) errors.push({ field: `taxDetails.${field}`, message: `${field} must be a valid non-negative amount.` });
+  if (!["EXCLUSIVE", "INCLUSIVE"].includes(taxDetails.mode)) errors.push({ field: "taxDetails.mode", message: "Tax mode must be EXCLUSIVE or INCLUSIVE." });
+  const expectedVat = Number(taxDetails.taxableAmount) * Number(taxDetails.vatRate) / 100;
+  const expectedTotal = Number(taxDetails.taxableAmount) + expectedVat;
+  if (Number.isFinite(expectedVat) && Math.abs(Number(taxDetails.vatAmount) - expectedVat) > 0.01) errors.push({ field: "taxDetails.vatAmount", message: "VAT amount does not match the taxable amount and rate." });
+  if (Number.isFinite(expectedTotal) && Math.abs(Number(taxDetails.totalAmount) - expectedTotal) > 0.01) errors.push({ field: "taxDetails.totalAmount", message: "Total amount does not match the tax details." });
+}
+
 function validateTransaction(body, partial = false) {
   const errors = [];
   const fields = partial ? UPDATE_FIELDS : CREATE_FIELDS;
@@ -52,6 +70,8 @@ function validateTransaction(body, partial = false) {
   validateOptionalText(body, "narration", 2000, errors);
   validateAccountingEntries(body.accountingEntries, errors);
   validateInventoryEntries(body.inventoryEntries, errors);
+  validateTaxDetails(body.taxDetails, errors);
+  if (body.taxDetails !== undefined && !partial && !["SALE", "PURCHASE"].includes(body.transactionType)) errors.push({ field: "taxDetails", message: "Tax details are only supported for sales and purchase vouchers." });
   if (partial && !Object.keys(body).length) errors.push({ field: "body", message: "At least one field must be provided." });
   return errors;
 }

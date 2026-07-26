@@ -2,6 +2,7 @@ const { Company } = require("../models/Company");
 const { Setting } = require("../models/Setting");
 const { FiscalYear } = require("../models/FiscalYear");
 const { Journal } = require("../models/Journal");
+const { Transaction } = require("../models/Transaction");
 const { ApiError } = require("../utils/apiError");
 
 function mapPan(company) {
@@ -51,6 +52,21 @@ function calculateVat(amount, rate = 13, mode = "EXCLUSIVE") {
   return { taxableAmount: Number(taxableAmount.toFixed(2)), vatAmount: Number(vatAmount.toFixed(2)), totalAmount: Number((mode === "INCLUSIVE" ? value : value + vatAmount).toFixed(2)), rate: percentage, mode };
 }
 
+async function getTaxInvoice(companyId, transactionId) {
+  const transaction = await Transaction.findOne({ _id: transactionId, companyId, transactionType: "SALE", status: { $in: ["POSTED", "REVERSED"] } })
+    .select("fiscalYearId voucherNumber transactionDate status taxInvoice")
+    .lean();
+  if (!transaction || !transaction.taxInvoice) throw new ApiError(404, "Tax invoice was not found.");
+  return {
+    transactionId: transaction._id,
+    fiscalYearId: transaction.fiscalYearId,
+    voucherNumber: transaction.voucherNumber,
+    transactionDate: transaction.transactionDate,
+    status: transaction.status,
+    ...transaction.taxInvoice,
+  };
+}
+
 async function closeFiscalYear(companyId, fiscalYearId, actorUserId) {
   const fiscalYear = await FiscalYear.findOne({ _id: fiscalYearId, companyId });
   if (!fiscalYear) throw new ApiError(404, "Fiscal year was not found.");
@@ -62,4 +78,4 @@ async function closeFiscalYear(companyId, fiscalYearId, actorUserId) {
   return { id: fiscalYear._id, name: fiscalYear.name, isLocked: fiscalYear.isLocked, totalDebit: debit, totalCredit: credit };
 }
 
-module.exports = { getPan, updatePan, getVat, updateVat, calculateVat, closeFiscalYear };
+module.exports = { getPan, updatePan, getVat, updateVat, calculateVat, getTaxInvoice, closeFiscalYear };

@@ -86,6 +86,7 @@ export type BalanceSheet = { assets: Array<{ ledgerId: string; ledgerName: strin
 export type CashFlow = { openingBalance: number; closingBalance: number; operating: CashFlowEntry[]; investing: CashFlowEntry[]; financing: CashFlowEntry[]; totals: { operating: number; investing: number; financing: number; netCashFlow: number } };
 type CashFlowEntry = { journalId: string; transactionDate: string; voucherNumber: string | null; narration: string | null; amount: number };
 export type VoucherSummary = { items: Array<{ id: string; voucherNumber: string; transactionDate: string; narration: string | null; itemCount: number; amount: number }>; totals: { amount: number; count: number }; meta: ReportPageMeta };
+export type VatRegister = { items: Array<{ id: string; voucherNumber: string; taxInvoiceNumber: string | null; transactionDate: string; partyName: string | null; panNumber: string | null; taxableAmount: number; vatAmount: number; totalAmount: number }>; totals: { taxableAmount: number; vatAmount: number; totalAmount: number }; meta: ReportPageMeta };
 export type ProductMovementSummary = { items: Array<{ productId: string; productName: string; productSku: string; quantity: number; value: number; transactionCount: number }>; totals: { quantity: number; value: number; transactionCount: number } };
 export type ExpenseSummary = { items: Array<{ ledgerId: string; ledgerName: string; amount: number }>; totals: { expenses: number } };
 export type LowStock = { items: Array<{ productId: string; productName: string; productSku: string; reorderLevel: number; quantityOnHand: number; shortage: number }>; totals: { products: number; shortage: number } };
@@ -130,6 +131,7 @@ export const reportKeys = {
     [...reportKeys.all, `${role}-statement`, contactId, filters] as const,
   cashFlow: (filters: ReportFilters) => [...reportKeys.all, "cash-flow", filters] as const,
   voucherSummary: (type: "sales" | "purchase", filters: ReportFilters) => [...reportKeys.all, `${type}-summary`, filters] as const,
+  vatRegister: (type: "sales" | "purchase", filters: ReportFilters) => [...reportKeys.all, `vat-${type}-register`, filters] as const,
   productMovementSummary: (type: "sales" | "purchases", filters: ReportFilters) => [...reportKeys.all, `${type}-by-product`, filters] as const,
   expenseSummary: (filters: ReportFilters) => [...reportKeys.all, "expense-summary", filters] as const,
   lowStock: () => [...reportKeys.all, "low-stock"] as const,
@@ -172,6 +174,7 @@ export const reportsApi = {
     apiClient<CashFlow>(`/reports/cash-flow${query(filters)}`, { signal }),
   voucherSummary: (type: "sales" | "purchase", filters: ReportFilters, signal?: AbortSignal) =>
     apiClient<VoucherSummary>(`/reports/${type}-summary${query(filters)}`, { signal }),
+  vatRegister: (type: "sales" | "purchase", filters: ReportFilters, signal?: AbortSignal) => apiClient<VatRegister>(`/reports/vat-${type}-register${query(filters)}`, { signal }),
   productMovementSummary: (type: "sales" | "purchases", filters: ReportFilters, signal?: AbortSignal) =>
     apiClient<ProductMovementSummary>(`/reports/${type}-by-product${query(filters)}`, { signal }),
   expenseSummary: (filters: ReportFilters, signal?: AbortSignal) =>

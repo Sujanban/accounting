@@ -913,6 +913,65 @@ input {
   border-radius: .75rem;
   background: #fbfdfc;
 }
+
+.voucher-tax {
+  border: 1px solid var(--gray-a5);
+  border-left: 3px solid var(--accent-9);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.voucher-tax__toggle {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-weight: 600;
+}
+
+.voucher-tax__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .85rem;
+  margin-top: 1rem;
+}
+
+.voucher-tax__grid label {
+  display: grid;
+  gap: .35rem;
+  font-size: .85rem;
+  color: var(--gray-11);
+}
+
+.voucher-tax__totals {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: .3rem;
+  padding: .65rem .8rem;
+  background: var(--accent-a3);
+  border-radius: 6px;
+}
+
+.voucher-tax-invoice {
+  margin-top: 1rem;
+  border-left: 3px solid var(--accent-9);
+}
+
+.voucher-tax-invoice__eyebrow {
+  display: block;
+  margin-bottom: .35rem;
+  color: var(--accent-11);
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.voucher-tax-invoice__amounts {
+  display: grid;
+  gap: .3rem;
+  text-align: right;
+}
 .voucher-form__accounting h4,
 .voucher-form__inventory h4 {
   color: #173b4a;

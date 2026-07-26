@@ -50,6 +50,8 @@ module.exports = {
   getPurchaseSummary: handler("getPurchaseSummary", "Purchase summary fetched successfully."),
   getSalesByProduct: handler("getSalesByProduct", "Sales by product fetched successfully."),
   getPurchasesByProduct: handler("getPurchasesByProduct", "Purchases by product fetched successfully."),
+  getVatSalesRegister: handler("getVatSalesRegister", "VAT sales register fetched successfully."),
+  getVatPurchaseRegister: handler("getVatPurchaseRegister", "VAT purchase register fetched successfully."),
   getExpenseSummary: handler("getExpenseSummary", "Expense summary fetched successfully."),
   getLowStock: handler("getLowStock", "Low stock report fetched successfully."),
   getNegativeStock: handler("getNegativeStock", "Negative stock report fetched successfully."),

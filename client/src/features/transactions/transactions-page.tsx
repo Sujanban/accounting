@@ -10,12 +10,13 @@ import {
   usePostVoucher,
   useReverseVoucher,
   useTransaction,
+  useTaxInvoice,
   useUpdateVoucherDraft,
   useVoucherTransactions,
 } from "./use-transactions";
 import { mastersApi } from "../masters/masters-api";
 import { useAttachments, useDeleteAttachment, useProducts, useUploadAttachment, useWarehouses } from "../masters/use-masters";
-import { useAdToBs, useBsToAd } from "../settings/use-settings";
+import { useAdToBs, useBsToAd, useVat } from "../settings/use-settings";
 import type { VoucherTransactionType } from "./transactions-api";
 
 const types = [
@@ -131,8 +132,9 @@ export function TransactionsPage({
   const createDraft = useCreateVoucherDraft();
   const products = useProducts();
   const warehouses = useWarehouses();
+  const vat = useVat();
   if (transactionId) return <TransactionDetail />;
-  if (create && (ledgers.isLoading || products.isLoading || warehouses.isLoading)) {
+  if (create && (ledgers.isLoading || products.isLoading || warehouses.isLoading || vat.isLoading)) {
     return (
       <Flex direction="column" gap="5">
         <Heading size="7">New {formatVoucherType(routeType?.value ?? type)} voucher</Heading>
@@ -152,6 +154,8 @@ export function TransactionsPage({
         ledgers={ledgers.data ?? []}
         products={products.data ?? []}
         warehouses={warehouses.data ?? []}
+        defaultVatRate={vat.data?.defaultVatRate ?? 13}
+        defaultVatMode={vat.data?.vatMode ?? "EXCLUSIVE"}
         pending={createDraft.isPending}
         error={
           createDraft.error instanceof Error
@@ -345,6 +349,8 @@ function DraftForm({
   ledgers,
   products,
   warehouses,
+  defaultVatRate,
+  defaultVatMode,
   pending,
   error,
   onSave,
@@ -354,6 +360,8 @@ function DraftForm({
   ledgers: Array<{ id: string; name: string }>;
   products: Array<{ id: string; name: string; isService: boolean }>;
   warehouses: Array<{ id: string; name: string }>;
+  defaultVatRate: number;
+  defaultVatMode: "EXCLUSIVE" | "INCLUSIVE";
   pending: boolean;
   error?: string;
   onSave: (input: any) => Promise<void>;
@@ -374,8 +382,14 @@ function DraftForm({
       direction: "IN" | "OUT";
     }>
   >([]);
+  const [includeTaxInvoice, setIncludeTaxInvoice] = useState(false);
+  const [tax, setTax] = useState({ customerName: "", customerPan: "", taxableAmount: "", vatRate: String(defaultVatRate), mode: defaultVatMode });
   const selected = types.find((item) => item.value === type)!;
   const voucherLabel = selected.value.toLowerCase().replaceAll("_", " ");
+  const taxableAmount = Number(tax.taxableAmount || 0);
+  const vatRate = Number(tax.vatRate || 0);
+  const vatAmount = Number((taxableAmount * vatRate / 100).toFixed(2));
+  const totalAmount = Number((taxableAmount + vatAmount).toFixed(2));
   return (
     <Flex direction="column" gap="5">
       <Heading size="7">New {voucherLabel} voucher</Heading>
@@ -391,6 +405,7 @@ function DraftForm({
               transactionDate,
               narration: form.get("narration") || null,
               items: [],
+              ...(type === "SALE" && includeTaxInvoice ? { taxDetails: { customerName: tax.customerName || null, customerPan: tax.customerPan || null, taxableAmount, vatRate, vatAmount, totalAmount, mode: tax.mode } } : {}),
               inventoryEntries: inventory
                 .filter((line) => line.productId && line.warehouseId)
                 .map((line) => ({
@@ -434,6 +449,27 @@ function DraftForm({
             <Text className="accounting-form__wide" color="red" role="alert">
               {error}
             </Text>
+          ) : null}
+          {type === "SALE" ? (
+            <div className="accounting-form__wide voucher-tax">
+              <Flex justify="between" align="center" gap="3" wrap="wrap">
+                <div>
+                  <Heading size="4">Tax invoice</Heading>
+                  <Text size="2" color="gray">Tally-style VAT summary for a taxable sale.</Text>
+                </div>
+                <label className="voucher-tax__toggle"><input type="checkbox" checked={includeTaxInvoice} onChange={(event) => setIncludeTaxInvoice(event.target.checked)} /> Issue tax invoice</label>
+              </Flex>
+              {includeTaxInvoice ? (
+                <div className="voucher-tax__grid">
+                  <label>Customer name<input value={tax.customerName} onChange={(event) => setTax({ ...tax, customerName: event.target.value })} placeholder="Customer name" /></label>
+                  <label>Customer PAN<input value={tax.customerPan} onChange={(event) => setTax({ ...tax, customerPan: event.target.value.replace(/\D/g, "").slice(0, 9) })} inputMode="numeric" placeholder="Optional 9-digit PAN" /></label>
+                  <label>Taxable amount<input type="number" min="0" step="0.01" required value={tax.taxableAmount} onChange={(event) => setTax({ ...tax, taxableAmount: event.target.value })} /></label>
+                  <label>VAT rate (%)<input type="number" min="0" max="100" step="0.01" required value={tax.vatRate} onChange={(event) => setTax({ ...tax, vatRate: event.target.value })} /></label>
+                  <label>VAT mode<AppSelect value={tax.mode} onChange={(event) => setTax({ ...tax, mode: event.target.value as "EXCLUSIVE" | "INCLUSIVE" })}><option value="EXCLUSIVE">Exclusive</option><option value="INCLUSIVE">Inclusive</option></AppSelect></label>
+                  <div className="voucher-tax__totals"><span>VAT: Rs. {vatAmount.toFixed(2)}</span><strong>Total: Rs. {totalAmount.toFixed(2)}</strong></div>
+                </div>
+              ) : null}
+            </div>
           ) : null}
           <div className="accounting-form__wide voucher-form__accounting">
             <Heading size="4">Accounting entries</Heading>
@@ -614,6 +650,13 @@ function DraftForm({
 function TransactionDetail() {
   const { transactionId } = useParams();
   const transaction = useTransaction(transactionId);
+  const taxInvoice = useTaxInvoice(
+    transactionId,
+    Boolean(
+      transaction.data?.transactionType === "SALE" &&
+        ["POSTED", "REVERSED"].includes(transaction.data.status),
+    ),
+  );
   const post = usePostVoucher();
   const reverse = useReverseVoucher();
   const duplicate = useCreateVoucherDraft();
@@ -683,6 +726,23 @@ function TransactionDetail() {
           <strong className={`voucher-status voucher-status--${item.status.toLowerCase()}`}>{item.status}</strong>
         </div>
       </Card>
+      {taxInvoice.data ? (
+        <Card size="3" className="voucher-tax-invoice">
+          <Flex justify="between" align="start" gap="3" wrap="wrap">
+            <div>
+              <Text className="voucher-tax-invoice__eyebrow">Nepal VAT tax invoice</Text>
+              <Heading size="5">{taxInvoice.data.number}</Heading>
+              <Text size="2" color="gray">Company PAN {taxInvoice.data.companyPan} · VAT {taxInvoice.data.companyVatNumber}</Text>
+            </div>
+            <div className="voucher-tax-invoice__amounts">
+              <span>Taxable Rs. {taxInvoice.data.taxableAmount.toFixed(2)}</span>
+              <span>VAT {taxInvoice.data.vatRate}%: Rs. {taxInvoice.data.vatAmount.toFixed(2)}</span>
+              <strong>Total Rs. {taxInvoice.data.totalAmount.toFixed(2)}</strong>
+            </div>
+          </Flex>
+          {taxInvoice.data.customerName || taxInvoice.data.customerPan ? <Text mt="3" size="2">Customer: {taxInvoice.data.customerName ?? "—"}{taxInvoice.data.customerPan ? ` · PAN ${taxInvoice.data.customerPan}` : ""}</Text> : null}
+        </Card>
+      ) : null}
       <Card size="3" className="voucher-detail__section">
         <Heading size="4">Accounting entries</Heading>
         {item.accountingEntries.length ? <table className="accounting-table voucher-detail__entries"><thead><tr><th>Ledger</th><th>Debit</th><th>Credit</th></tr></thead><tbody>{item.accountingEntries.map((line, index) => <tr key={index}><td>{line.ledgerId}</td><td>{Number(line.debit || 0).toFixed(2)}</td><td>{Number(line.credit || 0).toFixed(2)}</td></tr>)}</tbody><tfoot><tr><th>Total</th><th>{totals.debit.toFixed(2)}</th><th>{totals.credit.toFixed(2)}</th></tr></tfoot></table> : <Text color="gray">No accounting entries yet. Add balanced debit and credit entries before posting.</Text>}

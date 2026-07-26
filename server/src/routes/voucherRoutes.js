@@ -19,7 +19,7 @@ const definitions = [
 
 for (const definition of definitions) {
   voucherRouter.get(`/${definition.path}`, requireRoles(...definition.roles, "STAFF"), listVouchersController(definition));
-  voucherRouter.post(`/${definition.path}`, requireRoles(...definition.roles), validate(validateVoucherDraft), createVoucherController(definition));
+  voucherRouter.post(`/${definition.path}`, requireRoles(...definition.roles), validate((body) => validateVoucherDraft(body, definition.transactionType)), createVoucherController(definition));
   voucherRouter.get(`/${definition.path}/:id`, requireRoles(...definition.roles, "STAFF"), getVoucherController(definition));
   voucherRouter.patch(`/${definition.path}/:id`, requireRoles(...definition.roles), validate(validateVoucherUpdate), updateVoucherController(definition));
   voucherRouter.post(`/${definition.path}/:id/post`, requireRoles("OWNER", "ADMIN", "ACCOUNTANT"), postVoucherController(definition));
