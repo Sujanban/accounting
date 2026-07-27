@@ -23,6 +23,8 @@ The initial Approval Workflow slice is delivered: companies can opt in through A
 
 The initial Sales Orders slice is delivered: sales users can create and list branch-scoped, customer-linked planning documents. Orders do not yet create deliveries, invoices, inventory movements, or accounting entries.
 
+The initial Purchase Orders slice is delivered: users can create and list branch-scoped, supplier-linked planning documents. Orders do not yet create goods receipts, purchase bills, inventory movements, or accounting entries.
+
 Implement company branch and warehouse routes, including warehouse filtering by branch and the selectors required by subsequent product and voucher forms.
 
 Prerequisites

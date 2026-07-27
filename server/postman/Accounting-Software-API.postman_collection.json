@@ -530,6 +530,19 @@
           }
         },
         {
+          "name": "List Purchase Orders",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/purchase-orders?page=1&limit=20" }
+        },
+        {
+          "name": "Create Purchase Order",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"branchId\": \"{{branchId}}\", \"contactId\": \"{{supplierId}}\", \"orderDate\": \"2026-07-27\", \"items\": [{ \"productId\": \"{{productId}}\", \"quantity\": 1, \"unitPrice\": 1000 }] }" },
+            "url": "{{baseUrl}}/api/purchase-orders"
+          }
+        },
+        {
           "name": "Get PAN",
           "request": {
             "method": "GET",

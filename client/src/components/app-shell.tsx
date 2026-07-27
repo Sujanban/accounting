@@ -27,7 +27,7 @@ const navigation: NavigationGroup[] = [
     { label: "Receipt", to: "/vouchers/receipt" }, { label: "Payment", to: "/vouchers/payment" },
     { label: "Contra", to: "/vouchers/contra" }, { label: "Journal", to: "/vouchers/journal" },
   ] },
-  { label: "Orders", icon: FileTextIcon, items: [{ label: "Sales orders", to: "/sales-orders" }] },
+  { label: "Orders", icon: FileTextIcon, items: [{ label: "Sales orders", to: "/sales-orders" }, { label: "Purchase orders", to: "/purchase-orders" }] },
   { label: "Masters", icon: GearIcon, items: [
     { label: "Parties", to: "/masters/parties" }, { label: "Products & services", to: "/masters/products" },
     { label: "Product categories", to: "/masters/categories" }, { label: "Units", to: "/masters/units" },

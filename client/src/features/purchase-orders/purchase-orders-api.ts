@@ -1,0 +1,4 @@
+import { apiClient } from "../../services/api-client";
+export type PurchaseOrderInput = { branchId: string; contactId: string; orderDate: string; items: Array<{ productId: string; quantity: number; unitPrice: number }>; notes?: string };
+export type PurchaseOrder = PurchaseOrderInput & { id: string; orderNumber: string; status: "DRAFT" | "CONFIRMED" | "CANCELLED" };
+export const purchaseOrdersApi = { list: (signal?: AbortSignal) => apiClient<{ items: PurchaseOrder[] }>("/purchase-orders?page=1&limit=20", { signal }), create: (input: PurchaseOrderInput) => apiClient<PurchaseOrder>("/purchase-orders", { method: "POST", body: JSON.stringify(input) }) };
