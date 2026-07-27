@@ -31,6 +31,21 @@ The initial CRM slice is delivered: sales users can create and list branch-scope
 
 The initial POS slice is delivered as a counter-sales entry point to the existing Sales Voucher workflow. It preserves transaction-engine validation and avoids separate POS accounting logic; offline operation, scanners, printers, and terminal integrations remain out of scope for this slice.
 
+The initial Payroll and Leave slice is delivered: employee records and pending leave requests are available. Payroll runs, tax/allowance calculations, leave-balance policies, approval actions, and journal posting remain out of scope for these foundations.
+
+The initial Project Management and enterprise dashboard slice is delivered: projects and project tasks can be registered, and a read-only dashboard reports counts for leads, assets, draft orders, and active projects. Milestones, timesheets, project cost allocation, and richer dashboard analytics remain out of scope for this slice.
+
+## Remaining implementation
+
+- Approval policies: rejections, multi-step routing, delegation, and reuse by orders, payroll, and assets.
+- Sales and purchase orders: editing, delivery/goods receipt, invoice/bill conversion, and approvals. Draft orders can now be confirmed or cancelled.
+- Fixed assets: edit/disposal, persisted depreciation runs, and depreciation journal posting.
+- Payroll and leave: payroll runs, allowances, deductions, tax, leave balances, approval actions, and accounting integration.
+- CRM: lead updates, activities, conversion, and automation.
+- POS: cart/checkout, barcode scanning, receipts, offline operation, and terminal integrations.
+- Projects: milestones, timesheets, budget/cost allocation, and project reporting.
+- Enterprise reports and dashboard analytics for branches, assets, payroll, orders, CRM, and projects.
+
 Implement company branch and warehouse routes, including warehouse filtering by branch and the selectors required by subsequent product and voucher forms.
 
 Prerequisites

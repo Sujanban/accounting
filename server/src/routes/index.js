@@ -15,6 +15,11 @@ const { salesOrderRouter } = require("./salesOrderRoutes");
 const { purchaseOrderRouter } = require("./purchaseOrderRoutes");
 const { fixedAssetRouter } = require("./fixedAssetRoutes");
 const { leadRouter } = require("./leadRoutes");
+const { payrollRouter } = require("./payrollRoutes");
+const { leaveRouter } = require("./leaveRoutes");
+const { projectRouter } = require("./projectRoutes");
+const { enterpriseDashboardRouter } = require("./enterpriseDashboardRoutes");
+const { orderFulfillmentRouter } = require("./orderFulfillmentRoutes");
 
 const apiRouter = express.Router();
 
@@ -33,6 +38,11 @@ apiRouter.use("/sales-orders", salesOrderRouter);
 apiRouter.use("/purchase-orders", purchaseOrderRouter);
 apiRouter.use("/fixed-assets", fixedAssetRouter);
 apiRouter.use("/leads", leadRouter);
+apiRouter.use("/payroll", payrollRouter);
+apiRouter.use("/leave-requests", leaveRouter);
+apiRouter.use("/projects", projectRouter);
+apiRouter.use("/enterprise-dashboard", enterpriseDashboardRouter);
+apiRouter.use("/", orderFulfillmentRouter);
 
 module.exports = {
   apiRouter
