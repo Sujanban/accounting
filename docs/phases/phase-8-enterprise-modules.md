@@ -25,6 +25,8 @@ The initial Sales Orders slice is delivered: sales users can create and list bra
 
 The initial Purchase Orders slice is delivered: users can create and list branch-scoped, supplier-linked planning documents. Orders do not yet create goods receipts, purchase bills, inventory movements, or accounting entries.
 
+The initial Fixed Assets and Depreciation slice is delivered: users can maintain a branch-scoped asset register and preview monthly straight-line or written-down-value depreciation schedules. The preview is read-only; asset disposal, persisted depreciation runs, and depreciation journal posting remain out of scope for this slice.
+
 Implement company branch and warehouse routes, including warehouse filtering by branch and the selectors required by subsequent product and voucher forms.
 
 Prerequisites
