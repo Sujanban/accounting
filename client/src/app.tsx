@@ -12,6 +12,7 @@ import { TransactionEditPage, TransactionsPage } from "./features/transactions/t
 import { ReportsPage } from "./features/reports/reports-page";
 import { OpeningBalancesPage } from "./pages/opening-balances-page";
 import { BranchesPage } from "./pages/branches-page";
+import { SalesOrdersPage } from "./features/sales-orders/sales-orders-page";
 
 export function App() {
   return (
@@ -45,6 +46,7 @@ export function App() {
             <Route path="reports/:report" element={<ReportsPage />} />
             <Route path="company/:section" element={<SettingsPage />} />
             <Route path="company/branches" element={<BranchesPage />} />
+            <Route path="sales-orders" element={<SalesOrdersPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Route>

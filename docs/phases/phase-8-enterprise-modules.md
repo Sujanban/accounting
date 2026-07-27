@@ -21,6 +21,8 @@ The remaining branch work is delivered: financial statements and contact stateme
 
 The initial Approval Workflow slice is delivered: companies can opt in through Accounting Preferences, submit draft transactions, and have an owner or administrator approve them before posting. It intentionally covers only the documented draft → submitted → approved → posted progression; configurable multi-step policies, rejections, delegation, and approval workflows for future enterprise modules are out of scope for this slice.
 
+The initial Sales Orders slice is delivered: sales users can create and list branch-scoped, customer-linked planning documents. Orders do not yet create deliveries, invoices, inventory movements, or accounting entries.
+
 Implement company branch and warehouse routes, including warehouse filtering by branch and the selectors required by subsequent product and voucher forms.
 
 Prerequisites
