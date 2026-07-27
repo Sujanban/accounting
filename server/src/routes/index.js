@@ -14,6 +14,7 @@ const { fiscalYearRouter } = require("./fiscalYearRoutes");
 const { salesOrderRouter } = require("./salesOrderRoutes");
 const { purchaseOrderRouter } = require("./purchaseOrderRoutes");
 const { fixedAssetRouter } = require("./fixedAssetRoutes");
+const { leadRouter } = require("./leadRoutes");
 
 const apiRouter = express.Router();
 
@@ -31,6 +32,7 @@ apiRouter.use("/", enterpriseRouter);
 apiRouter.use("/sales-orders", salesOrderRouter);
 apiRouter.use("/purchase-orders", purchaseOrderRouter);
 apiRouter.use("/fixed-assets", fixedAssetRouter);
+apiRouter.use("/leads", leadRouter);
 
 module.exports = {
   apiRouter

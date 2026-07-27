@@ -27,6 +27,10 @@ The initial Purchase Orders slice is delivered: users can create and list branch
 
 The initial Fixed Assets and Depreciation slice is delivered: users can maintain a branch-scoped asset register and preview monthly straight-line or written-down-value depreciation schedules. The preview is read-only; asset disposal, persisted depreciation runs, and depreciation journal posting remain out of scope for this slice.
 
+The initial CRM slice is delivered: sales users can create and list branch-scoped leads across a simple New → Qualified → Proposal → Won/Lost pipeline. Automation, activities, conversion, and integrations remain out of scope for this slice.
+
+The initial POS slice is delivered as a counter-sales entry point to the existing Sales Voucher workflow. It preserves transaction-engine validation and avoids separate POS accounting logic; offline operation, scanners, printers, and terminal integrations remain out of scope for this slice.
+
 Implement company branch and warehouse routes, including warehouse filtering by branch and the selectors required by subsequent product and voucher forms.
 
 Prerequisites

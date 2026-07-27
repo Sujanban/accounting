@@ -29,6 +29,8 @@ const navigation: NavigationGroup[] = [
   ] },
   { label: "Orders", icon: FileTextIcon, items: [{ label: "Sales orders", to: "/sales-orders" }, { label: "Purchase orders", to: "/purchase-orders" }] },
   { label: "Assets", icon: FileTextIcon, items: [{ label: "Fixed assets", to: "/fixed-assets" }] },
+  { label: "CRM", icon: FileTextIcon, items: [{ label: "Leads", to: "/crm/leads" }] },
+  { label: "POS", icon: FileTextIcon, items: [{ label: "Counter sales", to: "/pos" }] },
   { label: "Masters", icon: GearIcon, items: [
     { label: "Parties", to: "/masters/parties" }, { label: "Products & services", to: "/masters/products" },
     { label: "Product categories", to: "/masters/categories" }, { label: "Units", to: "/masters/units" },
