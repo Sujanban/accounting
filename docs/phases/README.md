@@ -2,6 +2,14 @@
 
 This directory is the canonical, version-controlled roadmap for the ERP implementation. Keep future phase updates here and reference the documents during planning, reviews, and release preparation. Each delivery phase includes its frontend route/API coverage and completion criteria; implement and verify one phase before starting the next.
 
+## Implementation scope and API reference
+
+Before implementing a phase, review the existing API collection in [`server/postman/Accounting-Software-API.postman_collection.json`](../../server/postman/Accounting-Software-API.postman_collection.json) as the primary API reference. It documents the available endpoints, request shapes, authentication expectations, and response examples that the frontend should use.
+
+Keep backend API changes to the minimum necessary. Prefer the existing API contract and make an API change only when the phase requirement cannot be delivered otherwise. Do not use a phase as a reason to redesign or expand unrelated backend behavior.
+
+Implement only the feature scope explicitly described in the relevant phase document. The phase documents are intentionally incremental: do not build a full or complex version of a feature ahead of the phase that calls for it. Record any genuinely required API gap or future enhancement in the relevant phase document for later work.
+
 | Phase | Focus |
 | --- | --- |
 | [Phase 2](phase-2-accounting-foundation.md) | Accounting foundation |

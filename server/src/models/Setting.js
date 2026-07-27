@@ -81,6 +81,10 @@ const settingSchema = new mongoose.Schema(
         type: String,
         enum: ["STANDARD", "COMPACT"],
         default: "STANDARD"
+      },
+      requireTransactionApproval: {
+        type: Boolean,
+        default: false
       }
     },
     fiscalLock: {

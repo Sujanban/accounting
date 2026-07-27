@@ -58,3 +58,14 @@ test("validateAccountingPreferences rejects invalid accounting and lock settings
   assert.equal(errors[1].field, "accounting.decimalPlaces");
   assert.equal(errors[2].field, "fiscalLock.lockBeforeDate");
 });
+
+test("validateAccountingPreferences accepts the transaction-approval policy and rejects invalid values", () => {
+  assert.deepEqual(
+    validateAccountingPreferences({ accounting: { requireTransactionApproval: true } }),
+    []
+  );
+
+  const errors = validateAccountingPreferences({ accounting: { requireTransactionApproval: "yes" } });
+  assert.equal(errors.length, 1);
+  assert.equal(errors[0].field, "accounting.requireTransactionApproval");
+});

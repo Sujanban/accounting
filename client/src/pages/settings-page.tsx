@@ -559,6 +559,16 @@ function AccountingForm({
           }
         />
         <Flex justify="between" align="center">
+          <div>
+            <Text>Require transaction approval</Text>
+            <Text as="p" size="1" color="gray">Submitted vouchers must be approved before posting.</Text>
+          </div>
+          <Switch
+            checked={accounting.requireTransactionApproval}
+            onCheckedChange={(requireTransactionApproval) => setAccounting({ ...accounting, requireTransactionApproval })}
+          />
+        </Flex>
+        <Flex justify="between" align="center">
           <Text>Lock closed fiscal years</Text>
           <Switch
             checked={fiscalLock.lockClosedFiscalYear}

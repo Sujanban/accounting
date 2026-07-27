@@ -184,7 +184,10 @@ function validateVoucherSequence(body) {
 function validateAccountingPreferences(body) {
   const errors = [];
 
+  rejectUnknownFields(body, new Set(["accounting", "fiscalLock"]), errors);
+
   if (body.accounting) {
+    rejectUnknownFields(body.accounting, new Set(["voucherNumbering", "decimalPlaces", "allowJournalEditing", "lockAfterClosing", "defaultVoucherView", "requireTransactionApproval"]), errors);
     if (
       body.accounting.voucherNumbering !== undefined &&
       !["AUTO", "MANUAL"].includes(body.accounting.voucherNumbering)
@@ -193,6 +196,9 @@ function validateAccountingPreferences(body) {
         field: "accounting.voucherNumbering",
         message: "Voucher numbering must be AUTO or MANUAL."
       });
+    }
+    if (body.accounting.requireTransactionApproval !== undefined && typeof body.accounting.requireTransactionApproval !== "boolean") {
+      errors.push({ field: "accounting.requireTransactionApproval", message: "Transaction approval must be true or false." });
     }
 
     if (

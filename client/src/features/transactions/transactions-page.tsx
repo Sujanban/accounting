@@ -6,9 +6,11 @@ import { Button } from "../../components/ui/button";
 import { AppSelect } from "../../components/ui/select";
 import { useLedgers } from "../accounting/use-accounting";
 import {
+  useApproveTransaction,
   useCreateVoucherDraft,
   usePostVoucher,
   useReverseVoucher,
+  useSubmitTransaction,
   useTransaction,
   useTaxInvoice,
   useUpdateVoucherDraft,
@@ -19,6 +21,7 @@ import { useAttachments, useDeleteAttachment, useProducts, useUploadAttachment, 
 import { useAdToBs, useBsToAd, useVat } from "../settings/use-settings";
 import type { VoucherTransactionType } from "./transactions-api";
 import { useBranches, useBranchWarehouses } from "../enterprise/use-enterprise";
+import { useAuth } from "../auth/auth-provider";
 
 const types = [
   { value: "JOURNAL", voucher: "JV", path: "journal" },
@@ -218,6 +221,8 @@ export function TransactionsPage({
           >
             <option value="">All statuses</option>
             <option value="DRAFT">Draft</option>
+            <option value="SUBMITTED">Submitted</option>
+            <option value="APPROVED">Approved</option>
             <option value="POSTED">Posted</option>
             <option value="REVERSED">Reversed</option>
           </AppSelect>
@@ -668,8 +673,11 @@ function TransactionDetail() {
   );
   const post = usePostVoucher();
   const reverse = useReverseVoucher();
+  const submit = useSubmitTransaction();
+  const approve = useApproveTransaction();
   const duplicate = useCreateVoucherDraft();
   const navigate = useNavigate();
+  const { session } = useAuth();
   if (transaction.isLoading) {
     return (
       <LoadingScreen
@@ -769,6 +777,7 @@ function TransactionDetail() {
       <VoucherAttachments transactionId={item.id} />
       {item.status === "DRAFT" ? (
         <Flex direction="column" gap="2">
+          {submit.error instanceof Error ? <Text color="red" role="alert">{submit.error.message}</Text> : null}
           {post.error instanceof Error ? (
             <Text color="red" role="alert">
               {post.error.message}
@@ -792,7 +801,25 @@ function TransactionDetail() {
             >
               Post transaction
             </Button>
+            <Button variant="outline" loading={submit.isPending} onClick={() => void submit.mutateAsync(item.id)}>
+              Submit for approval
+            </Button>
           </Flex>
+        </Flex>
+      ) : null}
+      {item.status === "SUBMITTED" ? (
+        <Flex direction="column" gap="2">
+          <Text color="gray">Submitted {item.submittedAt ? new Date(item.submittedAt).toLocaleString() : ""}. This voucher is read-only until approved.</Text>
+          {["OWNER", "ADMIN"].includes(session?.activeMembership?.role ?? "") ? (
+            <Button loading={approve.isPending} onClick={() => void approve.mutateAsync(item.id)}>Approve transaction</Button>
+          ) : null}
+          {approve.error instanceof Error ? <Text color="red" role="alert">{approve.error.message}</Text> : null}
+        </Flex>
+      ) : null}
+      {item.status === "APPROVED" ? (
+        <Flex direction="column" gap="2">
+          <Text color="gray">Approved {item.approvedAt ? new Date(item.approvedAt).toLocaleString() : ""}. Ready to post.</Text>
+          <Button loading={post.isPending} onClick={() => void post.mutateAsync({ id: item.id, type: item.transactionType as VoucherTransactionType })}>Post approved transaction</Button>
         </Flex>
       ) : null}
       {item.status === "POSTED" && !item.reversedById ? (

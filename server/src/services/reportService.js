@@ -350,7 +350,7 @@ async function getContactStatement(companyId, fiscalYearId, query, role) {
     { $match: { companyId, ledgerId: ledger._id } },
     { $lookup: { from: "journals", localField: "journalId", foreignField: "_id", as: "journal" } },
     { $unwind: "$journal" },
-    { $match: { "journal.companyId": companyId, "journal.fiscalYearId": fiscalYearId } }
+    { $match: { "journal.companyId": companyId, "journal.fiscalYearId": fiscalYearId, ...(query.branchId ? { "journal.branchId": query.branchId } : {}) } }
   ];
   const [openingRows, lines] = await Promise.all([
     beforeRange ? JournalLine.aggregate([...basePipeline, { $match: beforeRange }, { $group: { _id: null, debit: { $sum: "$debit" }, credit: { $sum: "$credit" } } }]) : [],

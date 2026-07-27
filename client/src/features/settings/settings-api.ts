@@ -19,6 +19,7 @@ export type AccountingSettings = {
   allowJournalEditing: boolean;
   lockAfterClosing: boolean;
   defaultVoucherView: "STANDARD" | "COMPACT";
+  requireTransactionApproval: boolean;
 };
 export type FiscalLock = {
   lockBeforeDate: string | null;

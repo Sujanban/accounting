@@ -1,9 +1,9 @@
 import { apiClient } from "../../services/api-client";
 
-export type TransactionStatus = "DRAFT" | "POSTED" | "REVERSED" | "CANCELLED";
+export type TransactionStatus = "DRAFT" | "SUBMITTED" | "APPROVED" | "POSTED" | "REVERSED" | "CANCELLED";
 export type TaxDetails = { customerName?: string | null; customerPan?: string | null; taxableAmount: number; vatRate: number; vatAmount: number; totalAmount: number; mode: "EXCLUSIVE" | "INCLUSIVE" };
 export type TaxInvoice = TaxDetails & { number: string; issuedAt: string; companyPan: string; companyVatNumber: string };
-export type Transaction = { id: string; branchId?: string | null; transactionType: string; voucherType: string; voucherNumber: string | null; transactionDate: string; narration: string | null; taxDetails?: TaxDetails | null; taxInvoice?: TaxInvoice | null; accountingEntries: Array<{ ledgerId: string; debit: number; credit: number; narration?: string | null }>; inventoryEntries: Array<{ productId: string; warehouseId: string; quantity: number; direction: "IN" | "OUT"; unitCost: number }>; status: TransactionStatus; reversedById: string | null; /** Legacy-only; the server does not return or persist this value. */ referenceNo?: string | null; createdAt?: string; updatedAt?: string; postedAt?: string | null };
+export type Transaction = { id: string; branchId?: string | null; transactionType: string; voucherType: string; voucherNumber: string | null; transactionDate: string; narration: string | null; taxDetails?: TaxDetails | null; taxInvoice?: TaxInvoice | null; accountingEntries: Array<{ ledgerId: string; debit: number; credit: number; narration?: string | null }>; inventoryEntries: Array<{ productId: string; warehouseId: string; quantity: number; direction: "IN" | "OUT"; unitCost: number }>; status: TransactionStatus; reversedById: string | null; submittedAt?: string | null; approvedAt?: string | null; /** Legacy-only; the server does not return or persist this value. */ referenceNo?: string | null; createdAt?: string; updatedAt?: string; postedAt?: string | null };
 export type TransactionPage = { items: Transaction[]; meta: { page: number; totalPages: number; total: number; hasNextPage: boolean } };
 export type VoucherTransactionType = "JOURNAL" | "RECEIPT" | "PAYMENT" | "CONTRA" | "SALE" | "PURCHASE";
 const voucherPaths: Record<VoucherTransactionType, string> = { JOURNAL: "journal", RECEIPT: "receipt", PAYMENT: "payment", CONTRA: "contra", SALE: "sales", PURCHASE: "purchase" };
@@ -17,6 +17,8 @@ export const transactionsApi = {
   createVoucherDraft: (type: VoucherTransactionType, input: Omit<Transaction, "id" | "voucherNumber" | "status" | "reversedById" | "transactionType" | "voucherType">) => apiClient<Transaction>(`/${voucherPaths[type]}`, { method: "POST", body: JSON.stringify(input) }),
   updateDraft: (id: string, input: Partial<Omit<Transaction, "id" | "voucherNumber" | "status" | "reversedById">>) => apiClient<Transaction>(`/transactions/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
   updateVoucherDraft: (type: VoucherTransactionType, id: string, input: Partial<Omit<Transaction, "id" | "voucherNumber" | "status" | "reversedById" | "transactionType" | "voucherType">>) => apiClient<Transaction>(`/${voucherPaths[type]}/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
+  submit: (id: string) => apiClient<Transaction>(`/transactions/${id}/submit`, { method: "POST" }),
+  approve: (id: string) => apiClient<Transaction>(`/transactions/${id}/approve`, { method: "POST" }),
   post: (id: string) => apiClient<Transaction>(`/transactions/${id}/post`, { method: "POST" }),
   postVoucher: (type: VoucherTransactionType, id: string) => apiClient<Transaction>(`/${voucherPaths[type]}/${id}/post`, { method: "POST" }),
   reverseVoucher: (type: VoucherTransactionType, id: string) => apiClient<Transaction>(`/${voucherPaths[type]}/${id}/reverse`, { method: "POST" }),

@@ -45,7 +45,11 @@ function buildAccountingPreferences(payload) {
     defaultVoucherView:
       payload.accounting && payload.accounting.defaultVoucherView
         ? payload.accounting.defaultVoucherView
-        : "STANDARD"
+        : "STANDARD",
+    requireTransactionApproval:
+      payload.accounting && payload.accounting.requireTransactionApproval !== undefined
+        ? payload.accounting.requireTransactionApproval
+        : false
   };
 }
 

@@ -11,6 +11,7 @@ const { reportRouter } = require("./reportRoutes");
 const { localizationRouter } = require("./localizationRoutes");
 const { enterpriseRouter } = require("./enterpriseRoutes");
 const { fiscalYearRouter } = require("./fiscalYearRoutes");
+const { salesOrderRouter } = require("./salesOrderRoutes");
 
 const apiRouter = express.Router();
 
@@ -25,6 +26,7 @@ apiRouter.use("/", voucherRouter);
 apiRouter.use("/reports", reportRouter);
 apiRouter.use("/localization", localizationRouter);
 apiRouter.use("/", enterpriseRouter);
+apiRouter.use("/sales-orders", salesOrderRouter);
 
 module.exports = {
   apiRouter

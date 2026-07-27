@@ -17,7 +17,9 @@ Phase 8 is in progress. The multi-branch and multi-warehouse foundation is deliv
 - Voucher creation persists a selected active branch and limits inventory warehouses to that branch.
 - Operational reports expose a branch filter for journals, day book, stock, voucher, product-movement, and VAT-register reports.
 
-Remaining branch work: extend the filter to financial statements and contact statements, then complete warehouse lifecycle management. The next Phase 8 module after the branch foundation is Approval Workflow.
+The remaining branch work is delivered: financial statements and contact statements support the shared branch filter, and warehouse management supports create, edit, archive, and branch-scoped listing.
+
+The initial Approval Workflow slice is delivered: companies can opt in through Accounting Preferences, submit draft transactions, and have an owner or administrator approve them before posting. It intentionally covers only the documented draft → submitted → approved → posted progression; configurable multi-step policies, rejections, delegation, and approval workflows for future enterprise modules are out of scope for this slice.
 
 Implement company branch and warehouse routes, including warehouse filtering by branch and the selectors required by subsequent product and voucher forms.
 

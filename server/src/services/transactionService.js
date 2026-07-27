@@ -14,7 +14,7 @@ const { DOMAIN_EVENTS } = require("../shared/constants/events");
 const { resolveDefaultBranch } = require("./branchService");
 
 const MAX_LIMIT = 100;
-const TRANSACTION_STATUSES = new Set(["DRAFT", "POSTED", "CANCELLED", "REVERSED"]);
+const TRANSACTION_STATUSES = new Set(["DRAFT", "SUBMITTED", "APPROVED", "POSTED", "CANCELLED", "REVERSED"]);
 const TRANSACTION_TYPES = new Set(["JOURNAL", "RECEIPT", "PAYMENT", "CONTRA", "SALE", "PURCHASE", "INVENTORY_ADJUSTMENT", "STOCK_TRANSFER"]);
 const ROLE_TRANSACTION_TYPES = Object.freeze({
   SALES: new Set(["SALE", "RECEIPT"]),
@@ -79,7 +79,7 @@ async function assertStockAvailable(companyId, branchId, entries, session) {
 }
 
 function mapTransaction(transaction) {
-  return { id: transaction._id, companyId: transaction.companyId, branchId: transaction.branchId, fiscalYearId: transaction.fiscalYearId, transactionType: transaction.transactionType, voucherType: transaction.voucherType, voucherNumber: transaction.voucherNumber, transactionDate: transaction.transactionDate, narration: transaction.narration, items: transaction.items, taxDetails: transaction.taxDetails, taxInvoice: transaction.taxInvoice, accountingEntries: transaction.accountingEntries, inventoryEntries: transaction.inventoryEntries, status: transaction.status, journalId: transaction.journalId, reversalOfId: transaction.reversalOfId, reversedById: transaction.reversedById, postedAt: transaction.postedAt, postedBy: transaction.postedBy, createdBy: transaction.createdBy, updatedBy: transaction.updatedBy, createdAt: transaction.createdAt, updatedAt: transaction.updatedAt };
+  return { id: transaction._id, companyId: transaction.companyId, branchId: transaction.branchId, fiscalYearId: transaction.fiscalYearId, transactionType: transaction.transactionType, voucherType: transaction.voucherType, voucherNumber: transaction.voucherNumber, transactionDate: transaction.transactionDate, narration: transaction.narration, items: transaction.items, taxDetails: transaction.taxDetails, taxInvoice: transaction.taxInvoice, accountingEntries: transaction.accountingEntries, inventoryEntries: transaction.inventoryEntries, status: transaction.status, journalId: transaction.journalId, reversalOfId: transaction.reversalOfId, reversedById: transaction.reversedById, submittedAt: transaction.submittedAt, submittedBy: transaction.submittedBy, approvedAt: transaction.approvedAt, approvedBy: transaction.approvedBy, postedAt: transaction.postedAt, postedBy: transaction.postedBy, createdBy: transaction.createdBy, updatedBy: transaction.updatedBy, createdAt: transaction.createdAt, updatedAt: transaction.updatedAt };
 }
 
 function taxInvoiceNumber(fiscalYear, sequence) {
@@ -140,12 +140,41 @@ async function updateDraft(companyId, fiscalYearId, transactionId, payload) {
   return mapTransaction(draft);
 }
 
+async function submitTransaction(companyId, fiscalYearId, transactionId, actorUserId, actorRole) {
+  const transaction = await Transaction.findOne({ _id: transactionId, companyId, fiscalYearId });
+  if (!transaction) throw new ApiError(404, "Transaction was not found.");
+  assertTransactionTypeAccess(actorRole, transaction.transactionType);
+  if (transaction.status !== "DRAFT") throw new ApiError(409, "Only draft transactions can be submitted for approval.");
+  transaction.status = "SUBMITTED";
+  transaction.submittedAt = new Date();
+  transaction.submittedBy = actorUserId;
+  transaction.updatedBy = actorUserId;
+  await transaction.save();
+  return mapTransaction(transaction);
+}
+
+async function approveTransaction(companyId, fiscalYearId, transactionId, actorUserId) {
+  const transaction = await Transaction.findOne({ _id: transactionId, companyId, fiscalYearId });
+  if (!transaction) throw new ApiError(404, "Transaction was not found.");
+  if (transaction.status !== "SUBMITTED") throw new ApiError(409, "Only submitted transactions can be approved.");
+  transaction.status = "APPROVED";
+  transaction.approvedAt = new Date();
+  transaction.approvedBy = actorUserId;
+  transaction.updatedBy = actorUserId;
+  await transaction.save();
+  return mapTransaction(transaction);
+}
+
 async function postTransactionInSession(companyId, fiscalYearId, transactionId, actorUserId, session, { isReversal = false } = {}) {
   const transaction = await Transaction.findOne({ _id: transactionId, companyId, fiscalYearId }).session(session);
   if (!transaction) throw new ApiError(404, "Transaction was not found.");
-  if (transaction.status !== "DRAFT") throw new ApiError(409, "Only draft transactions can be posted.");
+  if (!["DRAFT", "APPROVED"].includes(transaction.status)) throw new ApiError(409, "Only draft or approved transactions can be posted.");
   await assertFiscalYearWritable(companyId, fiscalYearId, { transactionDate: transaction.transactionDate });
   const result = assertBalanced(transaction.accountingEntries);
+  const settings = await Setting.findOne({ companyId }).select("accounting.requireTransactionApproval").session(session).lean();
+  if (!isReversal && settings?.accounting?.requireTransactionApproval && transaction.status !== "APPROVED") {
+    throw new ApiError(409, "This company requires an approved transaction before posting.");
+  }
   await assertActiveLedgers(companyId, fiscalYearId, transaction.accountingEntries, session);
   await validateInventoryEntries(companyId, transaction.branchId, transaction.inventoryEntries, session);
   await assertStockAvailable(companyId, transaction.branchId, transaction.inventoryEntries, session);
@@ -226,4 +255,4 @@ async function listTransactions(companyId, fiscalYearId, query = {}, actorRole) 
   return { items: transactions.map(mapTransaction), meta: { page, limit, total, totalPages: Math.ceil(total / limit), hasNextPage: page * limit < total } };
 }
 
-module.exports = { createDraft, updateDraft, postTransaction, reverseTransaction, getTransaction, listTransactions };
+module.exports = { createDraft, updateDraft, submitTransaction, approveTransaction, postTransaction, reverseTransaction, getTransaction, listTransactions };

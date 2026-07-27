@@ -30,6 +30,10 @@ test("contact statements require a contact and allow only documented report filt
   assert.deepEqual(validateContactStatementQuery({ contactId: "507f1f77bcf86cd799439011", role: "CUSTOMER" }), [
     { field: "role", message: "This filter is not supported." },
   ]);
+  assert.deepEqual(
+    validateContactStatementQuery({ contactId: "507f1f77bcf86cd799439011", branchId: "507f1f77bcf86cd799439012" }),
+    [],
+  );
 });
 
 test("list report filters reject unsupported fields and oversized limits", () => {
