@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
 
-const TRANSACTION_TYPES = new Set(["JOURNAL", "RECEIPT", "PAYMENT", "CONTRA", "SALE", "PURCHASE", "INVENTORY_ADJUSTMENT", "STOCK_TRANSFER"]);
-const VOUCHER_TYPES = new Set(["JV", "RV", "PMV", "CV", "SV", "PV"]);
-const VOUCHERS_BY_TRANSACTION = Object.freeze({ JOURNAL: "JV", RECEIPT: "RV", PAYMENT: "PMV", CONTRA: "CV", SALE: "SV", PURCHASE: "PV", INVENTORY_ADJUSTMENT: "JV", STOCK_TRANSFER: "JV" });
+const TRANSACTION_TYPES = new Set(["JOURNAL", "RECEIPT", "PAYMENT", "CONTRA", "SALE", "PURCHASE", "INVENTORY_ADJUSTMENT", "STOCK_TRANSFER", "DELIVERY_NOTE", "RECEIPT_NOTE"]);
+const VOUCHER_TYPES = new Set(["JV", "RV", "PMV", "CV", "SV", "PV", "DN", "RN"]);
+const VOUCHERS_BY_TRANSACTION = Object.freeze({ JOURNAL: "JV", RECEIPT: "RV", PAYMENT: "PMV", CONTRA: "CV", SALE: "SV", PURCHASE: "PV", INVENTORY_ADJUSTMENT: "JV", STOCK_TRANSFER: "JV", DELIVERY_NOTE: "DN", RECEIPT_NOTE: "RN" });
 const CREATE_FIELDS = new Set(["transactionType", "voucherType", "branchId", "transactionDate", "narration", "items", "taxDetails", "accountingEntries", "inventoryEntries"]);
 const UPDATE_FIELDS = new Set(["branchId", "transactionDate", "referenceNo", "narration", "items", "taxDetails", "accountingEntries", "inventoryEntries"]);
 

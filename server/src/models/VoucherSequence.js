@@ -15,7 +15,7 @@ const voucherSequenceSchema = new mongoose.Schema(
     },
     voucherType: {
       type: String,
-      enum: ["JV", "SV", "PV", "RV", "PMV", "CV"],
+      enum: ["JV", "SV", "PV", "RV", "PMV", "CV", "DN", "RN"],
       required: true
     },
     prefix: {

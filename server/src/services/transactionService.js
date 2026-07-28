@@ -15,10 +15,10 @@ const { resolveDefaultBranch } = require("./branchService");
 
 const MAX_LIMIT = 100;
 const TRANSACTION_STATUSES = new Set(["DRAFT", "SUBMITTED", "APPROVED", "POSTED", "CANCELLED", "REVERSED"]);
-const TRANSACTION_TYPES = new Set(["JOURNAL", "RECEIPT", "PAYMENT", "CONTRA", "SALE", "PURCHASE", "INVENTORY_ADJUSTMENT", "STOCK_TRANSFER"]);
+const TRANSACTION_TYPES = new Set(["JOURNAL", "RECEIPT", "PAYMENT", "CONTRA", "SALE", "PURCHASE", "INVENTORY_ADJUSTMENT", "STOCK_TRANSFER", "DELIVERY_NOTE", "RECEIPT_NOTE"]);
 const ROLE_TRANSACTION_TYPES = Object.freeze({
-  SALES: new Set(["SALE", "RECEIPT"]),
-  INVENTORY_MANAGER: new Set(["PURCHASE", "INVENTORY_ADJUSTMENT", "STOCK_TRANSFER"])
+  SALES: new Set(["SALE", "RECEIPT", "DELIVERY_NOTE"]),
+  INVENTORY_MANAGER: new Set(["PURCHASE", "INVENTORY_ADJUSTMENT", "STOCK_TRANSFER", "RECEIPT_NOTE"])
 });
 
 function assertTransactionTypeAccess(role, transactionType) {
@@ -170,20 +170,22 @@ async function postTransactionInSession(companyId, fiscalYearId, transactionId, 
   if (!transaction) throw new ApiError(404, "Transaction was not found.");
   if (!["DRAFT", "APPROVED"].includes(transaction.status)) throw new ApiError(409, "Only draft or approved transactions can be posted.");
   await assertFiscalYearWritable(companyId, fiscalYearId, { transactionDate: transaction.transactionDate });
-  const result = assertBalanced(transaction.accountingEntries);
+  const inventoryOnly = ["DELIVERY_NOTE", "RECEIPT_NOTE"].includes(transaction.transactionType);
+  if (inventoryOnly && !transaction.inventoryEntries.length) throw new ApiError(422, "Inventory-only documents require at least one inventory entry.");
+  const result = inventoryOnly ? { debit: 0, credit: 0 } : assertBalanced(transaction.accountingEntries);
   const settings = await Setting.findOne({ companyId }).select("accounting.requireTransactionApproval").session(session).lean();
   if (!isReversal && settings?.accounting?.requireTransactionApproval && transaction.status !== "APPROVED") {
     throw new ApiError(409, "This company requires an approved transaction before posting.");
   }
-  await assertActiveLedgers(companyId, fiscalYearId, transaction.accountingEntries, session);
+  if (!inventoryOnly) await assertActiveLedgers(companyId, fiscalYearId, transaction.accountingEntries, session);
   await validateInventoryEntries(companyId, transaction.branchId, transaction.inventoryEntries, session);
   await assertStockAvailable(companyId, transaction.branchId, transaction.inventoryEntries, session);
   await issueTaxInvoice(companyId, fiscalYearId, transaction, session);
-  const voucherNumber = await getNextVoucherNumber(companyId, fiscalYearId, transaction.voucherType, session);
-  const journal = await Journal.create([{ companyId, branchId: transaction.branchId, fiscalYearId, transactionId: transaction._id, voucherNumber, transactionDate: transaction.transactionDate, narration: transaction.narration, totalDebit: result.debit, totalCredit: result.credit, isReversal, createdBy: actorUserId, updatedBy: actorUserId }], { session });
-  await JournalLine.insertMany(transaction.accountingEntries.map((entry) => ({ companyId, journalId: journal[0]._id, ledgerId: entry.ledgerId, debit: Number(entry.debit || 0), credit: Number(entry.credit || 0), narration: entry.narration, createdBy: actorUserId, updatedBy: actorUserId })), { session });
+  const voucherNumber = inventoryOnly ? `${transaction.voucherType}-${transaction._id}` : await getNextVoucherNumber(companyId, fiscalYearId, transaction.voucherType, session);
+  const journal = inventoryOnly ? [] : await Journal.create([{ companyId, branchId: transaction.branchId, fiscalYearId, transactionId: transaction._id, voucherNumber, transactionDate: transaction.transactionDate, narration: transaction.narration, totalDebit: result.debit, totalCredit: result.credit, isReversal, createdBy: actorUserId, updatedBy: actorUserId }], { session });
+  if (!inventoryOnly) await JournalLine.insertMany(transaction.accountingEntries.map((entry) => ({ companyId, journalId: journal[0]._id, ledgerId: entry.ledgerId, debit: Number(entry.debit || 0), credit: Number(entry.credit || 0), narration: entry.narration, createdBy: actorUserId, updatedBy: actorUserId })), { session });
   if (transaction.inventoryEntries.length) await InventoryMovement.insertMany(transaction.inventoryEntries.map((entry) => ({ companyId, branchId: transaction.branchId, fiscalYearId, transactionId: transaction._id, productId: entry.productId, warehouseId: entry.warehouseId, movementType: transaction.transactionType, direction: entry.direction, quantity: Number(entry.quantity), unitCost: Number(entry.unitCost || 0), transactionDate: transaction.transactionDate, createdBy: actorUserId, updatedBy: actorUserId })), { session });
-  transaction.voucherNumber = voucherNumber; transaction.journalId = journal[0]._id; transaction.status = "POSTED"; transaction.postedAt = new Date(); transaction.postedBy = actorUserId; transaction.updatedBy = actorUserId;
+  transaction.voucherNumber = voucherNumber; transaction.journalId = journal[0]?._id || null; transaction.status = "POSTED"; transaction.postedAt = new Date(); transaction.postedBy = actorUserId; transaction.updatedBy = actorUserId;
   await transaction.save({ session });
   return transaction;
 }

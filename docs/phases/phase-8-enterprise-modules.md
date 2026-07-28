@@ -19,7 +19,7 @@ Phase 8 is in progress. The multi-branch and multi-warehouse foundation is deliv
 
 The remaining branch work is delivered: financial statements and contact statements support the shared branch filter, and warehouse management supports create, edit, archive, and branch-scoped listing.
 
-The initial Approval Workflow slice is delivered: companies can opt in through Accounting Preferences, submit draft transactions, and have an owner or administrator approve them before posting. It intentionally covers only the documented draft → submitted → approved → posted progression; configurable multi-step policies, rejections, delegation, and approval workflows for future enterprise modules are out of scope for this slice.
+The initial Approval Workflow slice is delivered: companies can opt in through Accounting Preferences, submit draft transactions, and have an owner or administrator approve them before posting. Tally parity supports voucher verification and clarification states, but not configurable multi-step approval policies or delegation; those requirements are intentionally excluded.
 
 The initial Sales Orders slice is delivered: sales users can create, edit, confirm, cancel, pre-close, and list branch-scoped, customer-linked planning documents. Orders do not yet create deliveries, invoices, inventory movements, or accounting entries.
 
@@ -33,7 +33,6 @@ The initial Payroll and Leave slice is delivered: employee records can be create
 
 ## Remaining implementation
 
-- Approval policies: rejections, multi-step routing, delegation, and reuse by orders, payroll, and assets.
 - Sales and purchase orders: delivery/goods receipt, invoice/bill conversion, and approvals.
 - Fixed assets: disposal and depreciation journal posting. Do not add automatic or persisted depreciation runs for Tally parity.
 - Payroll and leave: payroll runs, allowances, deductions, tax, leave balances, approval actions, and accounting integration.
@@ -436,7 +435,7 @@ Completed
 
 Rules
 
-Approval policies configurable.
+Use the existing draft, submit, approve, and post lifecycle. Do not add configurable multi-step policies or delegation for Tally parity.
 
 ---
 
@@ -855,15 +854,14 @@ Implement in this sequence:
 
 1. Multi Branch
 2. Multi Warehouse
-3. Approval Workflow
-4. Sales Orders
-5. Purchase Orders
-6. Fixed Assets
-7. Depreciation Engine
-8. POS
-9. Payroll
-10. Leave Management
-11. Manufacturing foundation
+3. Sales Orders
+4. Purchase Orders
+5. Fixed Assets
+6. Depreciation Engine
+7. POS
+8. Payroll
+9. Leave Management
+10. Manufacturing foundation
 
 ---
 

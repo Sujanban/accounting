@@ -146,7 +146,9 @@ const VOUCHER_TYPES = Object.freeze({
   PURCHASE: "PV",
   RECEIPT: "RV",
   PAYMENT: "PMV",
-  CONTRA: "CV"
+  CONTRA: "CV",
+  DELIVERY_NOTE: "DN",
+  RECEIPT_NOTE: "RN"
 });
 
 const DEFAULT_ACCOUNT_GROUPS = Object.freeze(Object.values(ACCOUNT_GROUPS));

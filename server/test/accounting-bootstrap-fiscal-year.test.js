@@ -82,14 +82,16 @@ test("bootstrapAccountingForCompany creates default fiscal year, groups, ledgers
     assert.equal(calls.ledgers[0].fiscalYearId, "fy-1");
     assert.equal(calls.ledgers[0].systemCode, "CASH");
     assert.equal(calls.ledgers[0].groupId, "group-2");
-    assert.equal(calls.sequences.length, 6);
+    assert.equal(calls.sequences.length, 8);
     assert.deepEqual(calls.sequences.map((item) => item.voucherType), [
       "JV",
       "SV",
       "PV",
       "RV",
       "PMV",
-      "CV"
+      "CV",
+      "DN",
+      "RN"
     ]);
     assert.equal(calls.sequences[0].prefix, "JV-2082/83-");
   } finally {
