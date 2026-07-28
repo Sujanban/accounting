@@ -30,6 +30,10 @@ test("sales orders can be edited only while they are drafts", async () => {
 
     order.status = "CONFIRMED";
     await assert.rejects(() => service.update("company-1", "user-1", "sales-1", input), /Only draft sales orders can be edited/);
+    const closed = await service.close("company-1", "user-1", "sales-1", "Customer no longer requires the order");
+    assert.equal(order.status, "CLOSED");
+    assert.equal(order.closeReason, "Customer no longer requires the order");
+    assert.equal(closed.status, "CLOSED");
   } finally {
     restore();
   }
@@ -55,6 +59,11 @@ test("purchase orders can be edited only while they are drafts", async () => {
 
     order.status = "CANCELLED";
     await assert.rejects(() => service.update("company-1", "user-1", "purchase-1", input), /Only draft purchase orders can be edited/);
+    order.status = "CONFIRMED";
+    const closed = await service.close("company-1", "user-1", "purchase-1", "Supplier cannot fulfil the order");
+    assert.equal(order.status, "CLOSED");
+    assert.equal(order.closeReason, "Supplier cannot fulfil the order");
+    assert.equal(closed.status, "CLOSED");
   } finally {
     restore();
   }

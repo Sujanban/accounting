@@ -9,7 +9,9 @@ const salesOrderSchema = new mongoose.Schema({
   orderDate: { type: Date, required: true },
   items: { type: [{ productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true }, quantity: { type: Number, required: true, min: 0.000001 }, unitPrice: { type: Number, required: true, min: 0 } }], required: true },
   notes: { type: String, trim: true, maxlength: 2000, default: null },
-  status: { type: String, enum: ["DRAFT", "CONFIRMED", "CANCELLED"], default: "DRAFT" }
+  status: { type: String, enum: ["DRAFT", "CONFIRMED", "CANCELLED", "CLOSED"], default: "DRAFT" },
+  closedAt: { type: Date, default: null },
+  closeReason: { type: String, trim: true, maxlength: 500, default: null }
 }, { timestamps: true });
 salesOrderSchema.index({ companyId: 1, orderNumber: 1 }, { unique: true });
 salesOrderSchema.index({ companyId: 1, branchId: 1, status: 1, orderDate: -1, _id: -1 });

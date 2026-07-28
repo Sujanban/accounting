@@ -36,9 +36,11 @@ const purchaseOrderSchema = new mongoose.Schema(
     notes: { type: String, trim: true, maxlength: 2000, default: null },
     status: {
       type: String,
-      enum: ["DRAFT", "CONFIRMED", "CANCELLED"],
+      enum: ["DRAFT", "CONFIRMED", "CANCELLED", "CLOSED"],
       default: "DRAFT",
     },
+    closedAt: { type: Date, default: null },
+    closeReason: { type: String, trim: true, maxlength: 500, default: null },
   },
   { timestamps: true },
 );

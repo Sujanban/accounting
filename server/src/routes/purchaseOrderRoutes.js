@@ -15,6 +15,11 @@ purchaseOrderRouter.use(requireAuth, resolveActiveCompany, resolveActiveFiscalYe
 purchaseOrderRouter.get("/", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "INVENTORY_MANAGER", "STAFF"), asyncHandler(async (req, res) => sendSuccess(res, 200, "Purchase orders fetched successfully.", await service.list(req.auth.activeCompanyId, req.query))));
 purchaseOrderRouter.post("/", requireRoles("OWNER", "ADMIN", "INVENTORY_MANAGER"), validate(validateSalesOrder), asyncHandler(async (req, res) => sendSuccess(res, 201, "Purchase order created successfully.", await service.create(req.auth.activeCompanyId, req.auth.user._id, req.body))));
 purchaseOrderRouter.patch("/:id", requireRoles("OWNER", "ADMIN", "INVENTORY_MANAGER"), validate(validateSalesOrder), asyncHandler(async (req, res) => sendSuccess(res, 200, "Purchase order updated successfully.", await service.update(req.auth.activeCompanyId, req.auth.user._id, req.params.id, req.body))));
+purchaseOrderRouter.post("/:id/close", requireRoles("OWNER", "ADMIN", "INVENTORY_MANAGER"), asyncHandler(async (req, res) => {
+  const { reason } = req.body;
+  if (typeof reason !== "string" || !reason.trim() || reason.trim().length > 500) throw new ApiError(422, "A pre-close reason of up to 500 characters is required.");
+  return sendSuccess(res, 200, "Purchase order pre-closed successfully.", await service.close(req.auth.activeCompanyId, req.auth.user._id, req.params.id, reason));
+}));
 purchaseOrderRouter.post("/:id/status", requireRoles("OWNER", "ADMIN", "INVENTORY_MANAGER"), asyncHandler(async (req, res) => {
   if (!["CONFIRMED", "CANCELLED"].includes(req.body.status)) throw new ApiError(422, "Status must be CONFIRMED or CANCELLED.");
   const order = await PurchaseOrder.findOne({ _id: req.params.id, companyId: req.auth.activeCompanyId });
