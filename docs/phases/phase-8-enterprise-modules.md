@@ -25,7 +25,7 @@ The initial Sales Orders slice is delivered: sales users can create, edit, confi
 
 The initial Purchase Orders slice is delivered: users can create, edit, confirm, cancel, pre-close, and list branch-scoped, supplier-linked planning documents. Orders do not yet create goods receipts, purchase bills, inventory movements, or accounting entries.
 
-The initial Fixed Assets and Depreciation slice is delivered: users can maintain a branch-scoped asset register and preview monthly straight-line or written-down-value depreciation schedules. The preview is read-only; asset disposal, persisted depreciation runs, and depreciation journal posting remain out of scope for this slice.
+The initial Fixed Assets and Depreciation slice is delivered: users can create and edit a branch-scoped asset register and preview monthly straight-line or written-down-value depreciation schedules. The preview is read-only; asset disposal and depreciation journal posting remain out of scope for this slice. Tally parity checks must be applied before adding automatic or persisted depreciation because TallyPrime documents manual journal-based depreciation rather than automatic depreciation configuration.
 
 The initial CRM slice is delivered: sales users can create and list branch-scoped leads across a simple New → Qualified → Proposal → Won/Lost pipeline. Automation, activities, conversion, and integrations remain out of scope for this slice.
 
@@ -39,7 +39,7 @@ The initial Project Management and enterprise dashboard slice is delivered: proj
 
 - Approval policies: rejections, multi-step routing, delegation, and reuse by orders, payroll, and assets.
 - Sales and purchase orders: delivery/goods receipt, invoice/bill conversion, and approvals.
-- Fixed assets: edit/disposal, persisted depreciation runs, and depreciation journal posting.
+- Fixed assets: disposal and depreciation journal posting. Do not add automatic or persisted depreciation runs for Tally parity.
 - Payroll and leave: payroll runs, allowances, deductions, tax, leave balances, approval actions, and accounting integration.
 - CRM: lead updates, activities, conversion, and automation.
 - POS: cart/checkout, barcode scanning, receipts, offline operation, and terminal integrations.
