@@ -29,14 +29,15 @@ async function create(req, res, type) {
   return sendSuccess(res, 201, type === "SALES" ? "Delivery note created successfully." : "Goods receipt created successfully.", document);
 }
 
-async function voucherPayload(req, res, type) {
+async function voucherDraft(req, res, type) {
   const order = await findConfirmedOrder(req.auth.activeCompanyId, req.params.id, type);
-  return sendSuccess(res, 200, "Voucher draft payload created successfully.", { transactionType: type === "SALES" ? "SALE" : "PURCHASE", voucherType: type === "SALES" ? "SV" : "PV", branchId: order.branchId, transactionDate: new Date().toISOString().slice(0, 10), narration: `${type === "SALES" ? "Sales" : "Purchase"} order ${order.orderNumber}`, items: order.items, accountingEntries: [], inventoryEntries: [] });
+  const draft = await transactionService.createDraft(req.auth.activeCompanyId, req.auth.activeFiscalYearId, { actorUserId: req.auth.user._id, actorRole: req.auth.membership.role, transactionType: type === "SALES" ? "SALE" : "PURCHASE", voucherType: type === "SALES" ? "SV" : "PV", branchId: order.branchId, transactionDate: new Date().toISOString().slice(0, 10), narration: `${type === "SALES" ? "Sales" : "Purchase"} order ${order.orderNumber}`, items: order.items, accountingEntries: [], inventoryEntries: [] });
+  return sendSuccess(res, 201, "Voucher draft created successfully.", draft);
 }
 
 orderFulfillmentRouter.post("/sales-orders/:id/deliveries", requireRoles("OWNER", "ADMIN", "SALES"), asyncHandler((req, res) => create(req, res, "SALES")));
 orderFulfillmentRouter.post("/purchase-orders/:id/goods-receipts", requireRoles("OWNER", "ADMIN", "INVENTORY_MANAGER"), asyncHandler((req, res) => create(req, res, "PURCHASE")));
-orderFulfillmentRouter.get("/sales-orders/:id/voucher-draft", requireRoles("OWNER", "ADMIN", "SALES"), asyncHandler((req, res) => voucherPayload(req, res, "SALES")));
-orderFulfillmentRouter.get("/purchase-orders/:id/voucher-draft", requireRoles("OWNER", "ADMIN", "INVENTORY_MANAGER"), asyncHandler((req, res) => voucherPayload(req, res, "PURCHASE")));
+orderFulfillmentRouter.post("/sales-orders/:id/voucher-draft", requireRoles("OWNER", "ADMIN", "SALES"), asyncHandler((req, res) => voucherDraft(req, res, "SALES")));
+orderFulfillmentRouter.post("/purchase-orders/:id/voucher-draft", requireRoles("OWNER", "ADMIN", "INVENTORY_MANAGER"), asyncHandler((req, res) => voucherDraft(req, res, "PURCHASE")));
 
 module.exports = { orderFulfillmentRouter };
