@@ -21,9 +21,9 @@ The remaining branch work is delivered: financial statements and contact stateme
 
 The initial Approval Workflow slice is delivered: companies can opt in through Accounting Preferences, submit draft transactions, and have an owner or administrator approve them before posting. It intentionally covers only the documented draft → submitted → approved → posted progression; configurable multi-step policies, rejections, delegation, and approval workflows for future enterprise modules are out of scope for this slice.
 
-The initial Sales Orders slice is delivered: sales users can create and list branch-scoped, customer-linked planning documents. Orders do not yet create deliveries, invoices, inventory movements, or accounting entries.
+The initial Sales Orders slice is delivered: sales users can create, edit, confirm, cancel, and list branch-scoped, customer-linked planning documents. Orders do not yet create deliveries, invoices, inventory movements, or accounting entries.
 
-The initial Purchase Orders slice is delivered: users can create and list branch-scoped, supplier-linked planning documents. Orders do not yet create goods receipts, purchase bills, inventory movements, or accounting entries.
+The initial Purchase Orders slice is delivered: users can create, edit, confirm, cancel, and list branch-scoped, supplier-linked planning documents. Orders do not yet create goods receipts, purchase bills, inventory movements, or accounting entries.
 
 The initial Fixed Assets and Depreciation slice is delivered: users can maintain a branch-scoped asset register and preview monthly straight-line or written-down-value depreciation schedules. The preview is read-only; asset disposal, persisted depreciation runs, and depreciation journal posting remain out of scope for this slice.
 
@@ -38,7 +38,7 @@ The initial Project Management and enterprise dashboard slice is delivered: proj
 ## Remaining implementation
 
 - Approval policies: rejections, multi-step routing, delegation, and reuse by orders, payroll, and assets.
-- Sales and purchase orders: editing, delivery/goods receipt, invoice/bill conversion, and approvals. Draft orders can now be confirmed or cancelled.
+- Sales and purchase orders: delivery/goods receipt, invoice/bill conversion, and approvals.
 - Fixed assets: edit/disposal, persisted depreciation runs, and depreciation journal posting.
 - Payroll and leave: payroll runs, allowances, deductions, tax, leave balances, approval actions, and accounting integration.
 - CRM: lead updates, activities, conversion, and automation.

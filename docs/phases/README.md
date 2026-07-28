@@ -6,6 +6,10 @@ This directory is the canonical, version-controlled roadmap for the ERP implemen
 
 Before implementing a phase, review the existing API collection in [`server/postman/Accounting-Software-API.postman_collection.json`](../../server/postman/Accounting-Software-API.postman_collection.json) as the primary API reference. It documents the available endpoints, request shapes, authentication expectations, and response examples that the frontend should use.
 
+## Tally parity check
+
+Before beginning each new phase item, verify against current official Tally documentation whether Tally supports the equivalent workflow. Record the source and the result in the implementation notes or pull request. Do not implement a feature solely for Tally parity when Tally does not support it; raise it as a separate product decision instead.
+
 Keep backend API changes to the minimum necessary. Prefer the existing API contract and make an API change only when the phase requirement cannot be delivered otherwise. Do not use a phase as a reason to redesign or expand unrelated backend behavior.
 
 Implement only the feature scope explicitly described in the relevant phase document. The phase documents are intentionally incremental: do not build a full or complex version of a feature ahead of the phase that calls for it. Record any genuinely required API gap or future enhancement in the relevant phase document for later work.
