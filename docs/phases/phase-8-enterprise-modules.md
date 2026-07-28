@@ -27,9 +27,9 @@ The initial Purchase Orders slice is delivered: users can create, edit, confirm,
 
 The initial Fixed Assets and Depreciation slice is delivered: users can create and edit a branch-scoped asset register and preview monthly straight-line or written-down-value depreciation schedules. The preview is read-only; asset disposal and depreciation journal posting remain out of scope for this slice. Tally parity checks must be applied before adding automatic or persisted depreciation because TallyPrime documents manual journal-based depreciation rather than automatic depreciation configuration.
 
-The initial POS slice is delivered as a counter-sales entry point to the existing Sales Voucher workflow. It preserves transaction-engine validation and avoids separate POS accounting logic; offline operation, scanners, printers, and terminal integrations remain out of scope for this slice.
+The initial POS slice is delivered as a counter-sales entry point to the existing Sales Voucher workflow. It supports barcode/SKU lookup, a local counter-sale cart, quantity adjustment, and Sales Voucher checkout routing. It preserves transaction-engine validation and avoids separate POS accounting logic; offline operation, receipt printing, payment split, and terminal integrations remain out of scope for this slice.
 
-The initial Payroll and Leave slice is delivered: employee records can be created and edited, attendance vouchers can record present, absent, leave, and overtime units, and pending leave requests are available. Payroll runs, tax/allowance calculations, leave-balance policies, approval actions, and journal posting remain out of scope for these foundations.
+The initial Payroll and Leave slice is delivered: employee records can be created and edited through the Payroll workspace; attendance vouchers can record present, absent, leave, and overtime units; and leave requests can be submitted and reviewed. Payroll runs, tax/allowance calculations, leave-balance policies, approval actions, and journal posting remain out of scope for these foundations.
 
 ## Remaining implementation
 
