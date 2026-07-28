@@ -10,6 +10,8 @@ Before implementing a phase, review the existing API collection in [`server/post
 
 Before beginning each new phase item, verify against current official Tally documentation whether Tally supports the equivalent workflow. Record the source and the result in the implementation notes or pull request. Do not implement a feature solely for Tally parity when Tally does not support it; raise it as a separate product decision instead.
 
+Tally-supported workflows are the compatibility baseline for this project. The product should support every applicable Tally capability, and may optimize or improve the user experience and implementation, but must not remove or regress a feature that Tally supports.
+
 Keep backend API changes to the minimum necessary. Prefer the existing API contract and make an API change only when the phase requirement cannot be delivered otherwise. Do not use a phase as a reason to redesign or expand unrelated backend behavior.
 
 Implement only the feature scope explicitly described in the relevant phase document. The phase documents are intentionally incremental: do not build a full or complex version of a feature ahead of the phase that calls for it. Record any genuinely required API gap or future enhancement in the relevant phase document for later work.

@@ -27,13 +27,9 @@ The initial Purchase Orders slice is delivered: users can create, edit, confirm,
 
 The initial Fixed Assets and Depreciation slice is delivered: users can create and edit a branch-scoped asset register and preview monthly straight-line or written-down-value depreciation schedules. The preview is read-only; asset disposal and depreciation journal posting remain out of scope for this slice. Tally parity checks must be applied before adding automatic or persisted depreciation because TallyPrime documents manual journal-based depreciation rather than automatic depreciation configuration.
 
-The initial CRM slice is delivered: sales users can create and list branch-scoped leads across a simple New → Qualified → Proposal → Won/Lost pipeline. Automation, activities, conversion, and integrations remain out of scope for this slice.
-
 The initial POS slice is delivered as a counter-sales entry point to the existing Sales Voucher workflow. It preserves transaction-engine validation and avoids separate POS accounting logic; offline operation, scanners, printers, and terminal integrations remain out of scope for this slice.
 
-The initial Payroll and Leave slice is delivered: employee records and pending leave requests are available. Payroll runs, tax/allowance calculations, leave-balance policies, approval actions, and journal posting remain out of scope for these foundations.
-
-The initial Project Management and enterprise dashboard slice is delivered: projects and project tasks can be registered, and a read-only dashboard reports counts for leads, assets, draft orders, and active projects. Milestones, timesheets, project cost allocation, and richer dashboard analytics remain out of scope for this slice.
+The initial Payroll and Leave slice is delivered: employee records can be created and edited, and pending leave requests are available. Payroll runs, tax/allowance calculations, leave-balance policies, approval actions, and journal posting remain out of scope for these foundations.
 
 ## Remaining implementation
 
@@ -41,10 +37,8 @@ The initial Project Management and enterprise dashboard slice is delivered: proj
 - Sales and purchase orders: delivery/goods receipt, invoice/bill conversion, and approvals.
 - Fixed assets: disposal and depreciation journal posting. Do not add automatic or persisted depreciation runs for Tally parity.
 - Payroll and leave: payroll runs, allowances, deductions, tax, leave balances, approval actions, and accounting integration.
-- CRM: lead updates, activities, conversion, and automation.
 - POS: cart/checkout, barcode scanning, receipts, offline operation, and terminal integrations.
-- Projects: milestones, timesheets, budget/cost allocation, and project reporting.
-- Enterprise reports and dashboard analytics for branches, assets, payroll, orders, CRM, and projects.
+- Enterprise reports and dashboard analytics for branches, assets, payroll, and orders.
 
 Implement company branch and warehouse routes, including warehouse filtering by branch and the selectors required by subsequent product and voucher forms.
 
@@ -111,14 +105,12 @@ Enterprise
 ├── Asset Depreciation
 ├── Payroll
 ├── Leave Management
-├── CRM
 ├── POS
 ├── Sales Order
 ├── Purchase Order
 ├── Approval Workflow
 ├── Manufacturing (Future)
-├── Project Management
-└── Task Management
+└── Manufacturing (Future)
 
 ```
 
@@ -324,44 +316,6 @@ Biometric Integration
 
 ---
 
-# Module 7 — CRM
-
-Purpose
-
-Manage customer relationships.
-
-Modules
-
-Lead
-
-Opportunity
-
-Customer Pipeline
-
-Activities
-
-Calls
-
-Meetings
-
-Follow Ups
-
-Quotation
-
-Conversion
-
-Lead
-
-↓
-
-Customer
-
-Rules
-
-CRM should integrate with Sales.
-
----
-
 # Module 8 — POS
 
 Purpose
@@ -486,30 +440,6 @@ Approval policies configurable.
 
 ---
 
-# Module 12 — Project Management
-
-Features
-
-Projects
-
-Tasks
-
-Milestones
-
-Timesheets
-
-Budget
-
-Expenses
-
-Reports
-
-Future
-
-Project Profitability
-
----
-
 # Module 13 — Manufacturing (Future Ready)
 
 Modules
@@ -550,8 +480,6 @@ payroll/
 
 leave/
 
-crm/
-
 pos/
 
 sales-order/
@@ -559,8 +487,6 @@ sales-order/
 purchase-order/
 
 approval/
-
-projects/
 
 manufacturing/
 
@@ -594,12 +520,6 @@ GET /payroll
 
 POST /payroll
 
-CRM
-
-GET /leads
-
-POST /leads
-
 POS
 
 POST /pos/sale
@@ -611,12 +531,6 @@ POST /sales-orders
 Purchase Orders
 
 POST /purchase-orders
-
-Projects
-
-GET /projects
-
-POST /projects
 
 ---
 
@@ -636,8 +550,6 @@ Branch
 
 Approval
 
-Projects
-
 HR
 
 Payroll
@@ -645,8 +557,6 @@ Payroll
 Leave
 
 Sales
-
-CRM
 
 POS
 
@@ -686,8 +596,6 @@ Invoices affect accounting.
 
 Manufacturing consumes inventory.
 
-Projects may generate expenses.
-
 ---
 
 # Reports
@@ -706,15 +614,11 @@ Payroll Report
 
 Leave Report
 
-CRM Pipeline
-
 POS Sales
 
 Sales Order Status
 
 Purchase Order Status
-
-Project Costing
 
 ---
 
@@ -730,12 +634,7 @@ Payroll Summary
 
 Pending Approvals
 
-CRM Pipeline
-
 POS Sales
-
-Projects
-
 Top Salesperson
 
 Top Branch
@@ -820,8 +719,6 @@ These belong to Phase 9.
 
 ✓ Leave Management completed
 
-✓ CRM completed
-
 ✓ POS completed
 
 ✓ Sales Orders completed
@@ -829,8 +726,6 @@ These belong to Phase 9.
 ✓ Purchase Orders completed
 
 ✓ Approval Workflow completed
-
-✓ Project Management completed
 
 ✓ Enterprise Reports completed
 
@@ -939,7 +834,6 @@ Introduce background schedulers for:
 
 - Asset depreciation
 - Payroll generation
-- Project reminders
 - Recurring transactions
 - Scheduled reports
 
@@ -966,12 +860,10 @@ Implement in this sequence:
 5. Purchase Orders
 6. Fixed Assets
 7. Depreciation Engine
-8. CRM
-9. POS
-10. Payroll
-11. Leave Management
-12. Project Management
-13. Manufacturing foundation
+8. POS
+9. Payroll
+10. Leave Management
+11. Manufacturing foundation
 
 ---
 
@@ -1013,12 +905,10 @@ After completing Phase 8, the application evolves from an accounting system into
 - Inventory
 - Sales
 - Purchasing
-- CRM
 - POS
 - Payroll
 - Fixed Assets
 - Multi-Branch Operations
-- Project Management
 - Enterprise Reporting
 
 At this point, the only major remaining work is turning the ERP into a commercial SaaS platform through subscriptions, APIs, webhooks, monitoring, and marketplace capabilities in Phase 9.
