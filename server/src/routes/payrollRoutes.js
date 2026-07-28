@@ -3,7 +3,9 @@ const { requireAuth, resolveActiveCompany, resolveActiveFiscalYear, requireRoles
 const { requireCompletedOnboarding } = require("../middleware/onboarding");
 const { validate } = require("../middleware/validate");
 const { validateEmployee } = require("../validators/payrollValidators");
+const { validateAttendanceVoucher } = require("../validators/attendanceValidators");
 const { Employee } = require("../models/Employee");
+const { AttendanceVoucher } = require("../models/AttendanceVoucher");
 const { Branch } = require("../models/Branch");
 const { asyncHandler } = require("../utils/asyncHandler");
 const { sendSuccess } = require("../utils/apiResponse");
@@ -26,6 +28,14 @@ payrollRouter.put("/employees/:id", requireRoles("OWNER", "ADMIN"), validate(val
   Object.assign(employee, { branchId: branch._id, employeeCode: req.body.employeeCode.trim().toUpperCase(), name: req.body.name.trim(), baseSalary: req.body.baseSalary, email: req.body.email?.trim().toLowerCase() || null, updatedBy: req.auth.user._id });
   await employee.save();
   return sendSuccess(res, 200, "Employee updated successfully.", employee);
+}));
+payrollRouter.get("/attendance", requireRoles("OWNER", "ADMIN", "ACCOUNTANT", "STAFF"), asyncHandler(async (req, res) => sendSuccess(res, 200, "Attendance vouchers fetched successfully.", await AttendanceVoucher.find({ companyId: req.auth.activeCompanyId, fiscalYearId: req.auth.activeFiscalYearId }).sort({ attendanceDate: -1, _id: -1 }).lean())));
+payrollRouter.post("/attendance", requireRoles("OWNER", "ADMIN", "STAFF"), validate(validateAttendanceVoucher), asyncHandler(async (req, res) => {
+  const employeeIds = [...new Set(req.body.entries.map((entry) => entry.employeeId))];
+  const count = await Employee.countDocuments({ _id: { $in: employeeIds }, companyId: req.auth.activeCompanyId, isActive: true });
+  if (count !== employeeIds.length) throw new ApiError(422, "One or more employees are unavailable.");
+  const voucher = await AttendanceVoucher.create({ companyId: req.auth.activeCompanyId, fiscalYearId: req.auth.activeFiscalYearId, attendanceDate: req.body.attendanceDate, narration: req.body.narration?.trim() || null, entries: req.body.entries, createdBy: req.auth.user._id, updatedBy: req.auth.user._id });
+  return sendSuccess(res, 201, "Attendance voucher created successfully.", voucher);
 }));
 
 module.exports = { payrollRouter };
