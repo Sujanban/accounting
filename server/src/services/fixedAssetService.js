@@ -103,4 +103,35 @@ async function createDepreciationDraft(companyId, fiscalYearId, userId, role, as
   });
 }
 
-module.exports = { create, update, list, depreciationSchedule, createDepreciationDraft };
+async function createDisposalDraft(companyId, fiscalYearId, userId, role, assetId, input) {
+  const asset = await FixedAsset.findOne({ _id: assetId, companyId });
+  if (!asset) throw new ApiError(404, "Fixed asset was not found.");
+  if (asset.status !== "ACTIVE") throw new ApiError(409, "This fixed asset has already been disposed.");
+  if (input.accumulatedDepreciation > Number(asset.purchaseValue) - Number(asset.salvageValue)) throw new ApiError(422, "Accumulated depreciation cannot reduce the asset below its salvage value.");
+
+  const carryingValue = Number(asset.purchaseValue) - input.accumulatedDepreciation;
+  const difference = Number(input.proceeds) - carryingValue;
+  const accountingEntries = [
+    { ledgerId: input.accumulatedDepreciationLedgerId, debit: input.accumulatedDepreciation, credit: 0, narration: `Remove accumulated depreciation — ${asset.assetCode}` },
+    { ledgerId: input.proceedsLedgerId, debit: input.proceeds, credit: 0, narration: `Disposal proceeds — ${asset.assetCode}` },
+    { ledgerId: input.assetCostLedgerId, debit: 0, credit: Number(asset.purchaseValue), narration: `Remove asset cost — ${asset.assetCode}` },
+  ];
+  if (difference < 0) accountingEntries.push({ ledgerId: input.gainLossLedgerId, debit: Math.abs(difference), credit: 0, narration: `Loss on disposal — ${asset.assetCode}` });
+  if (difference > 0) accountingEntries.push({ ledgerId: input.gainLossLedgerId, debit: 0, credit: difference, narration: `Gain on disposal — ${asset.assetCode}` });
+
+  const draft = await transactionService.createDraft(companyId, fiscalYearId, {
+    actorUserId: userId,
+    actorRole: role,
+    transactionType: "JOURNAL",
+    voucherType: "JV",
+    branchId: asset.branchId,
+    transactionDate: input.transactionDate,
+    narration: `Fixed asset disposal — ${asset.assetCode}`,
+    items: [{ assetId: asset._id, type: "FIXED_ASSET_DISPOSAL", proceeds: input.proceeds, accumulatedDepreciation: input.accumulatedDepreciation }],
+    accountingEntries,
+    inventoryEntries: [],
+  });
+  return draft;
+}
+
+module.exports = { create, update, list, depreciationSchedule, createDepreciationDraft, createDisposalDraft };

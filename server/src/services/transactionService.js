@@ -170,6 +170,16 @@ async function postTransactionInSession(companyId, fiscalYearId, transactionId, 
   if (!transaction) throw new ApiError(404, "Transaction was not found.");
   if (!["DRAFT", "APPROVED"].includes(transaction.status)) throw new ApiError(409, "Only draft or approved transactions can be posted.");
   await assertFiscalYearWritable(companyId, fiscalYearId, { transactionDate: transaction.transactionDate });
+  const disposal = (transaction.items || []).find((item) => item?.type === "FIXED_ASSET_DISPOSAL");
+  if (disposal?.assetId) {
+    const { FixedAsset } = require("../models/FixedAsset");
+    const asset = await FixedAsset.findOneAndUpdate(
+      { _id: disposal.assetId, companyId, status: "ACTIVE" },
+      { status: "DISPOSED", disposalTransactionId: transaction._id, disposedAt: new Date(), updatedBy: actorUserId },
+      { new: true, session },
+    );
+    if (!asset) throw new ApiError(409, "This fixed asset is already disposed or unavailable for disposal.");
+  }
   const inventoryOnly = ["DELIVERY_NOTE", "RECEIPT_NOTE"].includes(transaction.transactionType);
   if (inventoryOnly && !transaction.inventoryEntries.length) throw new ApiError(422, "Inventory-only documents require at least one inventory entry.");
   const result = inventoryOnly ? { debit: 0, credit: 0 } : assertBalanced(transaction.accountingEntries);
