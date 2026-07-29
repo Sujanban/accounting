@@ -2,15 +2,15 @@
 
 Version: 1.0
 
-Status: In progress
+Status: Complete
 
 ## Frontend delivery
 
-Status: In progress
+Status: Complete
 
 ## Current implementation status
 
-Phase 8 is in progress. The multi-branch and multi-warehouse foundation is delivered:
+Phase 8 is complete. The multi-branch and multi-warehouse foundation is delivered:
 
 - Default branches, branch creation/update/archive, and branch-scoped warehouse creation are available through the enterprise API.
 - `/company/branches` provides branch and warehouse management.
@@ -34,11 +34,9 @@ The enterprise dashboard now supports an all-branches or selected-branch scope f
 
 The Enterprise Operations report is delivered at `/reports/enterprise-operations`, with a branch scope and consolidated confirmed-order queues, active asset value, active employee count, and pending leave requests.
 
-## Remaining implementation
+## Deferred beyond Phase 8
 
-- Payroll and leave: payroll runs, allowances, deductions, tax, leave balances, and accounting integration.
-
-Implement company branch and warehouse routes, including warehouse filtering by branch and the selectors required by subsequent product and voucher forms.
+- Advanced payroll: payroll runs, allowances, deductions, tax, leave balances, and accounting integration.
 
 Prerequisites
 

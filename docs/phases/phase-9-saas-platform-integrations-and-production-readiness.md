@@ -20,13 +20,11 @@ Prerequisites
 
 # Objective
 
-Transform the ERP into a commercial SaaS platform capable of serving thousands of businesses.
+Transform the ERP into a production-ready platform capable of serving thousands of businesses.
 
 This phase focuses on
 
 - SaaS Architecture
-- Subscription Management
-- Billing
 - Multi-tenancy Improvements
 - Public APIs
 - Webhooks
@@ -37,6 +35,8 @@ This phase focuses on
 - Production Deployment
 
 At the end of this phase, the application should be production-ready for commercial deployment.
+
+Subscription management and billing are intentionally excluded from this phase. They will be handled offline and must not be implemented as application modules, APIs, or gating rules.
 
 ---
 
@@ -52,10 +52,6 @@ At the end of this phase, the application should be production-ready for commerc
     ┌────────────────────────────┐
     │                            │
  Authentication Service     ERP API
-    │                            │
- Subscription Service      Business Modules
-    │                            │
- Billing Service      Transaction Engine
     │                            │
  Notification Service     Report Engine
     │                            │
@@ -75,8 +71,6 @@ At the end of this phase, the application should be production-ready for commerc
 ```
 Platform
 
-├── Subscription
-├── Billing
 ├── Tenant Management
 ├── API Keys
 ├── Public API
@@ -94,11 +88,11 @@ Platform
 
 ---
 
-# Module 1 — Subscription Management
+# Offline scope — Subscription Management
 
 Purpose
 
-Manage SaaS plans.
+Managed offline; not implemented in the application.
 
 Example Plans
 
@@ -137,11 +131,11 @@ Grace period configurable.
 
 ---
 
-# Module 2 — Billing
+# Offline scope — Billing
 
 Purpose
 
-Manage subscriptions and invoices.
+Managed offline; not implemented in the application.
 
 Features
 
@@ -208,6 +202,8 @@ Database Usage
 Rules
 
 Complete isolation between tenants.
+
+Initial delivery: owners and administrators can retrieve a company-scoped usage summary at `GET /api/companies/:companyId/usage`, covering active users, branches, warehouses, and attachment storage bytes. Subscription and billing limits remain offline-only.
 
 ---
 
@@ -946,10 +942,6 @@ These belong to Phase 10.
 
 # Definition of Done
 
-✓ Subscription Management completed
-
-✓ Billing completed
-
 ✓ Public API completed
 
 ✓ API Keys completed
@@ -1092,20 +1084,18 @@ Before launch ensure:
 1. Queue System (BullMQ + Redis)
 2. Scheduler
 3. Notification Center
-4. Subscription Management
-5. Billing
-6. Feature Flags
-7. API Keys
-8. Public REST API
-9. Webhooks
-10. Audit Center
-11. Backup Manager
-12. Security Enhancements
-13. Monitoring
-14. DevOps & CI/CD
-15. Marketplace Foundation
-16. Performance Optimization
-17. Production Deployment
+4. Feature Flags
+5. API Keys
+6. Public REST API
+7. Webhooks
+8. Audit Center
+9. Backup Manager
+10. Security Enhancements
+11. Monitoring
+12. DevOps & CI/CD
+13. Marketplace Foundation
+14. Performance Optimization
+15. Production Deployment
 
 ---
 
