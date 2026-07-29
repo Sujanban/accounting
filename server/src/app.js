@@ -17,7 +17,7 @@ const app = express();
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
 app.use(requestContext);
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: "same-site" } }));
 app.use(compression());
 
 if (env.clientOrigin) {

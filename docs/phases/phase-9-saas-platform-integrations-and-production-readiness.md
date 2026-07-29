@@ -72,7 +72,6 @@ Subscription management and billing are intentionally excluded from this phase. 
 Platform
 
 ├── Tenant Management
-├── API Keys
 ├── Public API
 ├── Webhooks
 ├── Notification Center
@@ -207,43 +206,7 @@ Initial delivery: owners and administrators can retrieve a company-scoped usage 
 
 ---
 
-# Module 4 — API Keys
-
-Purpose
-
-Allow secure API access.
-
-Fields
-
-Key
-
-Secret
-
-Scopes
-
-Expiration
-
-Last Used
-
-Status
-
----
-
-Permissions
-
-Read
-
-Write
-
-Reports
-
-Webhook
-
-Admin
-
----
-
-# Module 5 — Public REST API
+# Module 4 — Public REST API
 
 Purpose
 
@@ -278,8 +241,6 @@ Authentication
 OAuth2
 
 JWT
-
-API Key
 
 ---
 
@@ -570,6 +531,8 @@ Security Headers
 Encryption
 
 Secrets Manager
+
+Initial delivery: production configuration requires an explicit client origin, validates operational limits, applies security headers, rate-limits failed login attempts, and enforces HTTP request/header timeouts.
 
 ---
 
@@ -908,15 +871,11 @@ Retention
 
 # Business Rules
 
-Subscriptions control features.
-
-Expired plans become read-only.
-
 Background jobs never block API requests.
 
 Every external request is authenticated.
 
-API keys have scopes.
+Public API credentials use explicit scopes.
 
 Webhooks are signed.
 
@@ -943,8 +902,6 @@ These belong to Phase 10.
 # Definition of Done
 
 ✓ Public API completed
-
-✓ API Keys completed
 
 ✓ Webhooks completed
 
@@ -1085,17 +1042,16 @@ Before launch ensure:
 2. Scheduler
 3. Notification Center
 4. Feature Flags
-5. API Keys
-6. Public REST API
-7. Webhooks
-8. Audit Center
-9. Backup Manager
-10. Security Enhancements
-11. Monitoring
-12. DevOps & CI/CD
-13. Marketplace Foundation
-14. Performance Optimization
-15. Production Deployment
+5. Public REST API
+6. Webhooks
+7. Audit Center
+8. Backup Manager
+9. Security Enhancements
+10. Monitoring
+11. DevOps & CI/CD
+12. Marketplace Foundation
+13. Performance Optimization
+14. Production Deployment
 
 ---
 

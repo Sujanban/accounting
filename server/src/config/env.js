@@ -19,9 +19,18 @@ function readEnv(name, fallback) {
   return value;
 }
 
+function readPositiveNumber(name, fallback) {
+  const value = Number(process.env[name] || fallback);
+  if (!Number.isFinite(value) || value <= 0) throw new Error(`${name} must be a positive number.`);
+  return value;
+}
+
+const nodeEnv = process.env.NODE_ENV || "development";
+if (nodeEnv === "production" && !process.env.CLIENT_ORIGIN) throw new Error("CLIENT_ORIGIN is required in production.");
+
 const env = {
-  nodeEnv: process.env.NODE_ENV || "development",
-  port: Number(process.env.PORT || 5000),
+  nodeEnv,
+  port: readPositiveNumber("PORT", 5000),
   clientOrigin: process.env.CLIENT_ORIGIN || null,
   mongoUri: readEnv("MONGODB_URI"),
   jwtAccessSecret: readEnv("JWT_ACCESS_SECRET"),
@@ -29,8 +38,10 @@ const env = {
   accessTokenTtl: readEnv("ACCESS_TOKEN_TTL", "15m"),
   refreshTokenTtl: readEnv("REFRESH_TOKEN_TTL", "30d"),
   requestBodyLimit: process.env.REQUEST_BODY_LIMIT || "1mb",
-  rateLimitWindowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),
-  rateLimitMax: Number(process.env.RATE_LIMIT_MAX || 300),
+  rateLimitWindowMs: readPositiveNumber("RATE_LIMIT_WINDOW_MS", 15 * 60 * 1000),
+  rateLimitMax: readPositiveNumber("RATE_LIMIT_MAX", 300),
+  authRateLimitMax: readPositiveNumber("AUTH_RATE_LIMIT_MAX", 10),
+  requestTimeoutMs: readPositiveNumber("REQUEST_TIMEOUT_MS", 30_000),
   cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME || null,
   cloudinaryApiKey: process.env.CLOUDINARY_API_KEY || null,
   cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET || null,
