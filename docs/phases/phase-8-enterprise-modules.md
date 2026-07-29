@@ -30,10 +30,13 @@ The initial Fixed Assets and Depreciation slice is delivered: users can create a
 
 The initial Payroll and Leave slice is delivered: employee records can be created and edited through the Payroll workspace; attendance vouchers can record present, absent, leave, and overtime units; leave requests can be submitted; and owners or administrators can approve or reject pending requests. Payroll runs, tax/allowance calculations, leave-balance policies, and journal posting remain out of scope for these foundations.
 
+The enterprise dashboard now supports an all-branches or selected-branch scope for financial, inventory, order, fixed-asset, employee, and pending-leave widgets.
+
+The Enterprise Operations report is delivered at `/reports/enterprise-operations`, with a branch scope and consolidated confirmed-order queues, active asset value, active employee count, and pending leave requests.
+
 ## Remaining implementation
 
 - Payroll and leave: payroll runs, allowances, deductions, tax, leave balances, and accounting integration.
-- Enterprise reports and dashboard analytics for branches, assets, payroll, and orders.
 
 Implement company branch and warehouse routes, including warehouse filtering by branch and the selectors required by subsequent product and voucher forms.
 

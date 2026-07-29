@@ -59,6 +59,7 @@ const navigation: NavigationGroup[] = [
     { label: "Sales trend", to: "/reports/sales-trend" },
     { label: "Customer statement", to: "/reports/customer-statement" },
     { label: "Supplier statement", to: "/reports/supplier-statement" },
+    { label: "Enterprise operations", to: "/reports/enterprise-operations" },
   ] },
   { label: "Company", icon: GearIcon, items: [
     { label: "Company profile", to: "/company/profile" }, { label: "Preferences", to: "/company/preferences" },

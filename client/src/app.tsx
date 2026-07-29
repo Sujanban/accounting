@@ -10,6 +10,7 @@ import { DashboardPage } from "./pages/dashboard-page";
 import { SettingsPage } from "./pages/settings-page";
 import { TransactionEditPage, TransactionsPage } from "./features/transactions/transactions-page";
 import { ReportsPage } from "./features/reports/reports-page";
+import { EnterpriseOperationsReportPage } from "./features/reports/enterprise-operations-report-page";
 import { OpeningBalancesPage } from "./pages/opening-balances-page";
 import { BranchesPage } from "./pages/branches-page";
 import { SalesOrdersPage } from "./features/sales-orders/sales-orders-page";
@@ -46,6 +47,7 @@ export function App() {
             <Route path="accounting/account-groups/new" element={<AccountGroupCreatePage />} />
             <Route path="accounting/account-groups/:accountGroupId/edit" element={<AccountGroupEditPage />} />
             <Route path="accounting/:section" element={<AccountingPage />} />
+            <Route path="reports/enterprise-operations" element={<EnterpriseOperationsReportPage />} />
             <Route path="reports/:report" element={<ReportsPage />} />
             <Route path="company/:section" element={<SettingsPage />} />
             <Route path="company/branches" element={<BranchesPage />} />
