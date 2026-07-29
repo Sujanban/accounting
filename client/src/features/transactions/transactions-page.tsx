@@ -1,6 +1,6 @@
 import { Card, Flex, Heading, Text } from "@radix-ui/themes";
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { LoadingScreen } from "../../components/loading-screen";
 import { Button } from "../../components/ui/button";
 import { AppSelect } from "../../components/ui/select";
@@ -117,6 +117,8 @@ export function TransactionsPage({
   create?: boolean;
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const posCart = (location.state as { posCart?: Array<{ id: string; quantity: number; sellingPrice: number }> } | null)?.posCart ?? [];
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState(drafts ? "DRAFT" : "");
   const [fromDate, setFromDate] = useState("");
@@ -162,6 +164,7 @@ export function TransactionsPage({
         branches={branches.data ?? []}
         defaultVatRate={vat.data?.defaultVatRate ?? 13}
         defaultVatMode={vat.data?.vatMode ?? "EXCLUSIVE"}
+        initialInventory={routeType?.value === "SALE" ? posCart.map((line) => ({ productId: line.id, warehouseId: "", quantity: String(line.quantity), unitCost: String(line.sellingPrice), direction: "OUT" as const })) : []}
         pending={createDraft.isPending}
         error={
           createDraft.error instanceof Error
@@ -360,6 +363,7 @@ function DraftForm({
   branches,
   defaultVatRate,
   defaultVatMode,
+  initialInventory,
   pending,
   error,
   onSave,
@@ -372,6 +376,7 @@ function DraftForm({
   branches: Array<{ id: string; name: string; isDefault: boolean }>;
   defaultVatRate: number;
   defaultVatMode: "EXCLUSIVE" | "INCLUSIVE";
+  initialInventory: Array<{ productId: string; warehouseId: string; quantity: string; unitCost: string; direction: "IN" | "OUT" }>;
   pending: boolean;
   error?: string;
   onSave: (input: any) => Promise<void>;
@@ -391,7 +396,7 @@ function DraftForm({
       unitCost: string;
       direction: "IN" | "OUT";
     }>
-  >([]);
+  >(initialInventory);
   const [branchId, setBranchId] = useState(branches.find((branch) => branch.isDefault)?.id ?? "");
   const branchWarehouses = useBranchWarehouses(branchId);
   const [includeTaxInvoice, setIncludeTaxInvoice] = useState(false);

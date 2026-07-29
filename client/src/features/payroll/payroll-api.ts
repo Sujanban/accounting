@@ -13,4 +13,5 @@ export const payrollApi = {
   createAttendance: (input: { attendanceDate: string; narration?: string; entries: AttendanceEntry[] }) => apiClient<AttendanceVoucher>("/payroll/attendance", { method: "POST", body: JSON.stringify(input) }),
   leaveRequests: (signal?: AbortSignal) => apiClient<LeaveRequest[]>("/leave-requests", { signal }),
   createLeaveRequest: (input: { employeeId: string; leaveType: LeaveRequest["leaveType"]; startDate: string; endDate: string; reason?: string }) => apiClient<LeaveRequest>("/leave-requests", { method: "POST", body: JSON.stringify(input) }),
+  reviewLeaveRequest: (id: string, status: "APPROVED" | "REJECTED") => apiClient<LeaveRequest>(`/leave-requests/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }),
 };

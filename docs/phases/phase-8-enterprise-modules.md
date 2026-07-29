@@ -29,13 +29,13 @@ The initial Fixed Assets and Depreciation slice is delivered: users can create a
 
 The initial POS slice is delivered as a counter-sales entry point to the existing Sales Voucher workflow. It supports barcode/SKU lookup, a local counter-sale cart, quantity adjustment, and Sales Voucher checkout routing. It preserves transaction-engine validation and avoids separate POS accounting logic; offline operation, receipt printing, payment split, and terminal integrations remain out of scope for this slice.
 
-The initial Payroll and Leave slice is delivered: employee records can be created and edited through the Payroll workspace; attendance vouchers can record present, absent, leave, and overtime units; and leave requests can be submitted and reviewed. Payroll runs, tax/allowance calculations, leave-balance policies, approval actions, and journal posting remain out of scope for these foundations.
+The initial Payroll and Leave slice is delivered: employee records can be created and edited through the Payroll workspace; attendance vouchers can record present, absent, leave, and overtime units; leave requests can be submitted; and owners or administrators can approve or reject pending requests. Payroll runs, tax/allowance calculations, leave-balance policies, and journal posting remain out of scope for these foundations.
 
 ## Remaining implementation
 
 - Sales and purchase orders: reuse of the existing transaction approval lifecycle for order conversion.
 - Fixed assets: do not add automatic or persisted depreciation runs for Tally parity.
-- Payroll and leave: payroll runs, allowances, deductions, tax, leave balances, approval actions, and accounting integration.
+- Payroll and leave: payroll runs, allowances, deductions, tax, leave balances, and accounting integration.
 - POS: cart/checkout, barcode scanning, receipts, offline operation, and terminal integrations.
 - Enterprise reports and dashboard analytics for branches, assets, payroll, and orders.
 
