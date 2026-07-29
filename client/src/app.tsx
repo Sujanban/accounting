@@ -15,7 +15,6 @@ import { BranchesPage } from "./pages/branches-page";
 import { SalesOrdersPage } from "./features/sales-orders/sales-orders-page";
 import { PurchaseOrdersPage } from "./features/purchase-orders/purchase-orders-page";
 import { FixedAssetsPage } from "./features/fixed-assets/fixed-assets-page";
-import { PosPage } from "./features/pos/pos-page";
 import { PayrollPage } from "./features/payroll/payroll-page";
 
 export function App() {
@@ -53,7 +52,6 @@ export function App() {
             <Route path="sales-orders" element={<SalesOrdersPage />} />
             <Route path="purchase-orders" element={<PurchaseOrdersPage />} />
             <Route path="fixed-assets" element={<FixedAssetsPage />} />
-            <Route path="pos" element={<PosPage />} />
             <Route path="payroll" element={<PayrollPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>

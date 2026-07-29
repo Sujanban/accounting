@@ -12,7 +12,7 @@ import type { SalesOrder, SalesOrderInput } from "./sales-orders-api";
 export function SalesOrdersPage() {
   const client = useQueryClient();
   const navigate = useNavigate();
-  const orders = useQuery({ queryKey: ["sales-orders"], queryFn: ({ signal }) => salesOrdersApi.list(signal) });
+  const orders = useQuery({ queryKey: ["sales-orders"], queryFn: ({ signal }) => salesOrdersApi.list(undefined, signal) });
   const [editing, setEditing] = useState<SalesOrder | null>(null);
   const [branchId, setBranchId] = useState("");
   const [contactId, setContactId] = useState("");

@@ -12,7 +12,7 @@ import type { PurchaseOrder, PurchaseOrderInput } from "./purchase-orders-api";
 export function PurchaseOrdersPage() {
   const client = useQueryClient();
   const navigate = useNavigate();
-  const orders = useQuery({ queryKey: ["purchase-orders"], queryFn: ({ signal }) => purchaseOrdersApi.list(signal) });
+  const orders = useQuery({ queryKey: ["purchase-orders"], queryFn: ({ signal }) => purchaseOrdersApi.list(undefined, signal) });
   const [editing, setEditing] = useState<PurchaseOrder | null>(null);
   const [branchId, setBranchId] = useState("");
   const [contactId, setContactId] = useState("");

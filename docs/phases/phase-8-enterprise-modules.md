@@ -21,22 +21,18 @@ The remaining branch work is delivered: financial statements and contact stateme
 
 The initial Approval Workflow slice is delivered: companies can opt in through Accounting Preferences, submit draft transactions, and have an owner or administrator approve them before posting. Tally parity supports voucher verification and clarification states, but not configurable multi-step approval policies or delegation; those requirements are intentionally excluded.
 
-The initial Sales Orders slice is delivered: sales users can create, edit, confirm, cancel, pre-close, and list branch-scoped, customer-linked planning documents. From a confirmed order, users can select a branch-scoped warehouse and post a Delivery Note that reduces inventory without creating journals; invoice conversion remains in the existing Sales Voucher workflow.
+The initial Sales Orders slice is delivered: sales users can create, edit, confirm, cancel, pre-close, and list customer-linked planning documents, with branch-scoped list filtering available to operational users. From a confirmed order, users can select a branch-scoped warehouse and post a Delivery Note that reduces inventory without creating journals; invoice conversion remains in the existing Sales Voucher workflow.
 
-The initial Purchase Orders slice is delivered: users can create, edit, confirm, cancel, pre-close, and list branch-scoped, supplier-linked planning documents. From a confirmed order, users can select a branch-scoped warehouse and post a Goods Receipt that increases inventory without creating journals; bill conversion remains in the existing Purchase Voucher workflow.
+The initial Purchase Orders slice is delivered: users can create, edit, confirm, cancel, pre-close, and list supplier-linked planning documents, with branch-scoped list filtering available to operational users. From a confirmed order, users can select a branch-scoped warehouse and post a Goods Receipt that increases inventory without creating journals; bill conversion remains in the existing Purchase Voucher workflow.
 
 The initial Fixed Assets and Depreciation slice is delivered: users can create and edit a branch-scoped asset register, preview monthly straight-line or written-down-value depreciation schedules, prepare a calculated manual depreciation journal draft, and prepare a balanced disposal journal draft for the existing transaction approval lifecycle. An asset becomes disposed only after its disposal journal posts, and reactivates if that journal is reversed. Tally parity checks must be applied before adding automatic or persisted depreciation because TallyPrime documents manual journal-based depreciation rather than automatic depreciation configuration.
 
-The initial POS slice is delivered as a counter-sales entry point to the existing Sales Voucher workflow. It supports barcode/SKU lookup, a local counter-sale cart, quantity adjustment, and Sales Voucher checkout routing. It preserves transaction-engine validation and avoids separate POS accounting logic; offline operation, receipt printing, payment split, and terminal integrations remain out of scope for this slice.
 
 The initial Payroll and Leave slice is delivered: employee records can be created and edited through the Payroll workspace; attendance vouchers can record present, absent, leave, and overtime units; leave requests can be submitted; and owners or administrators can approve or reject pending requests. Payroll runs, tax/allowance calculations, leave-balance policies, and journal posting remain out of scope for these foundations.
 
 ## Remaining implementation
 
-- Sales and purchase orders: reuse of the existing transaction approval lifecycle for order conversion.
-- Fixed assets: do not add automatic or persisted depreciation runs for Tally parity.
 - Payroll and leave: payroll runs, allowances, deductions, tax, leave balances, and accounting integration.
-- POS: cart/checkout, barcode scanning, receipts, offline operation, and terminal integrations.
 - Enterprise reports and dashboard analytics for branches, assets, payroll, and orders.
 
 Implement company branch and warehouse routes, including warehouse filtering by branch and the selectors required by subsequent product and voucher forms.
@@ -104,7 +100,6 @@ Enterprise
 ├── Asset Depreciation
 ├── Payroll
 ├── Leave Management
-├── POS
 ├── Sales Order
 ├── Purchase Order
 ├── Approval Workflow
@@ -315,41 +310,6 @@ Biometric Integration
 
 ---
 
-# Module 8 — POS
-
-Purpose
-
-Retail billing.
-
-Features
-
-Barcode
-
-Receipt Printing
-
-Cash Drawer
-
-Discount
-
-Customer Lookup
-
-Offline Queue
-
-Payment Split
-
-Cash
-
-Card
-
-Digital Wallet
-
-Rules
-
-POS creates Sales Voucher.
-
-POS never creates journals directly.
-
----
 
 # Module 9 — Sales Orders
 
@@ -479,7 +439,6 @@ payroll/
 
 leave/
 
-pos/
 
 sales-order/
 
@@ -519,10 +478,6 @@ GET /payroll
 
 POST /payroll
 
-POS
-
-POST /pos/sale
-
 Sales Orders
 
 POST /sales-orders
@@ -557,8 +512,6 @@ Leave
 
 Sales
 
-POS
-
 Purchase
 
 Inventory Manager
@@ -587,8 +540,6 @@ Assets cannot be sold through inventory.
 
 Payroll posts journals automatically.
 
-POS uses Sales Voucher.
-
 Orders do not affect accounting.
 
 Invoices affect accounting.
@@ -613,8 +564,6 @@ Payroll Report
 
 Leave Report
 
-POS Sales
-
 Sales Order Status
 
 Purchase Order Status
@@ -633,7 +582,6 @@ Payroll Summary
 
 Pending Approvals
 
-POS Sales
 Top Salesperson
 
 Top Branch
@@ -676,8 +624,6 @@ Payroll Queue
 
 Depreciation Scheduler
 
-POS Offline Cache
-
 Background Jobs
 
 ---
@@ -717,8 +663,6 @@ These belong to Phase 9.
 ✓ Payroll completed
 
 ✓ Leave Management completed
-
-✓ POS completed
 
 ✓ Sales Orders completed
 
@@ -761,8 +705,6 @@ Transaction Engine
 ↓
 
 Journal
-
-POS Sale
 
 ↓
 
@@ -858,10 +800,9 @@ Implement in this sequence:
 4. Purchase Orders
 5. Fixed Assets
 6. Depreciation Engine
-7. POS
-8. Payroll
-9. Leave Management
-10. Manufacturing foundation
+7. Payroll
+8. Leave Management
+9. Manufacturing foundation
 
 ---
 
@@ -903,7 +844,6 @@ After completing Phase 8, the application evolves from an accounting system into
 - Inventory
 - Sales
 - Purchasing
-- POS
 - Payroll
 - Fixed Assets
 - Multi-Branch Operations

@@ -17,8 +17,8 @@ export function DashboardPage() {
   const balanceSheet = useBalanceSheet({});
   const cashFlow = useCashFlow({});
   const stockSummary = useStockSummary({});
-  const salesOrders = useQuery({ queryKey: ["sales-orders", "dashboard"], queryFn: ({ signal }) => salesOrdersApi.list(signal) });
-  const purchaseOrders = useQuery({ queryKey: ["purchase-orders", "dashboard"], queryFn: ({ signal }) => purchaseOrdersApi.list(signal) });
+  const salesOrders = useQuery({ queryKey: ["sales-orders", "dashboard"], queryFn: ({ signal }) => salesOrdersApi.list(undefined, signal) });
+  const purchaseOrders = useQuery({ queryKey: ["purchase-orders", "dashboard"], queryFn: ({ signal }) => purchaseOrdersApi.list(undefined, signal) });
   const fixedAssets = useQuery({ queryKey: ["fixed-assets", "dashboard"], queryFn: ({ signal }) => fixedAssetsApi.list(signal) });
   const employees = useQuery({ queryKey: ["payroll", "employees", "dashboard"], queryFn: ({ signal }) => payrollApi.employees(signal) });
   const leaveRequests = useQuery({ queryKey: ["payroll", "leave-requests", "dashboard"], queryFn: ({ signal }) => payrollApi.leaveRequests(signal) });
