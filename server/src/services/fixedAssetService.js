@@ -1,5 +1,106 @@
-const { FixedAsset } = require("../models/FixedAsset"); const { Branch } = require("../models/Branch"); const { Warehouse } = require("../models/Warehouse"); const { ApiError } = require("../utils/apiError"); const map = (asset) => ({ id: asset._id, branchId: asset.branchId, warehouseId: asset.warehouseId, assetCode: asset.assetCode, category: asset.category, purchaseDate: asset.purchaseDate, purchaseValue: asset.purchaseValue, salvageValue: asset.salvageValue, usefulLifeMonths: asset.usefulLifeMonths, depreciationMethod: asset.depreciationMethod, status: asset.status });
-async function create(companyId, userId, input) { const branch = await Branch.findOne({ _id: input.branchId, companyId, isActive: true }).lean(); const warehouse = input.warehouseId ? await Warehouse.findOne({ _id: input.warehouseId, companyId, branchId: input.branchId, isActive: true }).lean() : true; if (!branch || !warehouse) throw new ApiError(422, "The selected branch or warehouse is unavailable."); return map(await FixedAsset.create({ ...input, companyId, assetCode: input.assetCode.trim().toUpperCase(), createdBy: userId, updatedBy: userId })); }
-async function update(companyId, userId, assetId, input) { const asset = await FixedAsset.findOne({ _id: assetId, companyId }); if (!asset) throw new ApiError(404, "Fixed asset was not found."); if (asset.status !== "ACTIVE") throw new ApiError(409, "Disposed fixed assets cannot be edited."); const branch = await Branch.findOne({ _id: input.branchId, companyId, isActive: true }).lean(); const warehouse = input.warehouseId ? await Warehouse.findOne({ _id: input.warehouseId, companyId, branchId: input.branchId, isActive: true }).lean() : true; if (!branch || !warehouse) throw new ApiError(422, "The selected branch or warehouse is unavailable."); Object.assign(asset, { ...input, assetCode: input.assetCode.trim().toUpperCase(), updatedBy: userId }); await asset.save(); return map(asset); }
-async function list(companyId) { return (await FixedAsset.find({ companyId }).sort({ assetCode: 1 }).lean()).map(map); }
-async function depreciationSchedule(companyId, assetId) { const asset = await FixedAsset.findOne({ _id: assetId, companyId }).lean(); if (!asset) throw new ApiError(404, "Fixed asset was not found."); const purchaseValue = Number(asset.purchaseValue); const salvageValue = Number(asset.salvageValue); const life = Number(asset.usefulLifeMonths); let carryingValue = purchaseValue; const items = []; for (let month = 1; month <= life; month += 1) { const depreciation = asset.depreciationMethod === "STRAIGHT_LINE" ? (purchaseValue - salvageValue) / life : Math.min(carryingValue - salvageValue, (carryingValue * 2) / life); carryingValue = Math.max(salvageValue, carryingValue - depreciation); items.push({ month, depreciation: Number(depreciation.toFixed(2)), closingValue: Number(carryingValue.toFixed(2)) }); } return { asset: map(asset), items }; } module.exports = { create, update, list, depreciationSchedule };
+const { FixedAsset } = require("../models/FixedAsset");
+const { Branch } = require("../models/Branch");
+const { Warehouse } = require("../models/Warehouse");
+const { ApiError } = require("../utils/apiError");
+const transactionService = require("./transactionService");
+
+function map(asset) {
+  return {
+    id: asset._id,
+    branchId: asset.branchId,
+    warehouseId: asset.warehouseId,
+    assetCode: asset.assetCode,
+    category: asset.category,
+    purchaseDate: asset.purchaseDate,
+    purchaseValue: asset.purchaseValue,
+    salvageValue: asset.salvageValue,
+    usefulLifeMonths: asset.usefulLifeMonths,
+    depreciationMethod: asset.depreciationMethod,
+    status: asset.status,
+  };
+}
+
+async function assertLocation(companyId, branchId, warehouseId) {
+  const branch = await Branch.findOne({ _id: branchId, companyId, isActive: true }).lean();
+  const warehouse = warehouseId
+    ? await Warehouse.findOne({ _id: warehouseId, companyId, branchId, isActive: true }).lean()
+    : true;
+
+  if (!branch || !warehouse) throw new ApiError(422, "The selected branch or warehouse is unavailable.");
+}
+
+async function create(companyId, userId, input) {
+  await assertLocation(companyId, input.branchId, input.warehouseId);
+  const asset = await FixedAsset.create({
+    ...input,
+    companyId,
+    assetCode: input.assetCode.trim().toUpperCase(),
+    createdBy: userId,
+    updatedBy: userId,
+  });
+  return map(asset);
+}
+
+async function update(companyId, userId, assetId, input) {
+  const asset = await FixedAsset.findOne({ _id: assetId, companyId });
+  if (!asset) throw new ApiError(404, "Fixed asset was not found.");
+  if (asset.status !== "ACTIVE") throw new ApiError(409, "Disposed fixed assets cannot be edited.");
+
+  await assertLocation(companyId, input.branchId, input.warehouseId);
+  Object.assign(asset, { ...input, assetCode: input.assetCode.trim().toUpperCase(), updatedBy: userId });
+  await asset.save();
+  return map(asset);
+}
+
+async function list(companyId) {
+  return (await FixedAsset.find({ companyId }).sort({ assetCode: 1 }).lean()).map(map);
+}
+
+async function depreciationSchedule(companyId, assetId) {
+  const asset = await FixedAsset.findOne({ _id: assetId, companyId }).lean();
+  if (!asset) throw new ApiError(404, "Fixed asset was not found.");
+
+  const purchaseValue = Number(asset.purchaseValue);
+  const salvageValue = Number(asset.salvageValue);
+  const life = Number(asset.usefulLifeMonths);
+  let carryingValue = purchaseValue;
+  const items = [];
+
+  for (let month = 1; month <= life; month += 1) {
+    const depreciation = asset.depreciationMethod === "STRAIGHT_LINE"
+      ? (purchaseValue - salvageValue) / life
+      : Math.min(carryingValue - salvageValue, (carryingValue * 2) / life);
+    carryingValue = Math.max(salvageValue, carryingValue - depreciation);
+    items.push({ month, depreciation: Number(depreciation.toFixed(2)), closingValue: Number(carryingValue.toFixed(2)) });
+  }
+
+  return { asset: map(asset), items };
+}
+
+async function createDepreciationDraft(companyId, fiscalYearId, userId, role, assetId, input) {
+  const asset = await FixedAsset.findOne({ _id: assetId, companyId }).lean();
+  if (!asset) throw new ApiError(404, "Fixed asset was not found.");
+  if (asset.status !== "ACTIVE") throw new ApiError(409, "Only active fixed assets can be depreciated.");
+
+  const schedule = await depreciationSchedule(companyId, assetId);
+  const period = schedule.items[input.periodMonth - 1];
+  if (!period) throw new ApiError(422, "The selected period is outside the asset's useful life.");
+
+  return transactionService.createDraft(companyId, fiscalYearId, {
+    actorUserId: userId,
+    actorRole: role,
+    transactionType: "JOURNAL",
+    voucherType: "JV",
+    branchId: asset.branchId,
+    transactionDate: input.transactionDate,
+    narration: `Manual depreciation for ${asset.assetCode}, period ${input.periodMonth}`,
+    items: [{ assetId: asset._id, type: "FIXED_ASSET_DEPRECIATION", periodMonth: input.periodMonth, amount: period.depreciation }],
+    accountingEntries: [
+      { ledgerId: input.expenseLedgerId, debit: period.depreciation, credit: 0, narration: `Depreciation expense — ${asset.assetCode}` },
+      { ledgerId: input.accumulatedDepreciationLedgerId, debit: 0, credit: period.depreciation, narration: `Accumulated depreciation — ${asset.assetCode}` },
+    ],
+    inventoryEntries: [],
+  });
+}
+
+module.exports = { create, update, list, depreciationSchedule, createDepreciationDraft };

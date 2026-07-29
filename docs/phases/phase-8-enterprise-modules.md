@@ -25,7 +25,7 @@ The initial Sales Orders slice is delivered: sales users can create, edit, confi
 
 The initial Purchase Orders slice is delivered: users can create, edit, confirm, cancel, pre-close, and list branch-scoped, supplier-linked planning documents. From a confirmed order, users can select a branch-scoped warehouse and post a Goods Receipt that increases inventory without creating journals; bill conversion remains in the existing Purchase Voucher workflow.
 
-The initial Fixed Assets and Depreciation slice is delivered: users can create and edit a branch-scoped asset register and preview monthly straight-line or written-down-value depreciation schedules. The preview is read-only; asset disposal and depreciation journal posting remain out of scope for this slice. Tally parity checks must be applied before adding automatic or persisted depreciation because TallyPrime documents manual journal-based depreciation rather than automatic depreciation configuration.
+The initial Fixed Assets and Depreciation slice is delivered: users can create and edit a branch-scoped asset register, preview monthly straight-line or written-down-value depreciation schedules, and prepare a calculated manual depreciation journal draft for the existing transaction approval lifecycle. Asset disposal remains out of scope. Tally parity checks must be applied before adding automatic or persisted depreciation because TallyPrime documents manual journal-based depreciation rather than automatic depreciation configuration.
 
 The initial POS slice is delivered as a counter-sales entry point to the existing Sales Voucher workflow. It supports barcode/SKU lookup, a local counter-sale cart, quantity adjustment, and Sales Voucher checkout routing. It preserves transaction-engine validation and avoids separate POS accounting logic; offline operation, receipt printing, payment split, and terminal integrations remain out of scope for this slice.
 
@@ -34,7 +34,7 @@ The initial Payroll and Leave slice is delivered: employee records can be create
 ## Remaining implementation
 
 - Sales and purchase orders: reuse of the existing transaction approval lifecycle for order conversion.
-- Fixed assets: disposal and depreciation journal posting. Do not add automatic or persisted depreciation runs for Tally parity.
+- Fixed assets: disposal. Do not add automatic or persisted depreciation runs for Tally parity.
 - Payroll and leave: payroll runs, allowances, deductions, tax, leave balances, approval actions, and accounting integration.
 - POS: cart/checkout, barcode scanning, receipts, offline operation, and terminal integrations.
 - Enterprise reports and dashboard analytics for branches, assets, payroll, and orders.

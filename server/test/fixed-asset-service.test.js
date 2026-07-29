@@ -25,3 +25,30 @@ test("active fixed assets can be updated after company-scoped branch validation"
     restore();
   }
 });
+
+test("manual depreciation creates a calculated journal draft through the transaction engine", async () => {
+  const asset = { _id: "asset-1", assetCode: "COMP-01", branchId: "branch-1", status: "ACTIVE", purchaseValue: 1200, salvageValue: 0, usefulLifeMonths: 12, depreciationMethod: "STRAIGHT_LINE" };
+  const createDraft = async (_companyId, _fiscalYearId, payload) => payload;
+  const { module: service, restore } = loadWithMocks("../../src/services/fixedAssetService", {
+    "../models/FixedAsset": { FixedAsset: { findOne: () => ({ lean: async () => asset }) } },
+    "../models/Branch": { Branch: {} },
+    "../models/Warehouse": { Warehouse: {} },
+    "../services/transactionService": { createDraft },
+    "../utils/apiError": { ApiError: class ApiError extends Error { constructor(_status, message) { super(message); } } }
+  });
+
+  try {
+    const draft = await service.createDepreciationDraft("company-1", "fiscal-year-1", "user-1", "ACCOUNTANT", "asset-1", {
+      periodMonth: 1,
+      transactionDate: "2026-07-29",
+      expenseLedgerId: "expense-ledger",
+      accumulatedDepreciationLedgerId: "accumulated-ledger",
+    });
+    assert.equal(draft.transactionType, "JOURNAL");
+    assert.equal(draft.accountingEntries[0].debit, 100);
+    assert.equal(draft.accountingEntries[1].credit, 100);
+    assert.equal(draft.items[0].type, "FIXED_ASSET_DEPRECIATION");
+  } finally {
+    restore();
+  }
+});
