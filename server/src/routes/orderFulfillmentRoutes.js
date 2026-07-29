@@ -1,9 +1,11 @@
 const express = require("express");
 const { requireAuth, resolveActiveCompany, resolveActiveFiscalYear, requireRoles } = require("../middleware/auth");
 const { requireCompletedOnboarding } = require("../middleware/onboarding");
+const { validate } = require("../middleware/validate");
 const { SalesOrder } = require("../models/SalesOrder");
 const { PurchaseOrder } = require("../models/PurchaseOrder");
 const { OrderFulfillment } = require("../models/OrderFulfillment");
+const { validateOrderFulfillment } = require("../validators/orderFulfillmentValidators");
 const { asyncHandler } = require("../utils/asyncHandler");
 const { sendSuccess } = require("../utils/apiResponse");
 const { ApiError } = require("../utils/apiError");
@@ -35,8 +37,8 @@ async function voucherDraft(req, res, type) {
   return sendSuccess(res, 201, "Voucher draft created successfully.", draft);
 }
 
-orderFulfillmentRouter.post("/sales-orders/:id/deliveries", requireRoles("OWNER", "ADMIN", "SALES"), asyncHandler((req, res) => create(req, res, "SALES")));
-orderFulfillmentRouter.post("/purchase-orders/:id/goods-receipts", requireRoles("OWNER", "ADMIN", "INVENTORY_MANAGER"), asyncHandler((req, res) => create(req, res, "PURCHASE")));
+orderFulfillmentRouter.post("/sales-orders/:id/deliveries", requireRoles("OWNER", "ADMIN", "SALES"), validate(validateOrderFulfillment), asyncHandler((req, res) => create(req, res, "SALES")));
+orderFulfillmentRouter.post("/purchase-orders/:id/goods-receipts", requireRoles("OWNER", "ADMIN", "INVENTORY_MANAGER"), validate(validateOrderFulfillment), asyncHandler((req, res) => create(req, res, "PURCHASE")));
 orderFulfillmentRouter.post("/sales-orders/:id/voucher-draft", requireRoles("OWNER", "ADMIN", "SALES"), asyncHandler((req, res) => voucherDraft(req, res, "SALES")));
 orderFulfillmentRouter.post("/purchase-orders/:id/voucher-draft", requireRoles("OWNER", "ADMIN", "INVENTORY_MANAGER"), asyncHandler((req, res) => voucherDraft(req, res, "PURCHASE")));
 

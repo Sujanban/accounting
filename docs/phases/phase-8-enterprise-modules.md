@@ -21,9 +21,9 @@ The remaining branch work is delivered: financial statements and contact stateme
 
 The initial Approval Workflow slice is delivered: companies can opt in through Accounting Preferences, submit draft transactions, and have an owner or administrator approve them before posting. Tally parity supports voucher verification and clarification states, but not configurable multi-step approval policies or delegation; those requirements are intentionally excluded.
 
-The initial Sales Orders slice is delivered: sales users can create, edit, confirm, cancel, pre-close, and list branch-scoped, customer-linked planning documents. Confirmed orders can create posted Delivery Notes that reduce inventory without creating journals; invoice conversion remains in the existing Sales Voucher workflow.
+The initial Sales Orders slice is delivered: sales users can create, edit, confirm, cancel, pre-close, and list branch-scoped, customer-linked planning documents. From a confirmed order, users can select a branch-scoped warehouse and post a Delivery Note that reduces inventory without creating journals; invoice conversion remains in the existing Sales Voucher workflow.
 
-The initial Purchase Orders slice is delivered: users can create, edit, confirm, cancel, pre-close, and list branch-scoped, supplier-linked planning documents. Confirmed orders can create posted Goods Receipts that increase inventory without creating journals; bill conversion remains in the existing Purchase Voucher workflow.
+The initial Purchase Orders slice is delivered: users can create, edit, confirm, cancel, pre-close, and list branch-scoped, supplier-linked planning documents. From a confirmed order, users can select a branch-scoped warehouse and post a Goods Receipt that increases inventory without creating journals; bill conversion remains in the existing Purchase Voucher workflow.
 
 The initial Fixed Assets and Depreciation slice is delivered: users can create and edit a branch-scoped asset register and preview monthly straight-line or written-down-value depreciation schedules. The preview is read-only; asset disposal and depreciation journal posting remain out of scope for this slice. Tally parity checks must be applied before adding automatic or persisted depreciation because TallyPrime documents manual journal-based depreciation rather than automatic depreciation configuration.
 
@@ -33,7 +33,7 @@ The initial Payroll and Leave slice is delivered: employee records can be create
 
 ## Remaining implementation
 
-- Sales and purchase orders: invoice/bill conversion UI and reuse of the existing transaction approval lifecycle.
+- Sales and purchase orders: reuse of the existing transaction approval lifecycle for order conversion.
 - Fixed assets: disposal and depreciation journal posting. Do not add automatic or persisted depreciation runs for Tally parity.
 - Payroll and leave: payroll runs, allowances, deductions, tax, leave balances, approval actions, and accounting integration.
 - POS: cart/checkout, barcode scanning, receipts, offline operation, and terminal integrations.
