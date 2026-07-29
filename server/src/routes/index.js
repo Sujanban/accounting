@@ -17,6 +17,7 @@ const { fixedAssetRouter } = require("./fixedAssetRoutes");
 const { payrollRouter } = require("./payrollRoutes");
 const { leaveRouter } = require("./leaveRoutes");
 const { orderFulfillmentRouter } = require("./orderFulfillmentRoutes");
+const { notificationRouter } = require("./notificationRoutes");
 
 const apiRouter = express.Router();
 
@@ -36,6 +37,7 @@ apiRouter.use("/purchase-orders", purchaseOrderRouter);
 apiRouter.use("/fixed-assets", fixedAssetRouter);
 apiRouter.use("/payroll", payrollRouter);
 apiRouter.use("/leave-requests", leaveRouter);
+apiRouter.use("/notifications", notificationRouter);
 apiRouter.use("/", orderFulfillmentRouter);
 
 module.exports = {

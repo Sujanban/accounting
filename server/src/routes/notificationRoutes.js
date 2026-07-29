@@ -1,0 +1,10 @@
+const express = require("express");
+const { requireAuth, resolveActiveCompany } = require("../middleware/auth");
+const { asyncHandler } = require("../utils/asyncHandler");
+const { sendSuccess } = require("../utils/apiResponse");
+const service = require("../services/notificationService");
+const notificationRouter = express.Router();
+notificationRouter.use(requireAuth, resolveActiveCompany);
+notificationRouter.get("/", asyncHandler(async (req, res) => sendSuccess(res, 200, "Notifications fetched successfully.", await service.list(req.auth.activeCompanyId, req.auth.user._id))));
+notificationRouter.patch("/:id/read", asyncHandler(async (req, res) => sendSuccess(res, 200, "Notification marked as read.", await service.markRead(req.auth.activeCompanyId, req.auth.user._id, req.params.id))));
+module.exports = { notificationRouter };

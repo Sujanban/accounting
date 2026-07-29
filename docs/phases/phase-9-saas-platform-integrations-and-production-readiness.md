@@ -1,8 +1,26 @@
-# Phase 9 — SaaS Platform, Integrations & Production Readiness
+# Phase 9 — Platform & Production Readiness
 
 Version: 1.0
 
-Status: Planned
+Status: In progress
+
+## Current implementation status
+
+### Implemented
+
+- Tenant usage summaries for active users, branches, warehouses, and attachment storage.
+- Production security baseline: explicit production CORS origin, validated operational limits, security headers, failed-login rate limiting, and HTTP request/header timeouts.
+- Notification Center backend foundation: list notifications and mark notifications read.
+
+### Excluded
+
+- Subscription management and billing (handled offline).
+- API keys, public APIs, webhooks, and third-party integrations.
+
+### Remaining
+
+- Notification Center UI and domain-event producers.
+- Audit Center, backup/restore operations, monitoring, queue workers, scheduler, security enhancements, feature flags, performance work, CI/CD, and production deployment.
 
 Prerequisites
 
@@ -26,9 +44,6 @@ This phase focuses on
 
 - SaaS Architecture
 - Multi-tenancy Improvements
-- Public APIs
-- Webhooks
-- Third-party Integrations
 - Security
 - Monitoring
 - Performance
@@ -37,6 +52,8 @@ This phase focuses on
 At the end of this phase, the application should be production-ready for commercial deployment.
 
 Subscription management and billing are intentionally excluded from this phase. They will be handled offline and must not be implemented as application modules, APIs, or gating rules.
+
+Public APIs, webhooks, and third-party integrations are also excluded from this phase and must not be implemented.
 
 ---
 
@@ -72,15 +89,12 @@ Subscription management and billing are intentionally excluded from this phase. 
 Platform
 
 ├── Tenant Management
-├── Public API
-├── Webhooks
 ├── Notification Center
 ├── Audit Center
 ├── Backup Manager
 ├── Monitoring
 ├── Scheduler
 ├── Queue Workers
-├── Integrations
 ├── Security
 └── System Settings
 ```
@@ -206,101 +220,7 @@ Initial delivery: owners and administrators can retrieve a company-scoped usage 
 
 ---
 
-# Module 4 — Public REST API
-
-Purpose
-
-Allow external applications.
-
-Endpoints
-
-Customers
-
-Products
-
-Sales
-
-Purchase
-
-Inventory
-
-Reports
-
-Invoices
-
-Payments
-
-Branches
-
-Employees
-
----
-
-Authentication
-
-OAuth2
-
-JWT
-
----
-
-Rate Limits
-
-Free
-
-100/hour
-
-Professional
-
-1000/hour
-
-Enterprise
-
-Unlimited
-
----
-
-# Module 6 — Webhooks
-
-Purpose
-
-Notify external systems.
-
-Events
-
-Invoice Created
-
-Invoice Paid
-
-Product Updated
-
-Customer Created
-
-Inventory Changed
-
-Voucher Posted
-
-Employee Added
-
-Payroll Completed
-
-Subscription Renewed
-
----
-
-Delivery
-
-Retry
-
-Queue
-
-Signature Verification
-
-Logs
-
----
-
-# Module 7 — Notification Center
+# Module 4 — Notification Center
 
 Channels
 
@@ -536,7 +456,9 @@ Initial delivery: production configuration requires an explicit client origin, v
 
 ---
 
-# Module 14 — Integrations
+# Excluded scope — Third-party Integrations
+
+Third-party integrations are not required and will not be implemented.
 
 Payment Gateway
 
@@ -901,10 +823,6 @@ These belong to Phase 10.
 
 # Definition of Done
 
-✓ Public API completed
-
-✓ Webhooks completed
-
 ✓ Notification Center completed
 
 ✓ Audit Center completed
@@ -1042,16 +960,14 @@ Before launch ensure:
 2. Scheduler
 3. Notification Center
 4. Feature Flags
-5. Public REST API
-6. Webhooks
-7. Audit Center
-8. Backup Manager
-9. Security Enhancements
-10. Monitoring
-11. DevOps & CI/CD
-12. Marketplace Foundation
-13. Performance Optimization
-14. Production Deployment
+5. Audit Center
+6. Backup Manager
+7. Security Enhancements
+8. Monitoring
+9. DevOps & CI/CD
+10. Marketplace Foundation
+11. Performance Optimization
+12. Production Deployment
 
 ---
 

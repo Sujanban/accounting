@@ -1,5 +1,6 @@
 import {
   BarChartIcon,
+  BellIcon,
   ChevronDownIcon,
   DashboardIcon,
   ExitIcon,
@@ -10,9 +11,11 @@ import {
 } from "@radix-ui/react-icons";
 import { Dialog, DropdownMenu } from "@radix-ui/themes";
 import { useEffect, useState, type ComponentType } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../features/auth/auth-provider";
 import { Button } from "./ui/button";
+import { notificationsApi } from "../features/notifications/notifications-api";
 
 type NavigationItem = { label: string; to: string };
 type NavigationGroup = {
@@ -81,6 +84,14 @@ function CreateVoucherMenu({ onNavigate }: { onNavigate?: () => void }) {
   return <DropdownMenu.Root><DropdownMenu.Trigger><Button className="create-voucher-button" size="2"><PlusIcon /> Create</Button></DropdownMenu.Trigger><DropdownMenu.Content align="start" className="create-menu"><DropdownMenu.Label>Create voucher</DropdownMenu.Label>{createActions.map(({ label, to }) => <DropdownMenu.Item key={to} onSelect={() => { navigate(to); onNavigate?.(); }}>{label}</DropdownMenu.Item>)}</DropdownMenu.Content></DropdownMenu.Root>;
 }
 
+function NotificationsMenu() {
+  const client = useQueryClient();
+  const notifications = useQuery({ queryKey: ["notifications"], queryFn: ({ signal }) => notificationsApi.list(signal), refetchInterval: 60_000 });
+  const markRead = useMutation({ mutationFn: notificationsApi.markRead, onSuccess: () => client.invalidateQueries({ queryKey: ["notifications"] }) });
+  const unread = notifications.data?.filter((item) => !item.readAt).length ?? 0;
+  return <DropdownMenu.Root><DropdownMenu.Trigger><Button variant="ghost" size="1" aria-label={`Notifications${unread ? ` (${unread} unread)` : ""}`}><BellIcon />{unread ? <span>{unread}</span> : null}</Button></DropdownMenu.Trigger><DropdownMenu.Content align="end"><DropdownMenu.Label>Notifications</DropdownMenu.Label>{notifications.data?.length ? notifications.data.map((item) => <DropdownMenu.Item key={item.id} onSelect={() => { if (!item.readAt) markRead.mutate(item.id); }}>{item.title}{item.readAt ? "" : " •"}</DropdownMenu.Item>) : <DropdownMenu.Item disabled>No notifications</DropdownMenu.Item>}</DropdownMenu.Content></DropdownMenu.Root>;
+}
+
 function NavigationGroup({ group, onNavigate }: { group: NavigationGroup; onNavigate?: () => void }) {
   const location = useLocation();
   const hasActiveChild = group.items.some(({ to }) => location.pathname === to || location.pathname.startsWith(`${to}/`));
@@ -98,7 +109,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   async function signOut() { await logout(); navigate("/login", { replace: true }); onNavigate?.(); }
 
-  return <aside className="workspace-sidebar"><div className="workspace-sidebar__top"><Link className="brand" to="/" onClick={onNavigate}><span className="brand-mark">L</span>Ledgerly</Link><div className="workspace-sidebar__create"><CreateVoucherMenu onNavigate={onNavigate} /></div></div><nav aria-label="Main navigation" className="workspace-sidebar__navigation"><NavLink className={({ isActive }) => `app-nav-link ${isActive ? "app-nav-link--active" : ""}`} to="/" end onClick={onNavigate}><DashboardIcon />Overview</NavLink>{navigation.map((group) => <NavigationGroup group={group} key={group.label} onNavigate={onNavigate} />)}</nav><footer className="workspace-sidebar__footer"><div className="account-context"><span className="account-context__avatar" aria-hidden="true">{session?.user.name.slice(0, 1).toUpperCase()}</span><div><strong>{session?.user.name}</strong><span>{session?.user.email}</span></div><Button className="workspace-signout" variant="ghost" size="1" onClick={() => void signOut()} aria-label="Sign out" title="Sign out"><ExitIcon /></Button></div></footer></aside>;
+  return <aside className="workspace-sidebar"><div className="workspace-sidebar__top"><Link className="brand" to="/" onClick={onNavigate}><span className="brand-mark">L</span>Ledgerly</Link><div className="workspace-sidebar__create"><NotificationsMenu /><CreateVoucherMenu onNavigate={onNavigate} /></div></div><nav aria-label="Main navigation" className="workspace-sidebar__navigation"><NavLink className={({ isActive }) => `app-nav-link ${isActive ? "app-nav-link--active" : ""}`} to="/" end onClick={onNavigate}><DashboardIcon />Overview</NavLink>{navigation.map((group) => <NavigationGroup group={group} key={group.label} onNavigate={onNavigate} />)}</nav><footer className="workspace-sidebar__footer"><div className="account-context"><span className="account-context__avatar" aria-hidden="true">{session?.user.name.slice(0, 1).toUpperCase()}</span><div><strong>{session?.user.name}</strong><span>{session?.user.email}</span></div><Button className="workspace-signout" variant="ghost" size="1" onClick={() => void signOut()} aria-label="Sign out" title="Sign out"><ExitIcon /></Button></div></footer></aside>;
 }
 
 export function AppShell() {
