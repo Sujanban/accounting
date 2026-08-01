@@ -856,7 +856,10 @@ input {
   font-size: 0.82rem;
   font-weight: 650;
 }
-.accounting-form input,
+.accounting-form .form-field label {
+  display: inline;
+}
+.accounting-form input:not(.rt-TextFieldInput),
 .accounting-form textarea,
 .accounting-filters input,
 .accounting-search input,
@@ -881,7 +884,7 @@ input {
 .accounting-form textarea {
   resize: vertical;
 }
-.accounting-form input:focus,
+.accounting-form input:not(.rt-TextFieldInput):focus,
 .accounting-form textarea:focus,
 .accounting-filters input:focus,
 .accounting-search input:focus,
