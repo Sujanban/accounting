@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { LoadingScreen } from "../../components/loading-screen";
 import { Button } from "../../components/ui/button";
+import { NepaliDatePicker } from "../../components/ui/nepali-date-picker";
 import { AppSelect } from "../../components/ui/select";
 import { useLedgers } from "../accounting/use-accounting";
 import {
@@ -18,7 +19,7 @@ import {
 } from "./use-transactions";
 import { mastersApi } from "../masters/masters-api";
 import { useAttachments, useDeleteAttachment, useProducts, useUploadAttachment, useWarehouses } from "../masters/use-masters";
-import { useAdToBs, useBsToAd, useVat } from "../settings/use-settings";
+import { useVat } from "../settings/use-settings";
 import type { VoucherTransactionType } from "./transactions-api";
 import { useBranches, useBranchWarehouses } from "../enterprise/use-enterprise";
 import { useAuth } from "../auth/auth-provider";
@@ -46,65 +47,18 @@ function NepalDateField({
   value: string;
   onChange: (date: string) => void;
 }) {
-  const [bsDate, setBsDate] = useState("");
-  const adToBs = useAdToBs();
-  const bsToAd = useBsToAd();
-  const conversionError = adToBs.error ?? bsToAd.error;
-
   return (
     <div className="accounting-form__wide">
-      <Flex direction="column" gap="2">
-        <label>
-          Date (AD)
-          <input
-            name="transactionDate"
-            type="date"
-            value={value}
-            onChange={(event) => onChange(event.target.value)}
-            required
-          />
-        </label>
-        <Flex gap="2" align="end" wrap="wrap">
-          <label>
-            Date (BS)
-            <input
-              value={bsDate}
-              placeholder="2082-04-01"
-              onChange={(event) => setBsDate(event.target.value)}
-            />
-          </label>
-          <Button
-            type="button"
-            variant="outline"
-            loading={bsToAd.isPending}
-            disabled={!bsDate}
-            onClick={() =>
-              void bsToAd.mutateAsync(bsDate).then((result) => onChange(result.date))
-            }
-          >
-            Use BS date
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            loading={adToBs.isPending}
-            disabled={!value}
-            onClick={() => void adToBs.mutateAsync(value)}
-          >
-            Show BS equivalent
-          </Button>
-        </Flex>
-        {adToBs.data ? (
-          <Text size="2" color="gray">
-            BS equivalent: {adToBs.data.date} ({adToBs.data.monthName})
-          </Text>
-        ) : null}
-        {conversionError instanceof Error ? (
-          <Text size="2" color="red" role="alert">
-            {conversionError.message}
-          </Text>
-        ) : null}
-      </Flex>
+      <label>
+        Transaction date (BS)
+        <NepaliDatePicker
+          name="transactionDate"
+          value={value}
+          onChange={onChange}
+          required
+          ariaLabel="Choose transaction date in Bikram Sambat"
+        />
+      </label>
     </div>
   );
 }
@@ -210,7 +164,7 @@ export function TransactionsPage({
           voucher
         </Button>
       </Flex>
-      <Card size="3">
+      <Card size="3" className="voucher-list__filter-card">
         <div className="accounting-filters voucher-list__filters">
           <label>
             Status
@@ -231,26 +185,26 @@ export function TransactionsPage({
           </label>
           <label>
             From date
-            <input
-              type="date"
+            <NepaliDatePicker
               value={fromDate}
               max={toDate || undefined}
-              onChange={(event) => {
-                setFromDate(event.target.value);
+              onChange={(nextDate) => {
+                setFromDate(nextDate);
                 setPage(1);
               }}
+              ariaLabel="Choose starting date in Bikram Sambat"
             />
           </label>
           <label>
             To date
-            <input
-              type="date"
+            <NepaliDatePicker
               value={toDate}
               min={fromDate || undefined}
-              onChange={(event) => {
-                setToDate(event.target.value);
+              onChange={(nextDate) => {
+                setToDate(nextDate);
                 setPage(1);
               }}
+              ariaLabel="Choose ending date in Bikram Sambat"
             />
           </label>
         </div>

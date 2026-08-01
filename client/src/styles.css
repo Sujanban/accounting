@@ -622,6 +622,11 @@ input {
   align-items: end;
   min-height: 0;
 }
+.voucher-list__filter-card {
+  position: relative;
+  z-index: 2;
+  overflow: visible;
+}
 .voucher-list__filters label {
   letter-spacing: .02em;
   text-transform: uppercase;
@@ -877,6 +882,165 @@ input {
 .app-select:focus {
   outline: 3px solid rgb(17 128 102 / 0.2);
   border-color: #168567;
+}
+.nepali-date-picker {
+  position: relative;
+  width: 100%;
+  color: #173b4a;
+  font-size: .875rem;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-align: left;
+  text-transform: none;
+}
+.nepali-date-picker.is-open {
+  z-index: 60;
+}
+.nepali-date-picker__control {
+  display: flex;
+  width: 100%;
+  min-height: 2.55rem;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  border: 1px solid #cfded8;
+  border-radius: .55rem;
+  padding: .62rem .72rem;
+  color: #173b4a;
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.nepali-date-picker__control:hover:not(:disabled) {
+  border-color: #a9c8bd;
+}
+.nepali-date-picker__control:focus-visible {
+  border-color: #168567;
+  outline: 3px solid rgb(17 128 102 / .2);
+}
+.nepali-date-picker__control:disabled {
+  color: #83938f;
+  background: #f4f7f6;
+  cursor: not-allowed;
+}
+.nepali-date-picker__placeholder {
+  color: #71837f;
+}
+.nepali-date-picker__popover {
+  position: fixed;
+  z-index: 1100;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  box-sizing: border-box;
+  border: 1px solid #cfded8;
+  border-radius: .85rem;
+  padding: .85rem;
+  background: #fff;
+  box-shadow: 0 18px 48px rgb(15 42 35 / .18);
+}
+.nepali-date-picker__header {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) 2rem;
+  align-items: center;
+  gap: .45rem;
+}
+.nepali-date-picker__header > button,
+.nepali-date-picker__footer button {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: center;
+  gap: .3rem;
+  border: 0;
+  border-radius: .45rem;
+  color: #286155;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.nepali-date-picker__header > button:hover:not(:disabled),
+.nepali-date-picker__footer button:hover:not(:disabled) {
+  background: #edf7f3;
+}
+.nepali-date-picker button:focus-visible,
+.nepali-date-picker select:focus-visible {
+  outline: 2px solid #168567;
+  outline-offset: 2px;
+}
+.nepali-date-picker button:disabled {
+  opacity: .38;
+  cursor: not-allowed;
+}
+.nepali-date-picker__selectors {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(4.5rem, .8fr);
+  gap: .35rem;
+}
+.nepali-date-picker__selectors select {
+  min-width: 0;
+  border: 1px solid #d5e2dd;
+  border-radius: .45rem;
+  padding: .42rem .5rem;
+  color: #173b4a;
+  background: #f9fbfa;
+  font: inherit;
+  font-weight: 700;
+}
+.nepali-date-picker__weekdays,
+.nepali-date-picker__days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: .2rem;
+}
+.nepali-date-picker__weekdays {
+  margin: .85rem 0 .3rem;
+  color: #6b7f79;
+  font-size: .68rem;
+  font-weight: 750;
+  text-align: center;
+  text-transform: uppercase;
+}
+.nepali-date-picker__days button {
+  display: grid;
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: .45rem;
+  color: #274943;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  place-items: center;
+}
+.nepali-date-picker__days button:hover:not(:disabled) {
+  color: #0a684f;
+  background: #edf7f3;
+}
+.nepali-date-picker__days button.is-today {
+  box-shadow: inset 0 0 0 1px #78b8a5;
+  color: #0b7055;
+  font-weight: 750;
+}
+.nepali-date-picker__days button.is-selected {
+  color: #fff;
+  background: #128164;
+  box-shadow: none;
+  font-weight: 750;
+}
+.nepali-date-picker__footer {
+  display: flex;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: .65rem;
+  border-top: 1px solid #e2ece8;
+  padding-top: .55rem;
+}
+.nepali-date-picker__footer button {
+  padding: .25rem .5rem;
+  font-size: .78rem;
 }
 .accounting-form__wide {
   grid-column: 1 / -1;
