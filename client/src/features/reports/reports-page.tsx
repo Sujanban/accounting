@@ -1,6 +1,8 @@
 import { Card, Flex, Heading, Text } from "@radix-ui/themes";
-import { useRef, useState, type ReactNode } from "react";
+import { DownloadIcon, FileTextIcon, ReaderIcon } from "@radix-ui/react-icons";
+import { Children, isValidElement, useRef, useState, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
+import { OrderActionsMenu } from "../../components/order-actions-menu";
 import { Button } from "../../components/ui/button";
 import { AppSelect } from "../../components/ui/select";
 import { LoadingScreen } from "../../components/loading-screen";
@@ -165,12 +167,26 @@ function ReportFiltersForm({
 function ReportFrame({
   children,
   printTitle,
+  onExportCsv,
 }: {
   children: ReactNode;
   printTitle: string;
+  onExportCsv?: () => void;
 }) {
   const reportRef = useRef<HTMLDivElement>(null);
   const [template, setTemplate] = useState<"detailed" | "compact">("detailed");
+  const reportChildren = Children.toArray(children);
+  const inlineCsvAction = reportChildren.find(
+    (child) =>
+      isValidElement<{ className?: string; onClick?: () => void }>(child) &&
+      child.props.className?.split(" ").includes("report-export"),
+  );
+  const exportCsv =
+    onExportCsv ??
+    (isValidElement<{ onClick?: () => void }>(inlineCsvAction)
+      ? inlineCsvAction.props.onClick
+      : undefined);
+  const visibleChildren = reportChildren.filter((child) => child !== inlineCsvAction);
   const downloadExcel = async () => {
     const tables = reportRef.current?.querySelectorAll("table");
     if (!tables?.length) return;
@@ -213,9 +229,26 @@ function ReportFrame({
     <Card ref={reportRef} size="3" className={`accounting-table-card report-result report-result--${template}`}>
       <div className="report-result__heading">
         <div><Heading size="4">{printTitle}</Heading><Text className="report-print-meta" size="2">Generated {new Date().toLocaleString()}</Text></div>
-        <Flex className="no-print" gap="2" align="center"><label className="report-template-label">Layout<AppSelect value={template} onChange={(event) => setTemplate(event.target.value as "detailed" | "compact")}><option value="detailed">Detailed</option><option value="compact">Compact</option></AppSelect></label><Button variant="outline" onClick={() => void downloadExcel()}>Export Excel</Button><Button variant="outline" onClick={() => void downloadPdf()}>Export PDF</Button><Button variant="outline" onClick={() => window.print()}>Print</Button></Flex>
+        <Flex className="no-print report-result__actions" align="center">
+          <label className="report-template-label">
+            Layout
+            <AppSelect value={template} onChange={(event) => setTemplate(event.target.value as "detailed" | "compact")}>
+              <option value="detailed">Detailed</option>
+              <option value="compact">Compact</option>
+            </AppSelect>
+          </label>
+          <OrderActionsMenu
+            label={`Actions for ${printTitle}`}
+            actions={[
+              ...(exportCsv ? [{ label: "Export CSV", icon: <DownloadIcon />, onSelect: exportCsv }] : []),
+              { label: "Export Excel", icon: <DownloadIcon />, onSelect: () => void downloadExcel() },
+              { label: "Export PDF", icon: <FileTextIcon />, onSelect: () => void downloadPdf() },
+              { label: "Print report", icon: <ReaderIcon />, onSelect: () => window.print() },
+            ]}
+          />
+        </Flex>
       </div>
-      {children}
+      {visibleChildren}
     </Card>
   );
 }

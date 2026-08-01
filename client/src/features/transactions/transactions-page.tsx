@@ -1,7 +1,10 @@
+import { CheckCircledIcon, EyeOpenIcon, Pencil1Icon, ResetIcon, TrashIcon } from "@radix-ui/react-icons";
 import { Card, Flex, Heading, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { CrudPageHeader, CrudPageState } from "../../components/crud-page";
 import { LoadingScreen } from "../../components/loading-screen";
+import { OrderActionsMenu } from "../../components/order-actions-menu";
 import { Button } from "../../components/ui/button";
 import { NepaliDatePicker } from "../../components/ui/nepali-date-picker";
 import { AppSelect } from "../../components/ui/select";
@@ -23,6 +26,7 @@ import { useVat } from "../settings/use-settings";
 import type { VoucherTransactionType } from "./transactions-api";
 import { useBranches, useBranchWarehouses } from "../enterprise/use-enterprise";
 import { useAuth } from "../auth/auth-provider";
+import { adToBsDate, formatAdDate, formatBsDate } from "../../lib/nepali-date";
 
 const types = [
   { value: "JOURNAL", voucher: "JV", path: "journal" },
@@ -40,6 +44,20 @@ const formatVoucherType = (value: string) =>
     .map((word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
     .join(" ");
 
+const formatAmount = (value: number) => new Intl.NumberFormat("en-NP", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+}).format(value);
+
+export const voucherDate = (value: string) => {
+  const ad = value.slice(0, 10);
+  const bs = adToBsDate(ad);
+  return { ad, bs: bs ? formatBsDate(bs) : null };
+};
+
+export const voucherDebitTotal = (entries: Array<{ debit: number }>) =>
+  entries.reduce((total, entry) => total + Number(entry.debit || 0), 0);
+
 function NepalDateField({
   value,
   onChange,
@@ -48,18 +66,16 @@ function NepalDateField({
   onChange: (date: string) => void;
 }) {
   return (
-    <div className="accounting-form__wide">
-      <label>
-        Transaction date (BS)
-        <NepaliDatePicker
-          name="transactionDate"
-          value={value}
-          onChange={onChange}
-          required
-          ariaLabel="Choose transaction date in Bikram Sambat"
-        />
-      </label>
-    </div>
+    <label>
+      Transaction date (BS)
+      <NepaliDatePicker
+        name="transactionDate"
+        value={value}
+        onChange={onChange}
+        required
+        ariaLabel="Choose transaction date in Bikram Sambat"
+      />
+    </label>
   );
 }
 
@@ -75,9 +91,9 @@ export function TransactionsPage({
   const [status, setStatus] = useState(drafts ? "DRAFT" : "");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [type, setType] = useState("JOURNAL");
   const { transactionId, voucherType } = useParams();
   const routeType = types.find((item) => item.path === voucherType);
+  const activeType = routeType?.value ?? "JOURNAL";
   const list = useVoucherTransactions(routeType?.value, {
     page,
     status: status || undefined,
@@ -96,7 +112,7 @@ export function TransactionsPage({
   if (create && (ledgers.isLoading || products.isLoading || warehouses.isLoading || branches.isLoading || vat.isLoading)) {
     return (
       <Flex direction="column" gap="5">
-        <Heading size="7">New {formatVoucherType(routeType?.value ?? type)} voucher</Heading>
+        <Heading size="7">New {formatVoucherType(activeType)} voucher</Heading>
         <LoadingScreen
           fullScreen={false}
           label="Loading voucher form"
@@ -108,8 +124,7 @@ export function TransactionsPage({
   if (create)
     return (
       <DraftForm
-        type={routeType?.value ?? type}
-        setType={setType}
+        type={activeType}
         ledgers={ledgers.data ?? []}
         products={products.data ?? []}
         warehouses={warehouses.data ?? []}
@@ -139,20 +154,10 @@ export function TransactionsPage({
     );
   return (
     <Flex direction="column" gap="5">
-      <Flex justify="between">
-        <div>
-          <Heading size="7">
-            {drafts
-              ? "Drafts"
-              : routeType
-                ? `${formatVoucherType(routeType.value)} vouchers`
-                : "Transactions"}
-          </Heading>
-          <Text color="gray">
-            Review and manage {routeType ? formatVoucherType(routeType.value).toLowerCase() : "company"} vouchers.
-          </Text>
-        </div>
-        <Button
+      <CrudPageHeader
+        title={drafts ? "Voucher drafts" : routeType ? `${formatVoucherType(routeType.value)} vouchers` : "Transactions"}
+        description={drafts ? "Review unfinished vouchers before posting them." : `Review and manage ${routeType ? formatVoucherType(routeType.value).toLowerCase() : "company"} vouchers.`}
+        action={<Button
           onClick={() =>
             navigate(`/vouchers/${routeType?.path ?? "journal"}/new`)
           }
@@ -162,8 +167,8 @@ export function TransactionsPage({
             ? routeType.value.toLowerCase().replaceAll("_", " ")
             : "journal"}{" "}
           voucher
-        </Button>
-      </Flex>
+        </Button>}
+      />
       <Card size="3" className="voucher-list__filter-card">
         <div className="accounting-filters voucher-list__filters">
           <label>
@@ -207,81 +212,66 @@ export function TransactionsPage({
               ariaLabel="Choose ending date in Bikram Sambat"
             />
           </label>
+          {(status || fromDate || toDate) ? (
+            <div className="voucher-list__filter-actions">
+              <Button variant="ghost" onClick={() => { setStatus(drafts ? "DRAFT" : ""); setFromDate(""); setToDate(""); setPage(1); }}>
+                Clear filters
+              </Button>
+            </div>
+          ) : null}
         </div>
       </Card>
-      {list.isLoading ? (
-        <LoadingScreen
-          fullScreen={false}
-          label="Loading vouchers"
-          description="Retrieving voucher transactions…"
-        />
-      ) : (
+      <CrudPageState loading={list.isLoading} error={list.error} label="Loading vouchers" description="Retrieving voucher transactions…">
         <>
-      <Card size="3" className="accounting-table-card">
+      <Card size="3" className="accounting-table-card order-actions-table">
         <table className="accounting-table">
           <thead>
             <tr>
               <th>Date</th>
               <th>Voucher</th>
+              <th>Narration</th>
+              <th>Amount</th>
               <th>Status</th>
               <th>Action</th>
             </tr>
           </thead>
           <tbody>
-            {list.data?.items.map((item) => (
-              <tr key={item.id}>
-                <td>{new Date(item.transactionDate).toLocaleDateString()}</td>
+            {list.data?.items.map((item) => {
+              const date = voucherDate(item.transactionDate);
+              const amount = voucherDebitTotal(item.accountingEntries);
+              const pending = post.isPending || reverse.isPending;
+              const actions = [
+                { label: "View voucher", icon: <EyeOpenIcon />, onSelect: () => navigate(`/vouchers/transactions/${item.id}`) },
+                ...(item.status === "DRAFT" ? [
+                  { label: "Edit draft", icon: <Pencil1Icon />, onSelect: () => navigate(`/vouchers/transactions/${item.id}/edit`) },
+                  { label: "Post voucher", icon: <CheckCircledIcon />, disabled: pending, onSelect: () => { if (window.confirm("Post this transaction?")) void post.mutateAsync({ id: item.id, type: item.transactionType as VoucherTransactionType }); } },
+                ] : []),
+                ...(item.status === "POSTED" && !item.reversedById ? [
+                  { label: "Reverse voucher", icon: <ResetIcon />, disabled: pending, destructive: true, onSelect: () => { if (window.confirm("Reverse this posted transaction?")) void reverse.mutateAsync({ id: item.id, type: item.transactionType as VoucherTransactionType }); } },
+                ] : []),
+              ];
+              return <tr key={item.id}>
+                <td><span className="voucher-list__date"><strong>{date.bs ? `${date.bs} BS` : date.ad}</strong>{date.bs ? <small>{date.ad} AD</small> : null}</span></td>
                 <td>
                   <Link className="voucher-list__link" to={`/vouchers/transactions/${item.id}`}>
                     {item.voucherNumber ?? "Draft"}
                   </Link>
                 </td>
+                <td className="voucher-list__narration">{item.narration || "—"}</td>
+                <td className="voucher-list__amount">Rs. {formatAmount(amount)}</td>
                 <td>
                   <span className={`voucher-status voucher-status--${item.status.toLowerCase()}`}>
                     {item.status}
                   </span>
                 </td>
-                <td>
-                  <div className="accounting-table__actions">
-                    {item.status === "DRAFT" ? (
-                      <Button
-                        size="1"
-                        onClick={() => {
-                          if (window.confirm("Post this transaction?"))
-                            void post.mutateAsync({
-                              id: item.id,
-                              type: item.transactionType as VoucherTransactionType,
-                            });
-                        }}
-                      >
-                        Post
-                      </Button>
-                    ) : null}
-                    {item.status === "POSTED" && !item.reversedById ? (
-                      <Button
-                        size="1"
-                        variant="outline"
-                        onClick={() => {
-                          if (
-                            window.confirm("Reverse this posted transaction?")
-                          )
-                            void reverse.mutateAsync({
-                              id: item.id,
-                              type: item.transactionType as VoucherTransactionType,
-                            });
-                        }}
-                      >
-                        Reverse
-                      </Button>
-                    ) : null}
-                  </div>
-                </td>
-              </tr>
-            ))}
+                <td><OrderActionsMenu label={`Actions for voucher ${item.voucherNumber ?? "draft"}`} actions={actions} /></td>
+              </tr>;
+            })}
             {!list.data?.items.length ? (
               <tr>
-                <td colSpan={4}>
-                  <Text color="gray">No transactions found.</Text>
+                <td colSpan={6} className="voucher-list__empty">
+                  <strong>No vouchers found</strong>
+                  <Text color="gray">Try changing the filters or create a new voucher.</Text>
                 </td>
               </tr>
             ) : null}
@@ -289,7 +279,7 @@ export function TransactionsPage({
         </table>
       </Card>
       {list.data?.meta.totalPages && list.data.meta.totalPages > 1 ? (
-        <Flex justify="between">
+        <Flex justify="between" align="center" className="voucher-list__pagination">
           <Button
             variant="outline"
             disabled={page === 1}
@@ -297,8 +287,8 @@ export function TransactionsPage({
           >
             Previous
           </Button>
-          <Text>
-            Page {page} of {list.data.meta.totalPages}
+          <Text color="gray">
+            Page <strong>{page}</strong> of <strong>{list.data.meta.totalPages}</strong> · {list.data.meta.total} vouchers
           </Text>
           <Button
             variant="outline"
@@ -310,13 +300,12 @@ export function TransactionsPage({
         </Flex>
       ) : null}
         </>
-      )}
+      </CrudPageState>
     </Flex>
   );
 }
 function DraftForm({
   type,
-  setType,
   ledgers,
   products,
   warehouses,
@@ -329,7 +318,6 @@ function DraftForm({
   onSave,
 }: {
   type: string;
-  setType: (value: string) => void;
   ledgers: Array<{ id: string; name: string }>;
   products: Array<{ id: string; name: string; isService: boolean }>;
   warehouses: Array<{ id: string; name: string }>;
@@ -341,8 +329,9 @@ function DraftForm({
   error?: string;
   onSave: (input: any) => Promise<void>;
 }) {
+  const navigate = useNavigate();
   const [transactionDate, setTransactionDate] = useState(
-    new Date().toISOString().slice(0, 10),
+    formatAdDate(new Date()),
   );
   const [lines, setLines] = useState([
     { ledgerId: "", debit: "", credit: "" },
@@ -367,9 +356,16 @@ function DraftForm({
   const vatRate = Number(tax.vatRate || 0);
   const vatAmount = Number((taxableAmount * vatRate / 100).toFixed(2));
   const totalAmount = Number((taxableAmount + vatAmount).toFixed(2));
+  const debitTotal = lines.reduce((total, line) => total + Number(line.debit || 0), 0);
+  const creditTotal = lines.reduce((total, line) => total + Number(line.credit || 0), 0);
+  const isBalanced = debitTotal > 0 && Math.abs(debitTotal - creditTotal) < .005;
   return (
     <Flex direction="column" gap="5">
-      <Heading size="7">New {voucherLabel} voucher</Heading>
+      <CrudPageHeader
+        title={`New ${voucherLabel} voucher`}
+        description="Enter the voucher details, balance the accounting lines, and save it as a draft for review."
+        action={<Button variant="outline" onClick={() => navigate(`/vouchers/${selected.path}`)}>Back to vouchers</Button>}
+      />
       <Card size="3" className="voucher-form-card">
         <form
           className="accounting-form voucher-form"
@@ -401,16 +397,6 @@ function DraftForm({
             });
           }}
         >
-          <label>
-            Transaction type
-            <AppSelect value={type} onChange={(e) => setType(e.target.value)}>
-              {types.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.value}
-                </option>
-              ))}
-            </AppSelect>
-          </label>
           <NepalDateField
             value={transactionDate}
             onChange={setTransactionDate}
@@ -451,7 +437,10 @@ function DraftForm({
             </div>
           ) : null}
           <div className="accounting-form__wide voucher-form__accounting">
-            <Heading size="4">Accounting entries</Heading>
+            <div className="voucher-form__section-heading">
+              <div><Heading size="4">Accounting entries</Heading><Text size="2" color="gray">Add matching debit and credit lines.</Text></div>
+              <span>{lines.length} lines</span>
+            </div>
             {lines.map((line, index) => (
               <Flex className="voucher-form__line" key={index} gap="2" mb="2">
                 <AppSelect
@@ -497,8 +486,24 @@ function DraftForm({
                     )
                   }
                 />
+                <Button
+                  type="button"
+                  size="1"
+                  variant="ghost"
+                  className="table-icon-button"
+                  aria-label={`Remove accounting line ${index + 1}`}
+                  disabled={lines.length <= 2}
+                  onClick={() => setLines(lines.filter((_, lineIndex) => lineIndex !== index))}
+                >
+                  <TrashIcon className="table-action-icon" />
+                </Button>
               </Flex>
             ))}
+            <div className={`voucher-entry-summary${isBalanced ? " is-balanced" : ""}`}>
+              <span>Debit <strong>Rs. {formatAmount(debitTotal)}</strong></span>
+              <span>Credit <strong>Rs. {formatAmount(creditTotal)}</strong></span>
+              <span className="voucher-entry-summary__balance">{isBalanced ? "Balanced" : `Difference Rs. ${formatAmount(Math.abs(debitTotal - creditTotal))}`}</span>
+            </div>
             <Button
               type="button"
               variant="outline"
@@ -510,7 +515,10 @@ function DraftForm({
             </Button>
           </div>
           <div className="accounting-form__wide voucher-form__inventory">
-            <Heading size="4">Inventory movements</Heading>
+            <div className="voucher-form__section-heading">
+              <div><Heading size="4">Inventory movements</Heading><Text size="2" color="gray">Optional stock movement details for this voucher.</Text></div>
+              <span>{inventory.length} lines</span>
+            </div>
             {inventory.map((line, index) => (
               <Flex
                 className="voucher-form__line voucher-form__inventory-line"
@@ -595,6 +603,16 @@ function DraftForm({
                     )
                   }
                 />
+                <Button
+                  type="button"
+                  size="1"
+                  variant="ghost"
+                  className="table-icon-button"
+                  aria-label={`Remove inventory line ${index + 1}`}
+                  onClick={() => setInventory(inventory.filter((_, lineIndex) => lineIndex !== index))}
+                >
+                  <TrashIcon className="table-action-icon" />
+                </Button>
               </Flex>
             ))}
             <Button
@@ -617,8 +635,9 @@ function DraftForm({
             </Button>
           </div>
           <div className="accounting-form__actions accounting-form__wide voucher-form__actions">
+            <Button type="button" variant="outline" onClick={() => navigate(`/vouchers/${selected.path}`)}>Cancel</Button>
             <Button type="submit" loading={pending}>
-              Save voucher
+              Save draft
             </Button>
           </div>
         </form>
@@ -664,6 +683,7 @@ function TransactionDetail() {
     }),
     { debit: 0, credit: 0 },
   );
+  const detailDate = voucherDate(item.transactionDate);
   const duplicateVoucher = async () => {
     const draft = await duplicate.mutateAsync({
       type: item.transactionType as VoucherTransactionType,
@@ -693,7 +713,7 @@ function TransactionDetail() {
         </div>
         <div className="voucher-receipt__header-actions">
           <Text className="voucher-receipt__date">
-            {new Date(item.transactionDate).toLocaleDateString()}
+            {detailDate.bs ? `${detailDate.bs} BS` : detailDate.ad}
           </Text>
           <Flex gap="2" justify="end">
             <Button variant="outline" onClick={() => window.print()}>Print</Button>
@@ -707,6 +727,9 @@ function TransactionDetail() {
           <span>Voucher status</span>
           <strong className={`voucher-status voucher-status--${item.status.toLowerCase()}`}>{item.status}</strong>
         </div>
+        <div><span>AD date</span><strong>{detailDate.ad}</strong></div>
+        <div><span>Voucher amount</span><strong>Rs. {formatAmount(totals.debit)}</strong></div>
+        <div><span>Accounting lines</span><strong>{item.accountingEntries.length}</strong></div>
       </Card>
       {taxInvoice.data ? (
         <Card size="3" className="voucher-tax-invoice">
@@ -842,7 +865,7 @@ export function TransactionEditPage() {
   const branches = useBranches();
   const [accounting, setAccounting] = useState<
     Array<{ ledgerId: string; debit: number; credit: number }>
-  >([]);
+  | null>(null);
   const [inventory, setInventory] = useState<
     Array<{
       productId: string;
@@ -851,7 +874,7 @@ export function TransactionEditPage() {
       direction: "IN" | "OUT";
       unitCost: number;
     }>
-  >([]);
+  | null>(null);
   const [transactionDate, setTransactionDate] = useState("");
   const [branchId, setBranchId] = useState("");
   if (transaction.isLoading) {
@@ -868,15 +891,21 @@ export function TransactionEditPage() {
   const draft = transaction.data;
   const effectiveTransactionDate = transactionDate || draft.transactionDate.slice(0, 10);
   const effectiveBranchId = branchId || draft.branchId || "";
-  const lines = accounting.length ? accounting : draft.accountingEntries;
-  const stock = inventory.length ? inventory : draft.inventoryEntries;
+  const lines = accounting ?? draft.accountingEntries;
+  const stock = inventory ?? draft.inventoryEntries;
+  const voucherPath = types.find((item) => item.value === draft.transactionType)?.path ?? "journal";
+  const debitTotal = lines.reduce((total, line) => total + Number(line.debit || 0), 0);
+  const creditTotal = lines.reduce((total, line) => total + Number(line.credit || 0), 0);
+  const isBalanced = debitTotal > 0 && Math.abs(debitTotal - creditTotal) < .005;
   return (
     <Flex direction="column" gap="5">
-      <Heading size="7">
-        Edit {formatVoucherType(draft.transactionType)} voucher
-      </Heading>
+      <CrudPageHeader
+        title={`Edit ${formatVoucherType(draft.transactionType)} voucher`}
+        description={`Update ${draft.voucherNumber ?? "this draft"} before it is posted.`}
+        action={<Button variant="outline" onClick={() => navigate(`/vouchers/${voucherPath}`)}>Back to vouchers</Button>}
+      />
       {update.error ? (
-        <Text color="red">The draft could not be updated.</Text>
+        <Text color="red" role="alert">The draft could not be updated.</Text>
       ) : null}
       <Card size="3" className="voucher-form-card">
         <form
@@ -915,7 +944,10 @@ export function TransactionEditPage() {
             />
           </label>
           <div className="accounting-form__wide voucher-form__accounting">
-            <Heading size="4">Accounting entries</Heading>
+            <div className="voucher-form__section-heading">
+              <div><Heading size="4">Accounting entries</Heading><Text size="2" color="gray">Keep total debit and credit equal.</Text></div>
+              <span>{lines.length} lines</span>
+            </div>
             {lines.map((line, index) => (
               <Flex className="voucher-form__line" key={index} gap="2" mb="2">
                 <AppSelect
@@ -961,8 +993,16 @@ export function TransactionEditPage() {
                     )
                   }
                 />
+                <Button type="button" size="1" variant="ghost" className="table-icon-button" aria-label={`Remove accounting line ${index + 1}`} disabled={lines.length <= 2} onClick={() => setAccounting(lines.filter((_, lineIndex) => lineIndex !== index))}>
+                  <TrashIcon className="table-action-icon" />
+                </Button>
               </Flex>
             ))}
+            <div className={`voucher-entry-summary${isBalanced ? " is-balanced" : ""}`}>
+              <span>Debit <strong>Rs. {formatAmount(debitTotal)}</strong></span>
+              <span>Credit <strong>Rs. {formatAmount(creditTotal)}</strong></span>
+              <span className="voucher-entry-summary__balance">{isBalanced ? "Balanced" : `Difference Rs. ${formatAmount(Math.abs(debitTotal - creditTotal))}`}</span>
+            </div>
             <Button
               type="button"
               variant="outline"
@@ -974,7 +1014,10 @@ export function TransactionEditPage() {
             </Button>
           </div>
           <div className="accounting-form__wide voucher-form__inventory">
-            <Heading size="4">Inventory movements</Heading>
+            <div className="voucher-form__section-heading">
+              <div><Heading size="4">Inventory movements</Heading><Text size="2" color="gray">Optional stock movement details.</Text></div>
+              <span>{stock.length} lines</span>
+            </div>
             {stock.map((line, index) => (
               <Flex
                 className="voucher-form__line voucher-form__inventory-line"
@@ -1059,6 +1102,9 @@ export function TransactionEditPage() {
                     )
                   }
                 />
+                <Button type="button" size="1" variant="ghost" className="table-icon-button" aria-label={`Remove inventory line ${index + 1}`} onClick={() => setInventory(stock.filter((_, lineIndex) => lineIndex !== index))}>
+                  <TrashIcon className="table-action-icon" />
+                </Button>
               </Flex>
             ))}
             <Button
@@ -1089,7 +1135,7 @@ export function TransactionEditPage() {
               Cancel
             </Button>
             <Button type="submit" loading={update.isPending}>
-              Save voucher
+              Save changes
             </Button>
           </div>
         </form>

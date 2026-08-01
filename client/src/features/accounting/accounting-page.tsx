@@ -1,8 +1,9 @@
 import { Card, Dialog, Flex, Heading, Switch, Text } from "@radix-ui/themes";
-import { EyeOpenIcon, Pencil1Icon, TrashIcon } from "@radix-ui/react-icons";
+import { EyeOpenIcon, Pencil1Icon, TrashIcon, UpdateIcon } from "@radix-ui/react-icons";
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { LoadingScreen } from "../../components/loading-screen";
+import { OrderActionsMenu } from "../../components/order-actions-menu";
 import { Button } from "../../components/ui/button";
 import { AppSelect } from "../../components/ui/select";
 import { ApiClientError } from "../../lib/query-client";
@@ -265,7 +266,7 @@ function AccountGroupsPage() {
           value={{ text: requestMessage(groups.error), tone: "error" }}
         />
       ) : (
-        <Card size="3" className="accounting-table-card">
+        <Card size="3" className="accounting-table-card order-actions-table">
           <table className="accounting-table">
             <thead>
               <tr>
@@ -294,62 +295,13 @@ function AccountGroupsPage() {
                   </td>
                   <td>{group.isSystem ? "System" : "Custom"}</td>
                   <td>{group.isActive ? "Active" : "Archived"}</td>
-                  <td className="accounting-table__actions">
-                    <Button
-                      size="1"
-                      variant="ghost"
-                      className="table-icon-button"
-                      aria-label={group.isActive ? "Edit account group" : "View account group"}
-                      title={group.isActive ? "Edit account group" : "View account group"}
-                      onClick={() => {
-                        setMessage(null);
-                        if (group.isActive) {
-                          navigate(`/accounting/account-groups/${group.id}/edit`);
-                        } else {
-                          setEditing(group);
-                        }
-                      }}
-                    >
-                      {group.isActive ? <Pencil1Icon className="table-action-icon" /> : <EyeOpenIcon className="table-action-icon" />}
-                    </Button>
-                    {group.isActive ? (
-                      <Button
-                        size="1"
-                        variant="ghost"
-                        className="table-icon-button"
-                        aria-label="Archive account group"
-                        disabled={group.isSystem || archive.isPending}
-                        title={
-                          group.isSystem
-                            ? "System groups cannot be archived."
-                            : undefined
-                        }
-                        onClick={() => {
-                          if (window.confirm(`Archive ${group.name}?`))
-                            void run(
-                              () => archive.mutateAsync(group.id),
-                              "Account group archived.",
-                            );
-                        }}
-                      >
-                        <TrashIcon className="table-action-icon" />
-                      </Button>
-                    ) : (
-                      <Button
-                        size="1"
-                        variant="outline"
-                        disabled={restore.isPending}
-                        onClick={() =>
-                          void run(
-                            () => restore.mutateAsync(group.id),
-                            "Account group restored.",
-                          )
-                        }
-                      >
-                        Restore
-                      </Button>
-                    )}
-                  </td>
+                  <td><OrderActionsMenu label={`Actions for account group ${group.name}`} actions={group.isActive ? [
+                    { label: "Edit account group", icon: <Pencil1Icon />, onSelect: () => { setMessage(null); navigate(`/accounting/account-groups/${group.id}/edit`); } },
+                    ...(!group.isSystem ? [{ label: "Archive account group", icon: <TrashIcon />, destructive: true, disabled: archive.isPending, onSelect: () => { if (window.confirm(`Archive ${group.name}?`)) void run(() => archive.mutateAsync(group.id), "Account group archived."); } }] : []),
+                  ] : [
+                    { label: "View account group", icon: <EyeOpenIcon />, onSelect: () => { setMessage(null); setEditing(group); } },
+                    { label: "Restore account group", icon: <UpdateIcon />, disabled: restore.isPending, onSelect: () => void run(() => restore.mutateAsync(group.id), "Account group restored.") },
+                  ]} /></td>
                 </tr>
               ))}
               {!groups.data?.length ? (
@@ -744,7 +696,7 @@ function LedgersPage() {
           value={{ text: requestMessage(ledgers.error), tone: "error" }}
         />
       ) : (
-        <Card size="3" className="accounting-table-card">
+        <Card size="3" className="accounting-table-card order-actions-table">
           <table className="accounting-table">
             <thead>
               <tr>
@@ -777,51 +729,10 @@ function LedgersPage() {
                     {ledger.allowManualEntry ? "Manual allowed" : "Restricted"}
                   </td>
                   <td>{ledger.isActive ? "Active" : "Archived"}</td>
-                  <td className="accounting-table__actions">
-                    {ledger.isActive ? (
-                      <Button
-                        size="1"
-                        variant="ghost"
-                        className="table-icon-button"
-                        aria-label="Edit ledger"
-                        title="Edit ledger"
-                        onClick={() => navigate(`/accounting/ledgers/${ledger.id}/edit`)}
-                      >
-                        <Pencil1Icon className="table-action-icon" />
-                      </Button>
-                    ) : null}
-                    {ledger.isActive ? (
-                      <Button
-                        size="1"
-                        variant="ghost"
-                        className="table-icon-button"
-                        aria-label="Archive ledger"
-                        disabled={ledger.isSystem || archive.isPending}
-                        title={
-                          ledger.isSystem
-                            ? "System ledgers cannot be archived."
-                            : undefined
-                        }
-                        onClick={() => setLedgerToArchive(ledger)}
-                      >
-                        <TrashIcon className="table-action-icon" />
-                      </Button>
-                    ) : (
-                      <Button
-                        size="1"
-                        variant="outline"
-                        disabled={restore.isPending}
-                        onClick={() =>
-                          void run(
-                            () => restore.mutateAsync(ledger.id),
-                            "Ledger restored.",
-                          )
-                        }
-                      >
-                        Restore
-                      </Button>
-                    )}
-                  </td>
+                  <td><OrderActionsMenu label={`Actions for ledger ${ledger.name}`} actions={ledger.isActive ? [
+                    { label: "Edit ledger", icon: <Pencil1Icon />, onSelect: () => navigate(`/accounting/ledgers/${ledger.id}/edit`) },
+                    ...(!ledger.isSystem ? [{ label: "Archive ledger", icon: <TrashIcon />, destructive: true, disabled: archive.isPending, onSelect: () => setLedgerToArchive(ledger) }] : []),
+                  ] : [{ label: "Restore ledger", icon: <UpdateIcon />, disabled: restore.isPending, onSelect: () => void run(() => restore.mutateAsync(ledger.id), "Ledger restored.") }]} /></td>
                 </tr>
               ))}
               {!ledgers.data?.length ? (
@@ -1182,7 +1093,7 @@ function VoucherNumberingPage() {
           value={{ text: requestMessage(sequences.error), tone: "error" }}
         />
       ) : (
-        <Card size="3" className="accounting-table-card">
+        <Card size="3" className="accounting-table-card order-actions-table">
           <table className="accounting-table">
             <thead>
               <tr>
@@ -1207,26 +1118,7 @@ function VoucherNumberingPage() {
                   <td>{sequence.nextNumber}</td>
                   <td>{sequence.padding}</td>
                   <td>{sequence.resetEveryFiscalYear ? "Yes" : "No"}</td>
-                  <td>
-                    {canEdit ? (
-                      <Button
-                        size="1"
-                        variant="ghost"
-                        className="table-icon-button"
-                        aria-label={`Edit ${voucherTypeLabels[sequence.voucherType] ?? sequence.voucherType} numbering`}
-                        title={`Edit ${voucherTypeLabels[sequence.voucherType] ?? sequence.voucherType} numbering`}
-                        onClick={() =>
-                          navigate(
-                            `/accounting/voucher-numbering/${sequence.id}/edit`,
-                          )
-                        }
-                      >
-                        <Pencil1Icon className="table-action-icon" />
-                      </Button>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
+                  <td><OrderActionsMenu label={`Actions for ${voucherTypeLabels[sequence.voucherType] ?? sequence.voucherType} numbering`} actions={canEdit ? [{ label: "Edit numbering", icon: <Pencil1Icon />, onSelect: () => navigate(`/accounting/voucher-numbering/${sequence.id}/edit`) }] : []} /></td>
                 </tr>
               ))}
               {!filteredSequences?.length ? (

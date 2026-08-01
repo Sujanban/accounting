@@ -1,8 +1,9 @@
 import { Card, Dialog, Flex, Heading, Text } from "@radix-ui/themes";
-import { Cross2Icon, Pencil1Icon, TrashIcon } from "@radix-ui/react-icons";
+import { Cross2Icon, Pencil1Icon, TrashIcon, UpdateIcon } from "@radix-ui/react-icons";
 import { useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { LoadingScreen } from "../../components/loading-screen";
+import { OrderActionsMenu } from "../../components/order-actions-menu";
 import { Button } from "../../components/ui/button";
 import { AppSelect } from "../../components/ui/select";
 import { ApiClientError } from "../../lib/query-client";
@@ -520,7 +521,7 @@ function PartiesPage() {
       </Card>
       <Content loading={contacts.isLoading} error={contacts.error}>
         <>
-        <Card size="3" className="accounting-table-card">
+        <Card size="3" className="accounting-table-card order-actions-table">
           <table className="accounting-table">
             <thead>
               <tr>
@@ -543,42 +544,10 @@ function PartiesPage() {
                     {contact.mobile || contact.phone || contact.email || "—"}
                   </td>
                   <td>{contact.creditLimit.toLocaleString()}</td>
-                  <td>
-                    <div className="accounting-table__actions">
-                      {contact.isActive ? (
-                        <>
-                          <Button
-                            size="1"
-                            variant="ghost"
-                            className="table-icon-button"
-                            aria-label="Edit party"
-                            onClick={() => navigate(`/masters/parties/${contact.id}/edit`)}
-                          >
-                            <Pencil1Icon className="table-action-icon" />
-                          </Button>
-                          <Button
-                            size="1"
-                            variant="ghost"
-                            className="table-icon-button"
-                            aria-label="Archive party"
-                            disabled={archive.isPending || restore.isPending}
-                            onClick={() => setContactToArchive(contact)}
-                          >
-                            <TrashIcon className="table-action-icon" />
-                          </Button>
-                        </>
-                      ) : (
-                        <Button
-                          size="1"
-                          variant="outline"
-                          disabled={restore.isPending || archive.isPending}
-                          onClick={() => void restoreContact(contact)}
-                        >
-                          Restore
-                        </Button>
-                      )}
-                    </div>
-                  </td>
+                  <td><OrderActionsMenu label={`Actions for party ${contact.name}`} actions={contact.isActive ? [
+                    { label: "Edit party", icon: <Pencil1Icon />, onSelect: () => navigate(`/masters/parties/${contact.id}/edit`) },
+                    { label: "Archive party", icon: <TrashIcon />, destructive: true, disabled: archive.isPending || restore.isPending, onSelect: () => setContactToArchive(contact) },
+                  ] : [{ label: "Restore party", icon: <UpdateIcon />, disabled: restore.isPending || archive.isPending, onSelect: () => void restoreContact(contact) }]} /></td>
                 </tr>
               ))}
               {!contacts.data?.items.length ? (
@@ -942,7 +911,7 @@ function Catalog<T extends { id: string; isActive: boolean }>({
           </Card>
         ) : null}
         {!createPage ? <>
-        <Card size="3" className="accounting-table-card">
+        <Card size="3" className="accounting-table-card order-actions-table">
           <table className="accounting-table">
             <thead>
               <tr>
@@ -956,18 +925,10 @@ function Catalog<T extends { id: string; isActive: boolean }>({
               {paged.data?.items.map((item) => (
                 <tr key={item.id} className={item.isActive ? undefined : "archived-party-row"}>
                   {row(item)}
-                  <td>
-                    {item.isActive ? (
-                      <div className="accounting-table__actions">
-                        <Button type="button" size="1" variant="ghost" className="table-icon-button" aria-label={`Edit ${singularTitle}`} onClick={() => navigate(`/masters/${masterType}/${item.id}/edit`)}><Pencil1Icon className="table-action-icon" /></Button>
-                        <Button type="button" size="1" variant="ghost" className="table-icon-button" aria-label={`Archive ${singularTitle}`} disabled={archive.isPending || restore.isPending} onClick={() => setItemToArchive(item)}>
-                          <TrashIcon className="table-action-icon" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button type="button" size="1" variant="outline" disabled={archive.isPending || restore.isPending} onClick={() => void restoreItem(item)}>Restore</Button>
-                    )}
-                  </td>
+                  <td><OrderActionsMenu label={`Actions for ${singularTitle.toLowerCase()}`} actions={item.isActive ? [
+                    { label: `Edit ${singularTitle.toLowerCase()}`, icon: <Pencil1Icon />, onSelect: () => navigate(`/masters/${masterType}/${item.id}/edit`) },
+                    { label: `Archive ${singularTitle.toLowerCase()}`, icon: <TrashIcon />, destructive: true, disabled: archive.isPending || restore.isPending, onSelect: () => setItemToArchive(item) },
+                  ] : [{ label: `Restore ${singularTitle.toLowerCase()}`, icon: <UpdateIcon />, disabled: archive.isPending || restore.isPending, onSelect: () => void restoreItem(item) }]} /></td>
                 </tr>
               ))}
               {!paged.data?.items.length ? (

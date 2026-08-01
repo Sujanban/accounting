@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil1Icon } from "@radix-ui/react-icons";
+import { ActivityLogIcon, BarChartIcon, ExitIcon, Pencil1Icon } from "@radix-ui/react-icons";
 import { Card, Flex, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CrudPageHeader, CrudPageState, requestMessage } from "../../components/crud-page";
+import { OrderActionsMenu } from "../../components/order-actions-menu";
 import { Button } from "../../components/ui/button";
 import { AppSelect } from "../../components/ui/select";
 import { useLedgers } from "../accounting/use-accounting";
@@ -45,7 +46,34 @@ export function FixedAssetsPage() {
   const [scheduleAsset, setScheduleAsset] = useState<FixedAsset | null>(null);
   const schedule = useMutation({ mutationFn: fixedAssetsApi.schedule });
   const filtered = assets.data?.filter((asset) => (!branchId || asset.branchId === branchId) && (status === "all" || asset.status === status)) ?? [];
-  return <Flex direction="column" gap="5"><CrudPageHeader title="Fixed assets" description="Asset register, depreciation previews, and manual journal drafts." action={<Button onClick={() => navigate("/fixed-assets/new")}>Add fixed asset</Button>} /><Card size="3"><div className="accounting-filters"><label>Branch<AppSelect value={branchId} onChange={(event) => setBranchId(event.target.value)}><option value="">All branches</option>{branches.data?.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</AppSelect></label><label>Status<AppSelect value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">All statuses</option><option value="ACTIVE">Active</option><option value="DISPOSED">Disposed</option></AppSelect></label></div></Card><CrudPageState loading={assets.isLoading || branches.isLoading} error={assets.error ?? branches.error} label="Loading fixed assets" description="Retrieving the asset register…"><Card size="3" className="accounting-table-card"><table className="accounting-table"><thead><tr><th>Code</th><th>Category</th><th>Purchase value</th><th>Status</th><th>Action</th></tr></thead><tbody>{filtered.map((asset) => <tr key={asset.id}><td><strong>{asset.assetCode}</strong></td><td>{asset.category}</td><td>{asset.purchaseValue.toLocaleString()}</td><td>{asset.status}</td><td><div className="accounting-table__actions">{asset.status === "ACTIVE" ? <><Button size="1" variant="ghost" className="table-icon-button" aria-label="Edit fixed asset" onClick={() => navigate(`/fixed-assets/${asset.id}/edit`)}><Pencil1Icon className="table-action-icon" /></Button><Button size="1" variant="outline" onClick={() => navigate(`/fixed-assets/${asset.id}/depreciation`)}>Depreciation journal</Button><Button size="1" variant="outline" onClick={() => navigate(`/fixed-assets/${asset.id}/disposal`)}>Disposal journal</Button></> : null}<Button size="1" variant="outline" loading={schedule.isPending && scheduleAsset?.id === asset.id} onClick={() => { setScheduleAsset(asset); schedule.mutate(asset.id); }}>Preview schedule</Button></div></td></tr>)}{!filtered.length ? <tr><td colSpan={5}><Text color="gray">No fixed assets match your filters.</Text></td></tr> : null}</tbody></table></Card>{schedule.data && scheduleAsset ? <Card size="3" className="accounting-table-card"><CrudPageHeader title={`Depreciation schedule: ${scheduleAsset.assetCode}`} description="Preview only; no journal is posted automatically." /><table className="accounting-table"><thead><tr><th>Month</th><th>Depreciation</th><th>Closing value</th></tr></thead><tbody>{schedule.data.items.map((item) => <tr key={item.month}><td>{item.month}</td><td>{item.depreciation.toFixed(2)}</td><td>{item.closingValue.toFixed(2)}</td></tr>)}</tbody></table></Card> : null}</CrudPageState></Flex>;
+  return (
+    <Flex direction="column" gap="5">
+      <CrudPageHeader title="Fixed assets" description="Asset register, depreciation previews, and manual journal drafts." action={<Button onClick={() => navigate("/fixed-assets/new")}>Add fixed asset</Button>} />
+      <Card size="3"><div className="accounting-filters"><label>Branch<AppSelect value={branchId} onChange={(event) => setBranchId(event.target.value)}><option value="">All branches</option>{branches.data?.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</AppSelect></label><label>Status<AppSelect value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">All statuses</option><option value="ACTIVE">Active</option><option value="DISPOSED">Disposed</option></AppSelect></label></div></Card>
+      <CrudPageState loading={assets.isLoading || branches.isLoading} error={assets.error ?? branches.error} label="Loading fixed assets" description="Retrieving the asset register…">
+        <Card size="3" className="accounting-table-card order-actions-table">
+          <table className="accounting-table">
+            <thead><tr><th>Code</th><th>Category</th><th>Purchase value</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody>
+              {filtered.map((asset) => {
+                const actions = [
+                  ...(asset.status === "ACTIVE" ? [
+                    { label: "Edit asset", icon: <Pencil1Icon />, onSelect: () => navigate(`/fixed-assets/${asset.id}/edit`) },
+                    { label: "Depreciation journal", icon: <ActivityLogIcon />, onSelect: () => navigate(`/fixed-assets/${asset.id}/depreciation`) },
+                    { label: "Disposal journal", icon: <ExitIcon />, onSelect: () => navigate(`/fixed-assets/${asset.id}/disposal`) },
+                  ] : []),
+                  { label: "Preview schedule", icon: <BarChartIcon />, disabled: schedule.isPending, onSelect: () => { setScheduleAsset(asset); schedule.mutate(asset.id); } },
+                ];
+                return <tr key={asset.id}><td><strong>{asset.assetCode}</strong></td><td>{asset.category}</td><td>{asset.purchaseValue.toLocaleString()}</td><td>{asset.status}</td><td><OrderActionsMenu label={`Actions for fixed asset ${asset.assetCode}`} actions={actions} /></td></tr>;
+              })}
+              {!filtered.length ? <tr><td colSpan={5}><Text color="gray">No fixed assets match your filters.</Text></td></tr> : null}
+            </tbody>
+          </table>
+        </Card>
+        {schedule.data && scheduleAsset ? <Card size="3" className="accounting-table-card"><CrudPageHeader title={`Depreciation schedule: ${scheduleAsset.assetCode}`} description="Preview only; no journal is posted automatically." /><table className="accounting-table"><thead><tr><th>Month</th><th>Depreciation</th><th>Closing value</th></tr></thead><tbody>{schedule.data.items.map((item) => <tr key={item.month}><td>{item.month}</td><td>{item.depreciation.toFixed(2)}</td><td>{item.closingValue.toFixed(2)}</td></tr>)}</tbody></table></Card> : null}
+      </CrudPageState>
+    </Flex>
+  );
 }
 
 export function FixedAssetCreatePage() { return <AssetForm />; }
