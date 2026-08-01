@@ -7,16 +7,16 @@ import { OnboardingPage } from "./features/onboarding/onboarding-page";
 import { RequireOnboarding } from "./features/onboarding/require-onboarding";
 import { MastersPage, PartyCreatePage, PartyEditPage, ProductEditPage } from "./features/masters/masters-page";
 import { DashboardPage } from "./pages/dashboard-page";
-import { SettingsPage } from "./pages/settings-page";
+import { CompanyPanVatPage, CompanyPreferencesPage, CompanyProfilePage, FiscalYearCreatePage, FiscalYearsPage, SettingsPage } from "./pages/settings-page";
 import { TransactionEditPage, TransactionsPage } from "./features/transactions/transactions-page";
 import { ReportsPage } from "./features/reports/reports-page";
 import { EnterpriseOperationsReportPage } from "./features/reports/enterprise-operations-report-page";
 import { OpeningBalancesPage } from "./pages/opening-balances-page";
-import { BranchesPage } from "./pages/branches-page";
-import { SalesOrdersPage } from "./features/sales-orders/sales-orders-page";
-import { PurchaseOrdersPage } from "./features/purchase-orders/purchase-orders-page";
-import { FixedAssetsPage } from "./features/fixed-assets/fixed-assets-page";
-import { PayrollPage } from "./features/payroll/payroll-page";
+import { BranchCreatePage, BranchesPage, WarehouseCreatePage, WarehouseEditPage, WarehousesPage } from "./pages/branches-page";
+import { SalesOrderCreatePage, SalesOrderDeliveryPage, SalesOrdersPage } from "./features/sales-orders/sales-orders-page";
+import { PurchaseOrderCreatePage, PurchaseOrderReceiptPage, PurchaseOrdersPage } from "./features/purchase-orders/purchase-orders-page";
+import { FixedAssetCreatePage, FixedAssetDepreciationPage, FixedAssetDisposalPage, FixedAssetEditPage, FixedAssetsPage } from "./features/fixed-assets/fixed-assets-page";
+import { AttendanceCreatePage, EmployeeCreatePage, EmployeeEditPage, LeaveRequestCreatePage, PayrollPage } from "./features/payroll/payroll-page";
 
 export function App() {
   return (
@@ -49,11 +49,36 @@ export function App() {
             <Route path="accounting/:section" element={<AccountingPage />} />
             <Route path="reports/enterprise-operations" element={<EnterpriseOperationsReportPage />} />
             <Route path="reports/:report" element={<ReportsPage />} />
-            <Route path="company/:section" element={<SettingsPage />} />
+            <Route path="company/profile" element={<CompanyProfilePage />} />
+            <Route path="company/preferences" element={<CompanyPreferencesPage />} />
+            <Route path="company/pan-vat" element={<CompanyPanVatPage />} />
+            <Route path="company/fiscal-years/new" element={<FiscalYearCreatePage />} />
+            <Route path="company/fiscal-years" element={<FiscalYearsPage />} />
+            <Route path="company/branches/new" element={<BranchCreatePage />} />
+            <Route path="company/branches/:branchId/warehouses/new" element={<WarehouseCreatePage />} />
+            <Route path="company/branches/:branchId/warehouses/:warehouseId/edit" element={<WarehouseEditPage />} />
             <Route path="company/branches" element={<BranchesPage />} />
+            <Route path="company/warehouses/:branchId/new" element={<WarehouseCreatePage />} />
+            <Route path="company/warehouses/:branchId/:warehouseId/edit" element={<WarehouseEditPage />} />
+            <Route path="company/warehouses" element={<WarehousesPage />} />
+            <Route path="company/:section" element={<Navigate to="/company/profile" replace />} />
+            <Route path="sales-orders/new" element={<SalesOrderCreatePage />} />
+            <Route path="sales-orders/:orderId/edit" element={<SalesOrdersPage />} />
+            <Route path="sales-orders/:orderId/delivery" element={<SalesOrderDeliveryPage />} />
             <Route path="sales-orders" element={<SalesOrdersPage />} />
+            <Route path="purchase-orders/new" element={<PurchaseOrderCreatePage />} />
+            <Route path="purchase-orders/:orderId/edit" element={<PurchaseOrdersPage />} />
+            <Route path="purchase-orders/:orderId/receipt" element={<PurchaseOrderReceiptPage />} />
             <Route path="purchase-orders" element={<PurchaseOrdersPage />} />
+            <Route path="fixed-assets/new" element={<FixedAssetCreatePage />} />
+            <Route path="fixed-assets/:assetId/edit" element={<FixedAssetEditPage />} />
+            <Route path="fixed-assets/:assetId/depreciation" element={<FixedAssetDepreciationPage />} />
+            <Route path="fixed-assets/:assetId/disposal" element={<FixedAssetDisposalPage />} />
             <Route path="fixed-assets" element={<FixedAssetsPage />} />
+            <Route path="payroll/employees/new" element={<EmployeeCreatePage />} />
+            <Route path="payroll/employees/:employeeId/edit" element={<EmployeeEditPage />} />
+            <Route path="payroll/attendance/new" element={<AttendanceCreatePage />} />
+            <Route path="payroll/leave-requests/new" element={<LeaveRequestCreatePage />} />
             <Route path="payroll" element={<PayrollPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>

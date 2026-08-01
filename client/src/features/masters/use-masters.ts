@@ -110,7 +110,17 @@ export const useDeleteAttachment = () => useMutation({ mutationFn: mastersApi.de
 export const useAttachments = (entityType: string, entityId: string) => useQuery({ queryKey: [...masterKeys.all, "attachments", entityType, entityId], queryFn: ({ signal }) => mastersApi.attachments(entityType, entityId, signal), enabled: Boolean(entityId) });
 export const useCreateProduct = () =>
   useMasterMutation((input: ProductInput) => mastersApi.createProduct(input));
-export const useCatalogPage = <T>(resource: "units" | "categories" | "tax-rates" | "payment-terms" | "contact-groups" | "warehouses" | "price-lists" | "products", filters: { page: number; limit: number; search?: string; isActive?: "true" | "false" | "all" }) => useQuery({ queryKey: [...masterKeys.all, resource, "page", filters] as const, queryFn: ({ signal }) => catalogPage<T>(resource, filters, signal) });
+export const useCatalogPage = <T>(
+  resource: "units" | "categories" | "tax-rates" | "payment-terms" | "contact-groups" | "warehouses" | "price-lists" | "products",
+  filters: { page: number; limit: number; search?: string; isActive?: "true" | "false" | "all"; enabled?: boolean },
+) => {
+  const { enabled = true, ...requestFilters } = filters;
+  return useQuery({
+    queryKey: [...masterKeys.all, resource, "page", requestFilters] as const,
+    queryFn: ({ signal }) => catalogPage<T>(resource, requestFilters, signal),
+    enabled,
+  });
+};
 export const useUpdateCatalog = <T>(resource: "units" | "categories" | "tax-rates" | "payment-terms" | "contact-groups" | "warehouses" | "price-lists" | "products") => useMasterMutation(({ id, input }: { id: string; input: Partial<T> }) => updateCatalog<T>(resource, id, input));
 export const useArchiveCatalog = <T>(resource: "units" | "categories" | "tax-rates" | "payment-terms" | "contact-groups" | "warehouses" | "price-lists" | "products") => useMasterMutation((id: string) => archiveCatalog<T>(resource, id));
 export const useRestoreCatalog = <T>(resource: "units" | "categories" | "tax-rates" | "payment-terms" | "contact-groups" | "warehouses" | "price-lists" | "products") => useMasterMutation((id: string) => restoreCatalog<T>(resource, id));

@@ -8,6 +8,8 @@ import {
   Text,
 } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { CrudPageHeader, CrudPageState, requestMessage } from "../components/crud-page";
 import { FormSelect, FormTextField } from "../components/forms/form-fields";
 import { LoadingScreen } from "../components/loading-screen";
 import { Button } from "../components/ui/button";
@@ -58,6 +60,17 @@ const currencies = [
 const message = (error: unknown) =>
   error instanceof ApiClientError ? error.message : "Unable to save changes.";
 
+const editableSettings = (settings: CompanySettings): Partial<CompanySettings> => ({
+  businessType: settings.businessType,
+  currency: settings.currency,
+  currencySymbol: settings.currencySymbol,
+  language: settings.language,
+  dateFormat: settings.dateFormat,
+  timezone: settings.timezone,
+  decimalPlaces: settings.decimalPlaces,
+  allowNegativeStock: settings.allowNegativeStock,
+});
+
 export function SettingsPage() {
   const { session } = useAuth();
   const companyId = session?.activeCompany?.id ?? null;
@@ -97,7 +110,7 @@ export function SettingsPage() {
       });
   }, [company.data]);
   useEffect(() => {
-    if (settings.data) setGeneral(settings.data);
+    if (settings.data) setGeneral(editableSettings(settings.data));
   }, [settings.data]);
   useEffect(() => {
     if (vat.data) setVatForm(vat.data);
@@ -748,4 +761,59 @@ function FiscalYears({ years }: { years: FiscalYear[] }) {
       ))}
     </Flex>
   );
+}
+
+export function FiscalYearsPage() {
+  const navigate = useNavigate();
+  const years = useFiscalYears();
+  const activate = useActivateFiscalYear();
+  const close = useCloseFiscalYear();
+  const [status, setStatus] = useState("all");
+  const filtered = years.data?.filter((year) => status === "all" || (status === "active" ? year.isActive : status === "closed" ? year.isLocked : !year.isLocked)) ?? [];
+  return <Flex direction="column" gap="5"><CrudPageHeader title="Fiscal years" description="Manage accounting periods, activation, and year-end locking." action={<Button onClick={() => navigate("/company/fiscal-years/new")}>Add fiscal year</Button>} /><Card size="3"><div className="accounting-filters"><label>Status<select className="app-select" value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">All fiscal years</option><option value="active">Active</option><option value="open">Open</option><option value="closed">Closed</option></select></label></div></Card><CrudPageState loading={years.isLoading} error={years.error} label="Loading fiscal years" description="Retrieving accounting periods…"><Card size="3" className="accounting-table-card"><table className="accounting-table"><thead><tr><th>Name</th><th>BS period</th><th>AD period</th><th>Status</th><th>Action</th></tr></thead><tbody>{filtered.map((year) => <tr key={year.id}><td><strong>{year.name}</strong></td><td>{year.startDateBS} – {year.endDateBS}</td><td>{year.startDateAD ?? "—"} – {year.endDateAD ?? "—"}</td><td>{year.isActive ? "Active" : year.isLocked ? "Closed" : "Open"}</td><td><div className="accounting-table__actions">{!year.isActive && !year.isLocked ? <Button size="1" variant="outline" loading={activate.isPending} onClick={() => activate.mutate(year.id)}>Make active</Button> : null}{!year.isLocked ? <Button size="1" variant="outline" loading={close.isPending} onClick={() => { if (window.confirm(`Close ${year.name}? This locks the fiscal year.`)) close.mutate(year.id); }}>Close</Button> : "—"}</div></td></tr>)}{!filtered.length ? <tr><td colSpan={5}><Text color="gray">No fiscal years match your filter.</Text></td></tr> : null}</tbody></table></Card>{activate.error || close.error ? <Text color="red" role="alert">{requestMessage(activate.error || close.error)}</Text> : null}</CrudPageState></Flex>;
+}
+
+export function FiscalYearCreatePage() {
+  const navigate = useNavigate();
+  const defaults = getCurrentFiscalYearDefaults();
+  const [form, setForm] = useState(defaults);
+  const create = useFiscalYearMutation();
+  const convert = useBsToAd();
+  async function fillDates() { try { const start = await convert.mutateAsync(form.startDateBS); const end = await convert.mutateAsync(form.endDateBS); setForm((current) => ({ ...current, startDateAD: start.date, endDateAD: end.date })); } catch { /* rendered below */ } }
+  async function submit(event: React.FormEvent<HTMLFormElement>) { event.preventDefault(); try { await create.mutateAsync(form); navigate("/company/fiscal-years", { replace: true }); } catch { /* rendered below */ } }
+  return <Flex direction="column" gap="5"><CrudPageHeader title="Add fiscal year" description="Create and activate a new accounting period." /><Card size="3"><form className="accounting-form" onSubmit={(event) => void submit(event)}><FormTextField label="Name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required /><FormTextField label="Start BS" value={form.startDateBS} onChange={(event) => setForm({ ...form, startDateBS: event.target.value })} required /><FormTextField label="End BS" value={form.endDateBS} onChange={(event) => setForm({ ...form, endDateBS: event.target.value })} required /><FormTextField label="Start AD" type="date" value={form.startDateAD} onChange={(event) => setForm({ ...form, startDateAD: event.target.value })} required /><FormTextField label="End AD" type="date" value={form.endDateAD} onChange={(event) => setForm({ ...form, endDateAD: event.target.value })} required /><div className="accounting-form__actions accounting-form__wide"><Button type="button" variant="outline" onClick={() => navigate("/company/fiscal-years")}>Cancel</Button><Button type="button" variant="outline" loading={convert.isPending} disabled={!form.startDateBS || !form.endDateBS} onClick={() => void fillDates()}>Fill AD dates from BS</Button><Button type="submit" loading={create.isPending}>Create fiscal year</Button></div></form>{create.error || convert.error ? <Text color="red" role="alert">{requestMessage(create.error || convert.error)}</Text> : null}</Card></Flex>;
+}
+
+export function CompanyProfilePage() {
+  const { session } = useAuth();
+  const companyId = session?.activeCompany?.id ?? "";
+  const company = useCompanyProfile(companyId || null);
+  const update = useUpdateCompany(companyId);
+  const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", logo: "" });
+  useEffect(() => {
+    if (company.data) setForm({ name: company.data.name, phone: company.data.phone ?? "", email: company.data.email ?? "", address: company.data.address ?? "", logo: company.data.logo ?? "" });
+  }, [company.data]);
+  async function submit(event: React.FormEvent<HTMLFormElement>) { event.preventDefault(); try { await update.mutateAsync(form); } catch { /* rendered below */ } }
+  return <Flex direction="column" gap="5"><CrudPageHeader title="Company profile" description="Maintain the details shown on business documents and reports." /><CrudPageState loading={company.isLoading} error={company.error} label="Loading company profile" description="Retrieving company details…"><Card size="3"><form className="accounting-form" onSubmit={(event) => void submit(event)}><FormTextField label="Company name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required /><FormTextField label="Phone" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} /><FormTextField label="Company email" type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /><FormTextField label="Address" value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })} /><FormTextField label="Logo URL" type="url" value={form.logo} onChange={(event) => setForm({ ...form, logo: event.target.value })} /><div className="accounting-form__actions accounting-form__wide"><Button type="submit" loading={update.isPending}>Save company profile</Button></div></form>{update.error ? <Text color="red" role="alert">{message(update.error)}</Text> : null}{update.isSuccess ? <Text color="green" role="status">Company profile saved.</Text> : null}</Card></CrudPageState></Flex>;
+}
+
+export function CompanyPreferencesPage() {
+  const { session } = useAuth();
+  const settings = useSettings(session?.activeCompany?.id ?? null);
+  const update = useUpdateSettings();
+  const updateAccounting = useUpdateAccounting();
+  const [general, setGeneral] = useState<Partial<CompanySettings>>({});
+  useEffect(() => { if (settings.data) setGeneral(editableSettings(settings.data)); }, [settings.data]);
+  async function saveGeneral(event: React.FormEvent<HTMLFormElement>) { event.preventDefault(); try { await update.mutateAsync(general); } catch { /* rendered below */ } }
+  return <Flex direction="column" gap="5"><CrudPageHeader title="Preferences" description="Configure business, display, accounting, and fiscal-lock defaults." /><CrudPageState loading={settings.isLoading} error={settings.error} label="Loading preferences" description="Retrieving company preferences…"><Card size="3"><form className="accounting-form" onSubmit={(event) => void saveGeneral(event)}><FormSelect label="Business type" required value={String(general.businessType ?? "RETAIL")} onValueChange={(businessType) => setGeneral({ ...general, businessType })} options={businessTypes.map((value) => ({ value, label: value.replaceAll("_", " ") }))} /><FormSelect label="Currency" required value={String(general.currency ?? "NPR")} onValueChange={(currency) => { const selected = currencies.find((item) => item.value === currency); setGeneral({ ...general, currency, currencySymbol: selected?.symbol ?? general.currencySymbol }); }} options={currencies.map(({ value, label }) => ({ value, label }))} /><FormSelect label="Currency symbol" required value={String(general.currencySymbol ?? "Rs.")} onValueChange={(currencySymbol) => setGeneral({ ...general, currencySymbol })} options={currencies.map(({ value, symbol }) => ({ value: symbol, label: `${symbol} (${value})` }))} /><FormSelect label="Date format" required value={String(general.dateFormat ?? "BS")} onValueChange={(dateFormat) => setGeneral({ ...general, dateFormat: dateFormat as "BS" | "AD" })} options={[{ value: "BS", label: "Bikram Sambat (BS)" }, { value: "AD", label: "Gregorian (AD)" }]} /><FormSelect label="Decimal places" required value={String(general.decimalPlaces ?? 2)} onValueChange={(decimalPlaces) => setGeneral({ ...general, decimalPlaces: Number(decimalPlaces) })} options={[0, 1, 2, 3, 4, 5, 6].map((value) => ({ value: String(value), label: String(value) }))} /><Flex justify="between" align="center" className="accounting-form__wide"><Text>Allow negative stock</Text><Switch checked={Boolean(general.allowNegativeStock)} onCheckedChange={(allowNegativeStock) => setGeneral({ ...general, allowNegativeStock })} /></Flex><div className="accounting-form__actions accounting-form__wide"><Button type="submit" loading={update.isPending}>Save business preferences</Button></div></form>{update.error ? <Text color="red" role="alert">{message(update.error)}</Text> : null}{update.isSuccess ? <Text color="green" role="status">Business preferences saved.</Text> : null}</Card><Card size="3"><AccountingForm settings={settings.data!} onSave={async (input) => { try { await updateAccounting.mutateAsync(input); } catch { /* rendered below */ } }} pending={updateAccounting.isPending} />{updateAccounting.error ? <Text color="red" role="alert">{message(updateAccounting.error)}</Text> : null}{updateAccounting.isSuccess ? <Text color="green" role="status">Accounting preferences saved.</Text> : null}</Card></CrudPageState></Flex>;
+}
+
+export function CompanyPanVatPage() {
+  const pan = usePan();
+  const vat = useVat();
+  const updatePan = useUpdatePan();
+  const updateVat = useUpdateVat();
+  const [vatForm, setVatForm] = useState<VatSettings>({ vatRegistered: false, vatNumber: null, defaultVatRate: 13, vatMode: "EXCLUSIVE" });
+  useEffect(() => { if (vat.data) setVatForm(vat.data); }, [vat.data]);
+  return <Flex direction="column" gap="5"><CrudPageHeader title="PAN & VAT" description="Manage Nepal tax registration and default VAT treatment." /><CrudPageState loading={pan.isLoading || vat.isLoading} error={pan.error ?? vat.error} label="Loading PAN and VAT" description="Retrieving tax registration details…"><Card size="3"><PanForm pan={pan.data!} onSave={async (input) => { try { await updatePan.mutateAsync(input); } catch { /* rendered below */ } }} pending={updatePan.isPending} />{updatePan.error ? <Text color="red" role="alert">{message(updatePan.error)}</Text> : null}{updatePan.isSuccess ? <Text color="green" role="status">PAN settings saved.</Text> : null}</Card><Card size="3"><form className="accounting-form" onSubmit={(event) => { event.preventDefault(); updateVat.mutate(vatForm); }}><FormSelect label="VAT registration" required value={String(vatForm.vatRegistered)} onValueChange={(value) => setVatForm({ ...vatForm, vatRegistered: value === "true", vatNumber: value === "true" ? vatForm.vatNumber : null })} options={[{ value: "false", label: "Not VAT registered" }, { value: "true", label: "VAT registered" }]} />{vatForm.vatRegistered ? <FormTextField label="VAT number" value={vatForm.vatNumber ?? ""} onChange={(event) => setVatForm({ ...vatForm, vatNumber: event.target.value })} required /> : null}<FormTextField label="Default VAT rate" type="number" value={String(vatForm.defaultVatRate)} onChange={(event) => setVatForm({ ...vatForm, defaultVatRate: Number(event.target.value) })} required /><FormSelect label="VAT mode" value={vatForm.vatMode} onValueChange={(vatMode) => setVatForm({ ...vatForm, vatMode: vatMode as VatSettings["vatMode"] })} options={[{ value: "EXCLUSIVE", label: "Exclusive" }, { value: "INCLUSIVE", label: "Inclusive" }]} /><div className="accounting-form__actions accounting-form__wide"><Button type="submit" loading={updateVat.isPending}>Save VAT settings</Button></div></form>{updateVat.error ? <Text color="red" role="alert">{message(updateVat.error)}</Text> : null}{updateVat.isSuccess ? <Text color="green" role="status">VAT settings saved.</Text> : null}</Card></CrudPageState></Flex>;
 }

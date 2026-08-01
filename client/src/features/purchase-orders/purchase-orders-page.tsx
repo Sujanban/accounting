@@ -1,39 +1,76 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Card, Flex, Heading, Text } from "@radix-ui/themes";
+import { Pencil1Icon } from "@radix-ui/react-icons";
+import { Card, Flex, Text } from "@radix-ui/themes";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { CrudPageHeader, CrudPageState, requestMessage } from "../../components/crud-page";
 import { Button } from "../../components/ui/button";
 import { AppSelect } from "../../components/ui/select";
 import { useBranches, useBranchWarehouses } from "../enterprise/use-enterprise";
 import { useContacts, useProducts } from "../masters/use-masters";
-import { purchaseOrdersApi } from "./purchase-orders-api";
-import type { PurchaseOrder, PurchaseOrderInput } from "./purchase-orders-api";
+import { purchaseOrdersApi, type PurchaseOrder, type PurchaseOrderInput } from "./purchase-orders-api";
 
-export function PurchaseOrdersPage() {
-  const client = useQueryClient();
+const purchaseKeys = { all: ["purchase-orders"] as const, list: (branchId: string) => ["purchase-orders", "list", branchId] as const };
+
+function PurchaseOrderForm({ order }: { order?: PurchaseOrder }) {
   const navigate = useNavigate();
-  const orders = useQuery({ queryKey: ["purchase-orders"], queryFn: ({ signal }) => purchaseOrdersApi.list(undefined, signal) });
-  const [editing, setEditing] = useState<PurchaseOrder | null>(null);
-  const [branchId, setBranchId] = useState("");
-  const [contactId, setContactId] = useState("");
-  const [productId, setProductId] = useState("");
-  const [fulfillmentOrder, setFulfillmentOrder] = useState<PurchaseOrder | null>(null);
-  const [warehouseId, setWarehouseId] = useState("");
-  const [fulfillmentDate, setFulfillmentDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const complete = () => { setEditing(null); setBranchId(""); setContactId(""); setProductId(""); client.invalidateQueries({ queryKey: ["purchase-orders"] }); };
-  const create = useMutation({ mutationFn: purchaseOrdersApi.create, onSuccess: complete });
-  const update = useMutation({ mutationFn: ({ id, input }: { id: string; input: PurchaseOrderInput }) => purchaseOrdersApi.update(id, input), onSuccess: complete });
-  const changeStatus = useMutation({ mutationFn: ({ id, status }: { id: string; status: "CONFIRMED" | "CANCELLED" }) => purchaseOrdersApi.updateStatus(id, status), onSuccess: () => client.invalidateQueries({ queryKey: ["purchase-orders"] }) });
-  const closeOrder = useMutation({ mutationFn: ({ id, reason }: { id: string; reason: string }) => purchaseOrdersApi.close(id, reason), onSuccess: () => client.invalidateQueries({ queryKey: ["purchase-orders"] }) });
-  const createGoodsReceipt = useMutation({ mutationFn: ({ id, warehouseId, fulfillmentDate }: { id: string; warehouseId: string; fulfillmentDate: string }) => purchaseOrdersApi.createGoodsReceipt(id, { warehouseId, fulfillmentDate }), onSuccess: () => { setFulfillmentOrder(null); setWarehouseId(""); client.invalidateQueries({ queryKey: ["purchase-orders"] }); } });
-  const convert = useMutation({ mutationFn: purchaseOrdersApi.createVoucherDraft, onSuccess: (draft) => navigate(`/vouchers/transactions/${draft.id}/edit`) });
+  const client = useQueryClient();
+  const [branchId, setBranchId] = useState(order?.branchId ?? "");
+  const [contactId, setContactId] = useState(order?.contactId ?? "");
+  const [productId, setProductId] = useState(order?.items[0]?.productId ?? "");
   const branches = useBranches();
   const contacts = useContacts({ role: "SUPPLIER", page: 1, isActive: "true" });
   const products = useProducts();
-  const warehouses = useBranchWarehouses(fulfillmentOrder?.branchId || "");
-  const beginEdit = (order: PurchaseOrder) => { setEditing(order); setBranchId(order.branchId); setContactId(order.contactId); setProductId(order.items[0]?.productId || ""); };
-  const pending = create.isPending || update.isPending;
-  const error = create.error || update.error || changeStatus.error || closeOrder.error || createGoodsReceipt.error || convert.error;
+  const create = useMutation({ mutationFn: purchaseOrdersApi.create });
+  const update = useMutation({ mutationFn: ({ id, input }: { id: string; input: PurchaseOrderInput }) => purchaseOrdersApi.update(id, input) });
 
-  return <Flex direction="column" gap="5"><div><Heading size="7">Purchase orders</Heading><Text color="gray">Planning documents only; purchase orders do not affect inventory or accounting.</Text></div><Card size="3"><form className="accounting-form" key={editing?.id || "new"} onSubmit={(event) => { event.preventDefault(); const form = new FormData(event.currentTarget); const input = { branchId, contactId, orderDate: String(form.get("orderDate")), items: [{ productId, quantity: Number(form.get("quantity")), unitPrice: Number(form.get("unitPrice")) }], notes: String(form.get("notes") || "") || undefined }; if (editing) update.mutate({ id: editing.id, input }); else create.mutate(input); }}><label>Branch<AppSelect value={branchId} onChange={(event) => setBranchId(event.target.value)} required><option value="">Select branch</option>{branches.data?.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</AppSelect></label><label>Supplier<AppSelect value={contactId} onChange={(event) => setContactId(event.target.value)} required><option value="">Select supplier</option>{contacts.data?.items.map((contact) => <option key={contact.id} value={contact.id}>{contact.displayName || contact.name}</option>)}</AppSelect></label><label>Product<AppSelect value={productId} onChange={(event) => setProductId(event.target.value)} required><option value="">Select product</option>{products.data?.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</AppSelect></label><label>Date<input name="orderDate" type="date" defaultValue={editing ? editing.orderDate.slice(0, 10) : ""} required /></label><label>Quantity<input name="quantity" type="number" min="0.000001" step="any" defaultValue={editing?.items[0]?.quantity} required /></label><label>Unit price<input name="unitPrice" type="number" min="0" step="any" defaultValue={editing?.items[0]?.unitPrice} required /></label><label className="accounting-form__wide">Notes<textarea name="notes" defaultValue={editing?.notes || ""} /></label><div className="accounting-form__actions"><Button type="submit" disabled={!branchId || !contactId || !productId} loading={pending}>{editing ? "Save draft order" : "Create draft order"}</Button>{editing ? <Button type="button" variant="outline" onClick={complete}>Cancel edit</Button> : null}</div></form>{error instanceof Error ? <Text color="red" role="alert">{error.message}</Text> : null}</Card><Card size="3"><Heading size="4">Orders</Heading>{orders.data?.items.length ? orders.data.items.map((order) => <Flex key={order.id} justify="between" align="center" gap="3" py="2"><Text>{order.orderNumber} · {order.status} · {new Date(order.orderDate).toLocaleDateString()}</Text>{order.status === "DRAFT" ? <Flex gap="2"><Button type="button" variant="outline" onClick={() => beginEdit(order)}>Edit</Button><Button type="button" onClick={() => changeStatus.mutate({ id: order.id, status: "CONFIRMED" })} loading={changeStatus.isPending}>Confirm</Button><Button type="button" variant="outline" onClick={() => changeStatus.mutate({ id: order.id, status: "CANCELLED" })} disabled={changeStatus.isPending}>Cancel</Button></Flex> : null}{order.status === "CONFIRMED" ? <Flex gap="2"><Button type="button" variant="outline" loading={closeOrder.isPending} onClick={() => { const reason = window.prompt("Why is this order being pre-closed?"); if (reason?.trim()) closeOrder.mutate({ id: order.id, reason }); }}>Pre-close</Button><Button type="button" variant="outline" onClick={() => { setFulfillmentOrder(order); setWarehouseId(""); }}>Create goods receipt</Button><Button type="button" loading={convert.isPending} onClick={() => convert.mutate(order.id)}>Create purchase draft</Button></Flex> : null}</Flex>) : <Text color="gray">No purchase orders yet.</Text>}</Card>{fulfillmentOrder ? <Card size="3"><Heading size="4">Create goods receipt for {fulfillmentOrder.orderNumber}</Heading><form className="accounting-form" onSubmit={(event) => { event.preventDefault(); createGoodsReceipt.mutate({ id: fulfillmentOrder.id, warehouseId, fulfillmentDate }); }}><label>Warehouse<AppSelect value={warehouseId} onChange={(event) => setWarehouseId(event.target.value)} required><option value="">Select warehouse</option>{warehouses.data?.map((warehouse) => <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>)}</AppSelect></label><label>Receipt date<input type="date" value={fulfillmentDate} onChange={(event) => setFulfillmentDate(event.target.value)} required /></label><div className="accounting-form__actions"><Button type="submit" disabled={!warehouseId} loading={createGoodsReceipt.isPending}>Post goods receipt</Button><Button type="button" variant="outline" onClick={() => setFulfillmentOrder(null)}>Cancel</Button></div></form></Card> : null}</Flex>;
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const input: PurchaseOrderInput = { branchId, contactId, orderDate: String(form.get("orderDate")), items: [{ productId, quantity: Number(form.get("quantity")), unitPrice: Number(form.get("unitPrice")) }], notes: String(form.get("notes") || "") || undefined };
+    try {
+      if (order) await update.mutateAsync({ id: order.id, input });
+      else await create.mutateAsync(input);
+      await client.invalidateQueries({ queryKey: purchaseKeys.all });
+      navigate("/purchase-orders", { replace: true });
+    } catch { /* mutation state is rendered below */ }
+  }
+
+  const dependencyError = branches.error ?? contacts.error ?? products.error;
+  return <Flex direction="column" gap="5"><CrudPageHeader title={order ? "Edit purchase order" : "Add purchase order"} description="Create and maintain supplier planning documents." /><CrudPageState loading={branches.isLoading || contacts.isLoading || products.isLoading} error={dependencyError} label="Loading purchase order" description="Preparing the purchase order form…"><Card size="3"><form className="accounting-form" onSubmit={(event) => void submit(event)}><label>Branch<AppSelect value={branchId} onChange={(event) => setBranchId(event.target.value)} required><option value="">Select branch</option>{branches.data?.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</AppSelect></label><label>Supplier<AppSelect value={contactId} onChange={(event) => setContactId(event.target.value)} required><option value="">Select supplier</option>{contacts.data?.items.map((contact) => <option key={contact.id} value={contact.id}>{contact.displayName || contact.name}</option>)}</AppSelect></label><label>Product<AppSelect value={productId} onChange={(event) => setProductId(event.target.value)} required><option value="">Select product</option>{products.data?.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</AppSelect></label><label>Date<input name="orderDate" type="date" defaultValue={order?.orderDate.slice(0, 10)} required /></label><label>Quantity<input name="quantity" type="number" min="0.000001" step="any" defaultValue={order?.items[0]?.quantity} required /></label><label>Unit price<input name="unitPrice" type="number" min="0" step="any" defaultValue={order?.items[0]?.unitPrice} required /></label><label className="accounting-form__wide">Notes<textarea name="notes" defaultValue={order?.notes ?? ""} /></label><div className="accounting-form__actions accounting-form__wide"><Button type="button" variant="outline" onClick={() => navigate("/purchase-orders")}>Cancel</Button><Button type="submit" disabled={!branchId || !contactId || !productId} loading={create.isPending || update.isPending}>{order ? "Save purchase order" : "Create purchase order"}</Button></div></form>{create.error || update.error ? <Text color="red" role="alert">{requestMessage(create.error || update.error)}</Text> : null}</Card></CrudPageState></Flex>;
+}
+
+export function PurchaseOrdersPage() {
+  const navigate = useNavigate();
+  const client = useQueryClient();
+  const { orderId } = useParams();
+  const [branchId, setBranchId] = useState("");
+  const [status, setStatus] = useState("all");
+  const orders = useQuery({ queryKey: purchaseKeys.list(branchId), queryFn: ({ signal }) => purchaseOrdersApi.list(branchId || undefined, signal) });
+  const branches = useBranches();
+  const selected = orderId ? orders.data?.items.find((order) => order.id === orderId) : undefined;
+  const changeStatus = useMutation({ mutationFn: ({ id, status: nextStatus }: { id: string; status: "CONFIRMED" | "CANCELLED" }) => purchaseOrdersApi.updateStatus(id, nextStatus), onSuccess: () => client.invalidateQueries({ queryKey: purchaseKeys.all }) });
+  const close = useMutation({ mutationFn: ({ id, reason }: { id: string; reason: string }) => purchaseOrdersApi.close(id, reason), onSuccess: () => client.invalidateQueries({ queryKey: purchaseKeys.all }) });
+  const convert = useMutation({ mutationFn: purchaseOrdersApi.createVoucherDraft, onSuccess: (draft) => navigate(`/vouchers/transactions/${draft.id}/edit`) });
+
+  if (orderId) return <CrudPageState loading={orders.isLoading} error={orders.error} label="Loading purchase order" description="Retrieving purchase order details…">{selected ? <PurchaseOrderForm order={selected} /> : <Text color="red" role="alert">The purchase order was not found.</Text>}</CrudPageState>;
+  const filtered = orders.data?.items.filter((order) => status === "all" || order.status === status) ?? [];
+  const actionError = changeStatus.error ?? close.error ?? convert.error;
+  return <Flex direction="column" gap="5"><CrudPageHeader title="Purchase orders" description="Planning documents only; purchase orders do not affect inventory or accounting." action={<Button onClick={() => navigate("/purchase-orders/new")}>Add purchase order</Button>} /><Card size="3"><div className="accounting-filters"><label>Branch<AppSelect value={branchId} onChange={(event) => setBranchId(event.target.value)}><option value="">All branches</option>{branches.data?.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</AppSelect></label><label>Status<AppSelect value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">All statuses</option><option value="DRAFT">Draft</option><option value="CONFIRMED">Confirmed</option><option value="CANCELLED">Cancelled</option><option value="CLOSED">Closed</option></AppSelect></label></div></Card>{actionError ? <Text color="red" role="alert">{requestMessage(actionError)}</Text> : null}<CrudPageState loading={orders.isLoading || branches.isLoading} error={orders.error ?? branches.error} label="Loading purchase orders" description="Retrieving your purchase orders…"><Card size="3" className="accounting-table-card"><table className="accounting-table"><thead><tr><th>Order</th><th>Date</th><th>Status</th><th>Items</th><th>Action</th></tr></thead><tbody>{filtered.map((order) => <tr key={order.id}><td><strong>{order.orderNumber}</strong></td><td>{new Date(order.orderDate).toLocaleDateString()}</td><td>{order.status}</td><td>{order.items.length}</td><td><div className="accounting-table__actions">{order.status === "DRAFT" ? <><Button size="1" variant="ghost" className="table-icon-button" aria-label="Edit purchase order" onClick={() => navigate(`/purchase-orders/${order.id}/edit`)}><Pencil1Icon className="table-action-icon" /></Button><Button size="1" onClick={() => changeStatus.mutate({ id: order.id, status: "CONFIRMED" })} loading={changeStatus.isPending}>Confirm</Button><Button size="1" variant="outline" onClick={() => changeStatus.mutate({ id: order.id, status: "CANCELLED" })} disabled={changeStatus.isPending}>Cancel</Button></> : null}{order.status === "CONFIRMED" ? <><Button size="1" variant="outline" onClick={() => navigate(`/purchase-orders/${order.id}/receipt`)}>Create goods receipt</Button><Button size="1" variant="outline" loading={close.isPending} onClick={() => { const reason = window.prompt("Why is this order being pre-closed?"); if (reason?.trim()) close.mutate({ id: order.id, reason }); }}>Pre-close</Button><Button size="1" loading={convert.isPending} onClick={() => convert.mutate(order.id)}>Create purchase draft</Button></> : null}{!["DRAFT", "CONFIRMED"].includes(order.status) ? "—" : null}</div></td></tr>)}{!filtered.length ? <tr><td colSpan={5}><Text color="gray">No purchase orders match your filters.</Text></td></tr> : null}</tbody></table></Card></CrudPageState></Flex>;
+}
+
+export function PurchaseOrderCreatePage() { return <PurchaseOrderForm />; }
+
+export function PurchaseOrderReceiptPage() {
+  const navigate = useNavigate();
+  const client = useQueryClient();
+  const { orderId } = useParams();
+  const orders = useQuery({ queryKey: purchaseKeys.all, queryFn: ({ signal }) => purchaseOrdersApi.list(undefined, signal) });
+  const order = orders.data?.items.find((item) => item.id === orderId);
+  const warehouses = useBranchWarehouses(order?.branchId ?? "");
+  const [warehouseId, setWarehouseId] = useState("");
+  const [fulfillmentDate, setFulfillmentDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const receipt = useMutation({ mutationFn: () => purchaseOrdersApi.createGoodsReceipt(order!.id, { warehouseId, fulfillmentDate }) });
+  async function submit(event: React.FormEvent<HTMLFormElement>) { event.preventDefault(); try { await receipt.mutateAsync(); await client.invalidateQueries({ queryKey: purchaseKeys.all }); navigate("/purchase-orders", { replace: true }); } catch { /* rendered below */ } }
+  return <Flex direction="column" gap="5"><CrudPageHeader title="Create goods receipt" description={order ? `Record receipt for purchase order ${order.orderNumber}.` : "Record received inventory."} /><CrudPageState loading={orders.isLoading || warehouses.isLoading} error={orders.error ?? warehouses.error} label="Loading goods receipt" description="Preparing the receipt form…">{order ? <Card size="3"><form className="accounting-form" onSubmit={(event) => void submit(event)}><label>Warehouse<AppSelect value={warehouseId} onChange={(event) => setWarehouseId(event.target.value)} required><option value="">Select warehouse</option>{warehouses.data?.map((warehouse) => <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>)}</AppSelect></label><label>Receipt date<input type="date" value={fulfillmentDate} onChange={(event) => setFulfillmentDate(event.target.value)} required /></label><div className="accounting-form__actions accounting-form__wide"><Button type="button" variant="outline" onClick={() => navigate("/purchase-orders")}>Cancel</Button><Button type="submit" disabled={!warehouseId} loading={receipt.isPending}>Post goods receipt</Button></div></form>{receipt.error ? <Text color="red" role="alert">{requestMessage(receipt.error)}</Text> : null}</Card> : <Text color="red" role="alert">The purchase order was not found.</Text>}</CrudPageState></Flex>;
 }

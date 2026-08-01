@@ -1141,9 +1141,16 @@ function ChartOfAccountsPage() {
 function VoucherNumberingPage() {
   const sequences = useVoucherSequences();
   const navigate = useNavigate();
+  const [search, setSearch] = useState("");
   const { session } = useAuth();
   const canEdit = ["OWNER", "ADMIN"].includes(
     session?.activeMembership?.role ?? "",
+  );
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredSequences = sequences.data?.filter((sequence) =>
+    `${voucherTypeLabels[sequence.voucherType] ?? sequence.voucherType} ${sequence.prefix}`
+      .toLowerCase()
+      .includes(normalizedSearch),
   );
   return (
     <Flex direction="column" gap="5">
@@ -1151,6 +1158,14 @@ function VoucherNumberingPage() {
         title="Voucher numbering"
         description="Review and control the next voucher number for the active fiscal year."
       />
+      <Card size="3">
+        <div className="accounting-filters">
+          <label>
+            Search
+            <input value={search} placeholder="Voucher type or prefix" onChange={(event) => setSearch(event.target.value)} />
+          </label>
+        </div>
+      </Card>
       {!canEdit ? (
         <Text color="gray">
           Only owners and administrators can edit voucher numbering.
@@ -1180,7 +1195,7 @@ function VoucherNumberingPage() {
               </tr>
             </thead>
             <tbody>
-              {sequences.data?.map((sequence) => (
+              {filteredSequences?.map((sequence) => (
                 <tr key={sequence.id}>
                   <td>
                     <strong>
@@ -1214,7 +1229,7 @@ function VoucherNumberingPage() {
                   </td>
                 </tr>
               ))}
-              {!sequences.data?.length ? (
+              {!filteredSequences?.length ? (
                 <tr>
                   <td colSpan={6}>
                     <EmptyState>

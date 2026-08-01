@@ -840,7 +840,15 @@ function Catalog<T extends { id: string; isActive: boolean }>({
   const [status, setStatus] = useState<"true" | "false" | "all">("all");
   const [page, setPage] = useState(1);
   const [mutationError, setMutationError] = useState<unknown>(null);
-  const paged = useCatalogPage<T>(masterType as CatalogResource, { page, limit: 20, search: search || undefined, isActive: status });
+  const [success, setSuccess] = useState<string | null>(null);
+  const [itemToArchive, setItemToArchive] = useState<T | null>(null);
+  const paged = useCatalogPage<T>(masterType as CatalogResource, {
+    page,
+    limit: 20,
+    search: search || undefined,
+    isActive: status,
+    enabled: !createPage,
+  });
   const singularTitle = {
     units: "Unit",
     categories: "Product category",
@@ -849,9 +857,10 @@ function Catalog<T extends { id: string; isActive: boolean }>({
     products: "Product or service",
   }[masterType] ?? title;
   async function archiveItem(item: T) {
-    if (!window.confirm(`Archive ${singularTitle.toLowerCase()}? It will no longer be available for new entries.`)) return;
     try {
       await archive.mutateAsync(item.id);
+      setSuccess(`${singularTitle} archived.`);
+      setItemToArchive(null);
     } catch (requestError) {
       setMutationError(requestError);
     }
@@ -859,6 +868,7 @@ function Catalog<T extends { id: string; isActive: boolean }>({
   async function restoreItem(item: T) {
     try {
       await restore.mutateAsync(item.id);
+      setSuccess(`${singularTitle} restored.`);
     } catch (requestError) {
       setMutationError(requestError);
     }
@@ -870,7 +880,7 @@ function Catalog<T extends { id: string; isActive: boolean }>({
         description={createPage ? `Create a new ${singularTitle.toLowerCase()}.` : description}
         action={!createPage ? <Button onClick={() => navigate(`/masters/${masterType}/new`)}>Add {singularTitle}</Button> : undefined}
       />
-      <Status error={error ?? paged.error ?? create.error ?? mutationError} />
+      <Status error={error ?? paged.error ?? create.error ?? mutationError} success={success} />
       {!createPage ? (
         <Card size="3">
           <div className="accounting-filters">
@@ -920,9 +930,14 @@ function Catalog<T extends { id: string; isActive: boolean }>({
               input.decimalAllowed = formData.get("decimalAllowed") === "true";
               input.isService = formData.get("isService") === "true";
               input.isDefault = formData.get("isDefault") === "true";
-              void create.mutateAsync(input).then(() => {
-                navigate(`/masters/${masterType}`, { replace: true });
-              });
+              void (async () => {
+                try {
+                  await create.mutateAsync(input);
+                  navigate(`/masters/${masterType}`, { replace: true });
+                } catch (requestError) {
+                  setMutationError(requestError);
+                }
+              })();
             }, create.isPending, () => navigate(`/masters/${masterType}`))}
           </Card>
         ) : null}
@@ -945,7 +960,7 @@ function Catalog<T extends { id: string; isActive: boolean }>({
                     {item.isActive ? (
                       <div className="accounting-table__actions">
                         <Button type="button" size="1" variant="ghost" className="table-icon-button" aria-label={`Edit ${singularTitle}`} onClick={() => navigate(`/masters/${masterType}/${item.id}/edit`)}><Pencil1Icon className="table-action-icon" /></Button>
-                        <Button type="button" size="1" variant="ghost" className="table-icon-button" aria-label={`Archive ${singularTitle}`} disabled={archive.isPending || restore.isPending} onClick={() => void archiveItem(item)}>
+                        <Button type="button" size="1" variant="ghost" className="table-icon-button" aria-label={`Archive ${singularTitle}`} disabled={archive.isPending || restore.isPending} onClick={() => setItemToArchive(item)}>
                           <TrashIcon className="table-action-icon" />
                         </Button>
                       </div>
@@ -968,6 +983,22 @@ function Catalog<T extends { id: string; isActive: boolean }>({
         {paged.data?.meta.totalPages && paged.data.meta.totalPages > 1 ? <Flex justify="between" align="center" gap="3" wrap="wrap"><Text color="gray">Page {paged.data.meta.page} of {paged.data.meta.totalPages} · {paged.data.meta.total} records</Text><Flex gap="2"><Button type="button" variant="outline" disabled={page <= 1 || paged.isFetching} onClick={() => setPage((value) => Math.max(1, value - 1))}>Previous</Button><Button type="button" variant="outline" disabled={!paged.data.meta.hasNextPage || paged.isFetching} onClick={() => setPage((value) => value + 1)}>Next</Button></Flex></Flex> : null}
         </> : null}
       </Content>
+      <Dialog.Root open={Boolean(itemToArchive)} onOpenChange={(open) => {
+        if (!open && !archive.isPending) setItemToArchive(null);
+      }}>
+        <Dialog.Content className="archive-dialog" maxWidth="420px">
+          <Dialog.Title>Archive {singularTitle.toLowerCase()}?</Dialog.Title>
+          <Dialog.Description mt="2">
+            {itemToArchive
+              ? `This ${singularTitle.toLowerCase()} will no longer be available for new entries.`
+              : ""}
+          </Dialog.Description>
+          <Flex justify="end" gap="3" mt="5">
+            <Button type="button" variant="outline" disabled={archive.isPending} onClick={() => setItemToArchive(null)}>Cancel</Button>
+            <Button type="button" loading={archive.isPending} onClick={() => itemToArchive && void archiveItem(itemToArchive)}>Archive {singularTitle.toLowerCase()}</Button>
+          </Flex>
+        </Dialog.Content>
+      </Dialog.Root>
     </Flex>
   );
 }
