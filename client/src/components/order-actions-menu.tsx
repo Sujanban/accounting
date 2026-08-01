@@ -21,7 +21,7 @@ export function OrderActionsMenu({ label, actions }: { label: string; actions: O
           <DotsHorizontalIcon className="table-action-icon" />
         </Button>
       </DropdownMenu.Trigger>
-      <DropdownMenu.Content align="start" className="order-actions__menu">
+      <DropdownMenu.Content align="end" className="order-actions__menu">
         {actions.map((action) => (
           <DropdownMenu.Item
             key={action.label}

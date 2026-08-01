@@ -257,19 +257,12 @@ input {
 .workspace-topbar__mobile-brand {
   display: none;
 }
-.workspace-topbar__context {
+/* .workspace-topbar__context {
   display: grid;
   min-width: 0;
   gap: 0.12rem;
-}
-.workspace-topbar__context span {
-  overflow: hidden;
-  color: #748983;
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+} */
+
 .workspace-topbar__context strong {
   overflow: hidden;
   color: #142f3b;
@@ -1056,15 +1049,20 @@ input {
 }
 .order-actions-table th:last-child,
 .order-actions-table td:last-child {
-  text-align: left;
+  width: 1%;
+  min-width: 5.5rem;
+  text-align: right;
+  white-space: nowrap;
 }
 .order-actions__trigger {
+  border-color: transparent;
   color: #35675c;
-  background: #f2f7f5;
+  background: transparent;
+  box-shadow: none;
 }
 .order-actions__trigger:hover:not(:disabled) {
   color: #087f5b;
-  background: #e6f3ee;
+  background: #edf6f2;
 }
 .order-actions__menu {
   min-width: 13rem;
@@ -1079,10 +1077,10 @@ input {
 }
 .table-icon-button {
   display: inline-flex;
-  width: 2.4rem;
-  min-width: 2.4rem;
-  height: 2.4rem;
-  min-height: 2.4rem;
+  width: 2rem;
+  min-width: 2rem;
+  height: 2rem;
+  min-height: 2rem;
   justify-content: center;
   padding: 0 !important;
 }
