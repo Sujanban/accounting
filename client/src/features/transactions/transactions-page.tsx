@@ -73,6 +73,7 @@ function NepalDateField({
         value={value}
         onChange={onChange}
         required
+        placeholder="Select transaction date"
         ariaLabel="Choose transaction date in Bikram Sambat"
       />
     </label>
@@ -401,7 +402,7 @@ function DraftForm({
             value={transactionDate}
             onChange={setTransactionDate}
           />
-          <label>Branch<AppSelect value={branchId} onChange={(event) => setBranchId(event.target.value)}><option value="">Default branch</option>{branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</AppSelect></label>
+          <label>Branch<AppSelect value={branchId} onChange={(event) => setBranchId(event.target.value)}><option value="">Select branch (default)</option>{branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</AppSelect></label>
           <label className="accounting-form__wide">
             Narration
             <textarea
@@ -426,10 +427,10 @@ function DraftForm({
               </Flex>
               {includeTaxInvoice ? (
                 <div className="voucher-tax__grid">
-                  <label>Customer name<input value={tax.customerName} onChange={(event) => setTax({ ...tax, customerName: event.target.value })} placeholder="Customer name" /></label>
+                  <label>Customer name<input value={tax.customerName} onChange={(event) => setTax({ ...tax, customerName: event.target.value })} placeholder="Enter customer name" /></label>
                   <label>Customer PAN<input value={tax.customerPan} onChange={(event) => setTax({ ...tax, customerPan: event.target.value.replace(/\D/g, "").slice(0, 9) })} inputMode="numeric" placeholder="Optional 9-digit PAN" /></label>
-                  <label>Taxable amount<input type="number" min="0" step="0.01" required value={tax.taxableAmount} onChange={(event) => setTax({ ...tax, taxableAmount: event.target.value })} /></label>
-                  <label>VAT rate (%)<input type="number" min="0" max="100" step="0.01" required value={tax.vatRate} onChange={(event) => setTax({ ...tax, vatRate: event.target.value })} /></label>
+                  <label>Taxable amount<input type="number" min="0" step="0.01" required value={tax.taxableAmount} onChange={(event) => setTax({ ...tax, taxableAmount: event.target.value })} placeholder="Enter taxable amount" /></label>
+                  <label>VAT rate (%)<input type="number" min="0" max="100" step="0.01" required value={tax.vatRate} onChange={(event) => setTax({ ...tax, vatRate: event.target.value })} placeholder="Enter VAT rate" /></label>
                   <label>VAT mode<AppSelect value={tax.mode} onChange={(event) => setTax({ ...tax, mode: event.target.value as "EXCLUSIVE" | "INCLUSIVE" })}><option value="EXCLUSIVE">Exclusive</option><option value="INCLUSIVE">Inclusive</option></AppSelect></label>
                   <div className="voucher-tax__totals"><span>VAT: Rs. {vatAmount.toFixed(2)}</span><strong>Total: Rs. {totalAmount.toFixed(2)}</strong></div>
                 </div>
@@ -443,49 +444,58 @@ function DraftForm({
             </div>
             {lines.map((line, index) => (
               <Flex className="voucher-form__line" key={index} gap="2" mb="2">
-                <AppSelect
-                  value={line.ledgerId}
-                  onChange={(e) =>
-                    setLines(
-                      lines.map((x, i) =>
-                        i === index ? { ...x, ledgerId: e.target.value } : x,
-                      ),
-                    )
-                  }
-                >
-                  <option value="">Select ledger</option>
-                  {ledgers.map((ledger) => (
-                    <option key={ledger.id} value={ledger.id}>
-                      {ledger.name}
-                    </option>
-                  ))}
-                </AppSelect>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="Debit"
-                  value={line.debit}
-                  onChange={(e) =>
-                    setLines(
-                      lines.map((x, i) =>
-                        i === index ? { ...x, debit: e.target.value } : x,
-                      ),
-                    )
-                  }
-                />
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="Credit"
-                  value={line.credit}
-                  onChange={(e) =>
-                    setLines(
-                      lines.map((x, i) =>
-                        i === index ? { ...x, credit: e.target.value } : x,
-                      ),
-                    )
-                  }
-                />
+                <label>
+                  Ledger
+                  <AppSelect
+                    value={line.ledgerId}
+                    onChange={(e) =>
+                      setLines(
+                        lines.map((x, i) =>
+                          i === index ? { ...x, ledgerId: e.target.value } : x,
+                        ),
+                      )
+                    }
+                  >
+                    <option value="">Select ledger</option>
+                    {ledgers.map((ledger) => (
+                      <option key={ledger.id} value={ledger.id}>
+                        {ledger.name}
+                      </option>
+                    ))}
+                  </AppSelect>
+                </label>
+                <label>
+                  Debit
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Enter debit amount"
+                    value={line.debit}
+                    onChange={(e) =>
+                      setLines(
+                        lines.map((x, i) =>
+                          i === index ? { ...x, debit: e.target.value } : x,
+                        ),
+                      )
+                    }
+                  />
+                </label>
+                <label>
+                  Credit
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Enter credit amount"
+                    value={line.credit}
+                    onChange={(e) =>
+                      setLines(
+                        lines.map((x, i) =>
+                          i === index ? { ...x, credit: e.target.value } : x,
+                        ),
+                      )
+                    }
+                  />
+                </label>
                 <Button
                   type="button"
                   size="1"
@@ -526,83 +536,98 @@ function DraftForm({
                 gap="2"
                 mb="2"
               >
-                <AppSelect
-                  value={line.productId}
-                  onChange={(e) =>
-                    setInventory(
-                      inventory.map((x, i) =>
-                        i === index ? { ...x, productId: e.target.value } : x,
-                      ),
-                    )
-                  }
-                >
-                  <option value="">Product</option>
-                  {products
-                    .filter((product) => !product.isService)
-                    .map((product) => (
-                      <option key={product.id} value={product.id}>
-                        {product.name}
+                <label>
+                  Product
+                  <AppSelect
+                    value={line.productId}
+                    onChange={(e) =>
+                      setInventory(
+                        inventory.map((x, i) =>
+                          i === index ? { ...x, productId: e.target.value } : x,
+                        ),
+                      )
+                    }
+                  >
+                    <option value="">Select product</option>
+                    {products
+                      .filter((product) => !product.isService)
+                      .map((product) => (
+                        <option key={product.id} value={product.id}>
+                          {product.name}
+                        </option>
+                      ))}
+                  </AppSelect>
+                </label>
+                <label>
+                  Warehouse
+                  <AppSelect
+                    value={line.warehouseId}
+                    onChange={(e) =>
+                      setInventory(
+                        inventory.map((x, i) =>
+                          i === index ? { ...x, warehouseId: e.target.value } : x,
+                        ),
+                      )
+                    }
+                  >
+                    <option value="">Select warehouse</option>
+                    {(branchWarehouses.data ?? warehouses).map((warehouse) => (
+                      <option key={warehouse.id} value={warehouse.id}>
+                        {warehouse.name}
                       </option>
                     ))}
-                </AppSelect>
-                <AppSelect
-                  value={line.warehouseId}
-                  onChange={(e) =>
-                    setInventory(
-                      inventory.map((x, i) =>
-                        i === index ? { ...x, warehouseId: e.target.value } : x,
-                      ),
-                    )
-                  }
-                >
-                  <option value="">Warehouse</option>
-                  {(branchWarehouses.data ?? warehouses).map((warehouse) => (
-                    <option key={warehouse.id} value={warehouse.id}>
-                      {warehouse.name}
-                    </option>
-                  ))}
-                </AppSelect>
-                <AppSelect
-                  value={line.direction}
-                  onChange={(e) =>
-                    setInventory(
-                      inventory.map((x, i) =>
-                        i === index
-                          ? { ...x, direction: e.target.value as "IN" | "OUT" }
-                          : x,
-                      ),
-                    )
-                  }
-                >
-                  <option value="IN">In</option>
-                  <option value="OUT">Out</option>
-                </AppSelect>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="Quantity"
-                  value={line.quantity}
-                  onChange={(e) =>
-                    setInventory(
-                      inventory.map((x, i) =>
-                        i === index ? { ...x, quantity: e.target.value } : x,
-                      ),
-                    )
-                  }
-                />
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="Unit cost"
-                  value={line.unitCost}
-                  onChange={(e) =>
-                    setInventory(
-                      inventory.map((x, i) =>
-                        i === index ? { ...x, unitCost: e.target.value } : x,
-                      ),
-                    )
-                  }
-                />
+                  </AppSelect>
+                </label>
+                <label>
+                  Direction
+                  <AppSelect
+                    value={line.direction}
+                    onChange={(e) =>
+                      setInventory(
+                        inventory.map((x, i) =>
+                          i === index
+                            ? { ...x, direction: e.target.value as "IN" | "OUT" }
+                            : x,
+                        ),
+                      )
+                    }
+                  >
+                    <option value="IN">In</option>
+                    <option value="OUT">Out</option>
+                  </AppSelect>
+                </label>
+                <label>
+                  Quantity
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Enter quantity"
+                    value={line.quantity}
+                    onChange={(e) =>
+                      setInventory(
+                        inventory.map((x, i) =>
+                          i === index ? { ...x, quantity: e.target.value } : x,
+                        ),
+                      )
+                    }
+                  />
+                </label>
+                <label>
+                  Unit cost
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Enter unit cost"
+                    value={line.unitCost}
+                    onChange={(e) =>
+                      setInventory(
+                        inventory.map((x, i) =>
+                          i === index ? { ...x, unitCost: e.target.value } : x,
+                        ),
+                      )
+                    }
+                  />
+                </label>
                 <Button
                   type="button"
                   size="1"
@@ -941,13 +966,14 @@ export function TransactionEditPage() {
             value={effectiveTransactionDate}
             onChange={setTransactionDate}
           />
-          <label>Branch<AppSelect value={effectiveBranchId} onChange={(event) => setBranchId(event.target.value)}><option value="">Default branch</option>{branches.data?.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</AppSelect></label>
+          <label>Branch<AppSelect value={effectiveBranchId} onChange={(event) => setBranchId(event.target.value)}><option value="">Select branch (default)</option>{branches.data?.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</AppSelect></label>
           <label className="accounting-form__wide">
             Narration
             <textarea
               name="narration"
               rows={3}
               defaultValue={draft.narration ?? ""}
+              placeholder="Add a brief description"
             />
           </label>
           <div className="accounting-form__wide voucher-form__accounting">
@@ -957,49 +983,62 @@ export function TransactionEditPage() {
             </div>
             {lines.map((line, index) => (
               <Flex className="voucher-form__line" key={index} gap="2" mb="2">
-                <AppSelect
-                  value={line.ledgerId}
-                  onChange={(e) =>
-                    setAccounting(
-                      lines.map((x, i) =>
-                        i === index ? { ...x, ledgerId: e.target.value } : x,
-                      ),
-                    )
-                  }
-                >
-                  <option value="">Ledger</option>
-                  {ledgers.data?.map((ledger) => (
-                    <option key={ledger.id} value={ledger.id}>
-                      {ledger.name}
-                    </option>
-                  ))}
-                </AppSelect>
-                <input
-                  type="number"
-                  value={line.debit}
-                  onChange={(e) =>
-                    setAccounting(
-                      lines.map((x, i) =>
-                        i === index
-                          ? { ...x, debit: Number(e.target.value) }
-                          : x,
-                      ),
-                    )
-                  }
-                />
-                <input
-                  type="number"
-                  value={line.credit}
-                  onChange={(e) =>
-                    setAccounting(
-                      lines.map((x, i) =>
-                        i === index
-                          ? { ...x, credit: Number(e.target.value) }
-                          : x,
-                      ),
-                    )
-                  }
-                />
+                <label>
+                  Ledger
+                  <AppSelect
+                    value={line.ledgerId}
+                    onChange={(e) =>
+                      setAccounting(
+                        lines.map((x, i) =>
+                          i === index ? { ...x, ledgerId: e.target.value } : x,
+                        ),
+                      )
+                    }
+                  >
+                    <option value="">Select ledger</option>
+                    {ledgers.data?.map((ledger) => (
+                      <option key={ledger.id} value={ledger.id}>
+                        {ledger.name}
+                      </option>
+                    ))}
+                  </AppSelect>
+                </label>
+                <label>
+                  Debit
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Enter debit amount"
+                    value={line.debit}
+                    onChange={(e) =>
+                      setAccounting(
+                        lines.map((x, i) =>
+                          i === index
+                            ? { ...x, debit: Number(e.target.value) }
+                            : x,
+                        ),
+                      )
+                    }
+                  />
+                </label>
+                <label>
+                  Credit
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Enter credit amount"
+                    value={line.credit}
+                    onChange={(e) =>
+                      setAccounting(
+                        lines.map((x, i) =>
+                          i === index
+                            ? { ...x, credit: Number(e.target.value) }
+                            : x,
+                        ),
+                      )
+                    }
+                  />
+                </label>
                 <Button type="button" size="1" variant="ghost" className="table-icon-button" aria-label={`Remove accounting line ${index + 1}`} disabled={lines.length <= 2} onClick={() => setAccounting(lines.filter((_, lineIndex) => lineIndex !== index))}>
                   <TrashIcon className="table-action-icon" />
                 </Button>
@@ -1032,83 +1071,102 @@ export function TransactionEditPage() {
                 gap="2"
                 mb="2"
               >
-                <AppSelect
-                  value={line.productId}
-                  onChange={(e) =>
-                    setInventory(
-                      stock.map((x, i) =>
-                        i === index ? { ...x, productId: e.target.value } : x,
-                      ),
-                    )
-                  }
-                >
-                  <option value="">Product</option>
-                  {products.data
-                    ?.filter((product) => !product.isService)
-                    .map((product) => (
-                      <option key={product.id} value={product.id}>
-                        {product.name}
+                <label>
+                  Product
+                  <AppSelect
+                    value={line.productId}
+                    onChange={(e) =>
+                      setInventory(
+                        stock.map((x, i) =>
+                          i === index ? { ...x, productId: e.target.value } : x,
+                        ),
+                      )
+                    }
+                  >
+                    <option value="">Select product</option>
+                    {products.data
+                      ?.filter((product) => !product.isService)
+                      .map((product) => (
+                        <option key={product.id} value={product.id}>
+                          {product.name}
+                        </option>
+                      ))}
+                  </AppSelect>
+                </label>
+                <label>
+                  Warehouse
+                  <AppSelect
+                    value={line.warehouseId}
+                    onChange={(e) =>
+                      setInventory(
+                        stock.map((x, i) =>
+                          i === index ? { ...x, warehouseId: e.target.value } : x,
+                        ),
+                      )
+                    }
+                  >
+                    <option value="">Select warehouse</option>
+                    {warehouses.data?.map((warehouse) => (
+                      <option key={warehouse.id} value={warehouse.id}>
+                        {warehouse.name}
                       </option>
                     ))}
-                </AppSelect>
-                <AppSelect
-                  value={line.warehouseId}
-                  onChange={(e) =>
-                    setInventory(
-                      stock.map((x, i) =>
-                        i === index ? { ...x, warehouseId: e.target.value } : x,
-                      ),
-                    )
-                  }
-                >
-                  <option value="">Warehouse</option>
-                  {warehouses.data?.map((warehouse) => (
-                    <option key={warehouse.id} value={warehouse.id}>
-                      {warehouse.name}
-                    </option>
-                  ))}
-                </AppSelect>
-                <AppSelect
-                  value={line.direction}
-                  onChange={(e) =>
-                    setInventory(
-                      stock.map((x, i) =>
-                        i === index
-                          ? { ...x, direction: e.target.value as "IN" | "OUT" }
-                          : x,
-                      ),
-                    )
-                  }
-                >
-                  <option value="IN">In</option>
-                  <option value="OUT">Out</option>
-                </AppSelect>
-                <input
-                  type="number"
-                  value={line.quantity}
-                  onChange={(e) =>
-                    setInventory(
-                      stock.map((x, i) =>
-                        i === index
-                          ? { ...x, quantity: Number(e.target.value) }
-                          : x,
-                      ),
-                    )
-                  }
-                />
-                <input
-                  type="number"
-                  value={line.unitCost}
-                  onChange={(e) =>
-                    setInventory(
-                      stock.map((x, i) =>
-                        i === index
-                          ? { ...x, unitCost: Number(e.target.value) }
-                          : x,
-                      ),
-                    )
-                  }
-                />
+                  </AppSelect>
+                </label>
+                <label>
+                  Direction
+                  <AppSelect
+                    value={line.direction}
+                    onChange={(e) =>
+                      setInventory(
+                        stock.map((x, i) =>
+                          i === index
+                            ? { ...x, direction: e.target.value as "IN" | "OUT" }
+                            : x,
+                        ),
+                      )
+                    }
+                  >
+                    <option value="IN">In</option>
+                    <option value="OUT">Out</option>
+                  </AppSelect>
+                </label>
+                <label>
+                  Quantity
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Enter quantity"
+                    value={line.quantity}
+                    onChange={(e) =>
+                      setInventory(
+                        stock.map((x, i) =>
+                          i === index
+                            ? { ...x, quantity: Number(e.target.value) }
+                            : x,
+                        ),
+                      )
+                    }
+                  />
+                </label>
+                <label>
+                  Unit cost
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Enter unit cost"
+                    value={line.unitCost}
+                    onChange={(e) =>
+                      setInventory(
+                        stock.map((x, i) =>
+                          i === index
+                            ? { ...x, unitCost: Number(e.target.value) }
+                            : x,
+                        ),
+                      )
+                    }
+                  />
+                </label>
                 <Button type="button" size="1" variant="ghost" className="table-icon-button" aria-label={`Remove inventory line ${index + 1}`} onClick={() => setInventory(stock.filter((_, lineIndex) => lineIndex !== index))}>
                   <TrashIcon className="table-action-icon" />
                 </Button>

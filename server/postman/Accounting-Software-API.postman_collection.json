@@ -511,7 +511,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{ \"branchId\": \"{{branchId}}\", \"warehouseCode\": \"MAIN\", \"name\": \"Main Warehouse\", \"isDefault\": true }"
+              "raw": "{ \"branchId\": \"{{branchId}}\", \"name\": \"Main Warehouse\", \"address\": \"Kathmandu\", \"description\": \"Primary inventory location\", \"isDefault\": true }"
             },
             "url": "{{baseUrl}}/api/warehouses"
           }

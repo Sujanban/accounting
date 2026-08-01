@@ -26,12 +26,14 @@ apiRouter.use("/accounting", accountingRouter);
 apiRouter.use("/companies", companyRouter);
 apiRouter.use("/settings", settingRouter);
 apiRouter.use("/fiscal-years", fiscalYearRouter);
+// Enterprise owns the branch-scoped warehouse endpoints. Mount it before the
+// legacy business-master router, which exposes overlapping warehouse paths.
+apiRouter.use("/", enterpriseRouter);
 apiRouter.use("/", businessMasterRouter);
 apiRouter.use("/transactions", transactionRouter);
 apiRouter.use("/", voucherRouter);
 apiRouter.use("/reports", reportRouter);
 apiRouter.use("/localization", localizationRouter);
-apiRouter.use("/", enterpriseRouter);
 apiRouter.use("/sales-orders", salesOrderRouter);
 apiRouter.use("/purchase-orders", purchaseOrderRouter);
 apiRouter.use("/fixed-assets", fixedAssetRouter);

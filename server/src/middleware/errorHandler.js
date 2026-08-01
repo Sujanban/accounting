@@ -25,6 +25,22 @@ function errorHandler(error, request, response, _next) {
       : ERROR_CODES.INTERNAL_SERVER_ERROR;
   const errors = error instanceof ApiError ? error.errors : undefined;
 
+  console.warn(JSON.stringify({
+    level: statusCode >= 500 ? "error" : "warn",
+    event: "http_request_error",
+    requestId: request.requestId,
+    method: request.method,
+    path: request.path,
+    statusCode,
+    errorCode,
+    message,
+    validationFields: Array.isArray(errors)
+      ? errors.flatMap((item) => item && typeof item.field === "string" ? [item.field] : [])
+      : errors && typeof errors === "object"
+        ? Object.keys(errors)
+        : []
+  }));
+
   if (!(error instanceof ApiError)) {
     console.error(error);
   }

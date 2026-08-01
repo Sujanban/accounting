@@ -13,12 +13,6 @@ const warehouseSchema = new mongoose.Schema(
       ref: "Branch",
       default: null,
     },
-    warehouseCode: {
-      type: String,
-      required: true,
-      trim: true,
-      uppercase: true,
-    },
     name: { type: String, required: true, trim: true },
     address: { type: String, trim: true, default: null },
     description: { type: String, trim: true, default: null },
@@ -29,7 +23,6 @@ const warehouseSchema = new mongoose.Schema(
 );
 applySoftDeleteFields(warehouseSchema);
 applyAuditFields(warehouseSchema);
-warehouseSchema.index({ companyId: 1, warehouseCode: 1 }, { unique: true });
 warehouseSchema.index(
   { companyId: 1, branchId: 1, isDefault: 1 },
   { unique: true, partialFilterExpression: { isDefault: true } },

@@ -68,7 +68,7 @@ export type PaymentTerm = {
   isActive: boolean;
 };
 export type ContactGroup = { id: string; name: string; description: string | null; parentId: string | null; isActive: boolean };
-export type Warehouse = { id: string; warehouseCode: string; name: string; address: string | null; description: string | null; isDefault: boolean; isActive: boolean };
+export type Warehouse = { id: string; branchId: string; name: string; address: string | null; description: string | null; isDefault: boolean; isActive: boolean };
 export type PriceList = { id: string; name: string; description: string | null; currency: string; isDefault: boolean; isActive: boolean };
 export type Attachment = { id: string; entityType: string; entityId: string; fileName: string; mimeType: string; sizeBytes: number; storageKey: string; url?: string; createdAt: string };
 export type Product = {
@@ -122,7 +122,7 @@ export type PaymentTermInput = Pick<
   "name" | "dueDays" | "description"
 >;
 export type ContactGroupInput = Pick<ContactGroup, "name" | "description" | "parentId">;
-export type WarehouseInput = Pick<Warehouse, "warehouseCode" | "name" | "address" | "description" | "isDefault">;
+export type WarehouseInput = Pick<Warehouse, "branchId" | "name" | "address" | "description" | "isDefault">;
 export type PriceListInput = Pick<PriceList, "name" | "description" | "currency" | "isDefault">;
 export type ProductInput = Pick<
   Product,

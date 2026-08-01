@@ -9,7 +9,7 @@ const catalogFields = {
   "tax-rates": new Set(["taxCode", "name", "percentage", "type", "effectiveDate", "isDefault"]),
   "payment-terms": new Set(["name", "dueDays", "description"]),
   "contact-groups": new Set(["name", "description", "parentId"]),
-  warehouses: new Set(["warehouseCode", "name", "address", "description", "isDefault"]),
+  warehouses: new Set(["branchId", "name", "address", "description", "isDefault"]),
   "price-lists": new Set(["name", "description", "currency", "isDefault"]),
   products: new Set(["sku", "barcode", "name", "categoryId", "unitId", "purchasePrice", "sellingPrice", "taxId", "reorderLevel", "minimumStock", "description", "isService"])
 };
@@ -89,7 +89,8 @@ function validateCatalog(resource, body, { partial = false } = {}) {
     objectId("parentId", "Parent group must be a valid identifier.");
   }
   if (resource === "warehouses") {
-    required("warehouseCode", !body.warehouseCode || !/^[A-Za-z0-9_-]{2,30}$/.test(body.warehouseCode.trim()), "Warehouse code is invalid.");
+    required("branchId", !body.branchId, "Branch is required.");
+    objectId("branchId", "Branch must be a valid identifier.");
     required("name", !body.name || body.name.trim().length < 2, "Warehouse name is required.");
     if (body.isDefault !== undefined && typeof body.isDefault !== "boolean") errors.push({ field: "isDefault", message: "Default must be a boolean." });
   }

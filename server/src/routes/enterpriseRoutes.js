@@ -14,4 +14,5 @@ enterpriseRouter.get("/warehouses", requireRoles("OWNER", "ADMIN", "INVENTORY_MA
 enterpriseRouter.post("/warehouses", requireRoles("OWNER", "ADMIN", "INVENTORY_MANAGER"), validate(validateWarehouse), controller.postWarehouse);
 enterpriseRouter.patch("/warehouses/:id", requireRoles("OWNER", "ADMIN", "INVENTORY_MANAGER"), validate(validateWarehouse), controller.patchWarehouse);
 enterpriseRouter.delete("/warehouses/:id", requireRoles("OWNER", "ADMIN", "INVENTORY_MANAGER"), controller.deleteWarehouse);
+enterpriseRouter.post("/warehouses/:id/restore", requireRoles("OWNER", "ADMIN", "INVENTORY_MANAGER"), controller.restoreWarehouse);
 module.exports = { enterpriseRouter };

@@ -81,16 +81,37 @@ export async function apiClient<T>(
     });
   }
 
+  if (response.ok && (response.status === 204 || response.status === 205 || method === "HEAD")) {
+    return undefined as T;
+  }
+
   const payload = (await response.json().catch(() => null)) as ApiSuccess<T> | ApiFailure | null;
 
   if (!response.ok || !payload || !payload.success) {
     const error = payload as ApiFailure | null;
+    const fieldErrors = normalizeFieldErrors(error?.errors);
+
+    if (import.meta.env.DEV) {
+      console.error("[apiClient] Request failed", {
+        method,
+        path,
+        status: response.status,
+        response: {
+          success: false,
+          message: error?.message ?? "The request could not be completed.",
+          errorCode: error?.errorCode,
+          errors: fieldErrors,
+          requestId: error?.requestId ?? response.headers.get("x-request-id") ?? undefined,
+        },
+      });
+    }
+
     throw new ApiClientError(
       error?.message ?? "The request could not be completed.",
       response.status,
       error?.errorCode,
-      normalizeFieldErrors(error?.errors),
-      error?.requestId,
+      fieldErrors,
+      error?.requestId ?? response.headers.get("x-request-id") ?? undefined,
     );
   }
 

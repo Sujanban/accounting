@@ -1445,7 +1445,7 @@ input {
   display: grid !important;
   grid-template-columns: minmax(14rem, 1.4fr) repeat(2, minmax(7rem, .7fr)) auto;
   gap: .65rem !important;
-  align-items: center;
+  align-items: end;
 }
 .voucher-form__inventory-line {
   grid-template-columns: repeat(3, minmax(9rem, 1fr)) repeat(2, minmax(6.5rem, .75fr)) auto;
