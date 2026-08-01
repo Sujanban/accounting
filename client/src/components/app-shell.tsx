@@ -7,6 +7,7 @@ import {
   FileTextIcon,
   GearIcon,
   HamburgerMenuIcon,
+  PersonIcon,
   PlusIcon,
 } from "@radix-ui/react-icons";
 import { Dialog, DropdownMenu } from "@radix-ui/themes";
@@ -85,11 +86,26 @@ function CreateVoucherMenu({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 function NotificationsMenu() {
+  const navigate = useNavigate();
   const client = useQueryClient();
   const notifications = useQuery({ queryKey: ["notifications"], queryFn: ({ signal }) => notificationsApi.list(signal), refetchInterval: 60_000 });
   const markRead = useMutation({ mutationFn: notificationsApi.markRead, onSuccess: () => client.invalidateQueries({ queryKey: ["notifications"] }) });
   const unread = notifications.data?.filter((item) => !item.readAt).length ?? 0;
-  return <DropdownMenu.Root><DropdownMenu.Trigger><Button variant="ghost" size="1" aria-label={`Notifications${unread ? ` (${unread} unread)` : ""}`}><BellIcon />{unread ? <span>{unread}</span> : null}</Button></DropdownMenu.Trigger><DropdownMenu.Content align="end"><DropdownMenu.Label>Notifications</DropdownMenu.Label>{notifications.data?.length ? notifications.data.map((item) => <DropdownMenu.Item key={item.id} onSelect={() => { if (!item.readAt) markRead.mutate(item.id); }}>{item.title}{item.readAt ? "" : " •"}</DropdownMenu.Item>) : <DropdownMenu.Item disabled>No notifications</DropdownMenu.Item>}</DropdownMenu.Content></DropdownMenu.Root>;
+  return <DropdownMenu.Root><DropdownMenu.Trigger><button className="topbar-icon-button" type="button" aria-label={`Notifications${unread ? ` (${unread} unread)` : ""}`}><BellIcon />{unread ? <span className="topbar-notification-count">{unread > 99 ? "99+" : unread}</span> : null}</button></DropdownMenu.Trigger><DropdownMenu.Content align="end" className="topbar-notifications" sideOffset={8}><DropdownMenu.Label>Notifications</DropdownMenu.Label><DropdownMenu.Separator />{notifications.isLoading ? <DropdownMenu.Item disabled>Loading notifications…</DropdownMenu.Item> : notifications.isError ? <DropdownMenu.Item disabled>Notifications are unavailable</DropdownMenu.Item> : notifications.data?.length ? notifications.data.slice(0, 8).map((item) => <DropdownMenu.Item className="topbar-notification-item" key={item.id} onSelect={() => { if (!item.readAt) markRead.mutate(item.id); if (item.resourcePath) navigate(item.resourcePath); }}><span className={item.readAt ? "topbar-notification-dot is-read" : "topbar-notification-dot"} aria-hidden="true" /><span><strong>{item.title}</strong><small>{item.message}</small></span></DropdownMenu.Item>) : <DropdownMenu.Item disabled>No notifications</DropdownMenu.Item>}</DropdownMenu.Content></DropdownMenu.Root>;
+}
+
+function AccountMenu() {
+  const { logout, session } = useAuth();
+  const navigate = useNavigate();
+  const name = session?.user.name || "Account";
+  const role = session?.activeMembership?.role?.replaceAll("_", " ") || "Member";
+
+  async function signOut() {
+    await logout();
+    navigate("/login", { replace: true });
+  }
+
+  return <DropdownMenu.Root><DropdownMenu.Trigger><button className="topbar-account" type="button" aria-label="Open account menu"><span className="topbar-account__avatar" aria-hidden="true">{name.slice(0, 1).toUpperCase()}</span><span className="topbar-account__identity"><strong>{name}</strong><small>{role}</small></span><ChevronDownIcon /></button></DropdownMenu.Trigger><DropdownMenu.Content align="end" className="topbar-account-menu" sideOffset={8}><DropdownMenu.Label><span className="topbar-account-menu__identity"><strong>{name}</strong><small>{session?.user.email}</small></span></DropdownMenu.Label><DropdownMenu.Separator /><DropdownMenu.Item onSelect={() => navigate("/company/profile")}><PersonIcon />Company profile</DropdownMenu.Item><DropdownMenu.Item onSelect={() => navigate("/company/preferences")}><GearIcon />Preferences</DropdownMenu.Item><DropdownMenu.Separator /><DropdownMenu.Item color="red" onSelect={() => void signOut()}><ExitIcon />Sign out</DropdownMenu.Item></DropdownMenu.Content></DropdownMenu.Root>;
 }
 
 function NavigationGroup({ group, onNavigate }: { group: NavigationGroup; onNavigate?: () => void }) {
@@ -104,16 +120,16 @@ function NavigationGroup({ group, onNavigate }: { group: NavigationGroup; onNavi
 }
 
 function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
-  const { logout, session } = useAuth();
-  const navigate = useNavigate();
+  return <aside className="workspace-sidebar"><div className="workspace-sidebar__top"><Link className="brand" to="/" onClick={onNavigate}><span className="brand-mark">L</span>Ledgerly</Link><div className="workspace-sidebar__create"><CreateVoucherMenu onNavigate={onNavigate} /></div></div><nav aria-label="Main navigation" className="workspace-sidebar__navigation"><NavLink className={({ isActive }) => `app-nav-link ${isActive ? "app-nav-link--active" : ""}`} to="/" end onClick={onNavigate}><DashboardIcon />Overview</NavLink>{navigation.map((group) => <NavigationGroup group={group} key={group.label} onNavigate={onNavigate} />)}</nav></aside>;
+}
 
-  async function signOut() { await logout(); navigate("/login", { replace: true }); onNavigate?.(); }
-
-  return <aside className="workspace-sidebar"><div className="workspace-sidebar__top"><Link className="brand" to="/" onClick={onNavigate}><span className="brand-mark">L</span>Ledgerly</Link><div className="workspace-sidebar__create"><NotificationsMenu /><CreateVoucherMenu onNavigate={onNavigate} /></div></div><nav aria-label="Main navigation" className="workspace-sidebar__navigation"><NavLink className={({ isActive }) => `app-nav-link ${isActive ? "app-nav-link--active" : ""}`} to="/" end onClick={onNavigate}><DashboardIcon />Overview</NavLink>{navigation.map((group) => <NavigationGroup group={group} key={group.label} onNavigate={onNavigate} />)}</nav><footer className="workspace-sidebar__footer"><div className="account-context"><span className="account-context__avatar" aria-hidden="true">{session?.user.name.slice(0, 1).toUpperCase()}</span><div><strong>{session?.user.name}</strong><span>{session?.user.email}</span></div><Button className="workspace-signout" variant="ghost" size="1" onClick={() => void signOut()} aria-label="Sign out" title="Sign out"><ExitIcon /></Button></div></footer></aside>;
+function WorkspaceHeader({ mobileNavigationOpen, setMobileNavigationOpen }: { mobileNavigationOpen: boolean; setMobileNavigationOpen: (open: boolean) => void }) {
+  const { session } = useAuth();
+  return <header className="workspace-topbar"><div className="workspace-topbar__mobile-brand"><Dialog.Root open={mobileNavigationOpen} onOpenChange={setMobileNavigationOpen}><Dialog.Trigger><button className="topbar-icon-button" type="button" aria-label="Open navigation"><HamburgerMenuIcon /></button></Dialog.Trigger><Dialog.Content className="mobile-navigation-drawer"><Dialog.Title className="sr-only">Main navigation</Dialog.Title><Sidebar onNavigate={() => setMobileNavigationOpen(false)} /></Dialog.Content></Dialog.Root><Link className="brand" to="/"><span className="brand-mark">L</span>Ledgerly</Link></div><div className="workspace-topbar__context"><span>Current company</span><strong>{session?.activeCompany?.name ?? "Company workspace"}</strong></div><div className="workspace-topbar__actions"><NotificationsMenu /><AccountMenu /></div></header>;
 }
 
 export function AppShell() {
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
 
-  return <div className="app-shell min-h-screen text-slate-900"><div className="workspace-sidebar--desktop"><Sidebar /></div><header className="mobile-app-header"><Dialog.Root open={mobileNavigationOpen} onOpenChange={setMobileNavigationOpen}><Dialog.Trigger><Button variant="ghost" size="2" aria-label="Open navigation"><HamburgerMenuIcon /></Button></Dialog.Trigger><Dialog.Content className="mobile-navigation-drawer"><Dialog.Title className="sr-only">Main navigation</Dialog.Title><Sidebar onNavigate={() => setMobileNavigationOpen(false)} /></Dialog.Content></Dialog.Root><Link className="brand" to="/"><span className="brand-mark">L</span>Ledgerly</Link><CreateVoucherMenu /></header><main className="app-content"><Outlet /></main></div>;
+  return <div className="app-shell min-h-screen text-slate-900"><div className="workspace-sidebar--desktop"><Sidebar /></div><WorkspaceHeader mobileNavigationOpen={mobileNavigationOpen} setMobileNavigationOpen={setMobileNavigationOpen} /><main className="app-content"><Outlet /></main></div>;
 }
