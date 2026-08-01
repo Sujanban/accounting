@@ -4,6 +4,7 @@ import { Card, Flex, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CrudPageHeader, CrudPageState, requestMessage } from "../../components/crud-page";
+import { useActionDialog } from "../../components/action-dialog";
 import { OrderActionsMenu } from "../../components/order-actions-menu";
 import { Button } from "../../components/ui/button";
 import { NepaliDatePicker } from "../../components/ui/nepali-date-picker";
@@ -47,6 +48,7 @@ function PurchaseOrderForm({ order }: { order?: PurchaseOrder }) {
 export function PurchaseOrdersPage() {
   const navigate = useNavigate();
   const client = useQueryClient();
+  const actionDialog = useActionDialog();
   const { orderId } = useParams();
   const [branchId, setBranchId] = useState("");
   const [status, setStatus] = useState("all");
@@ -78,7 +80,7 @@ export function PurchaseOrdersPage() {
                   { label: "Cancel order", icon: <Cross2Icon />, onSelect: () => changeStatus.mutate({ id: order.id, status: "CANCELLED" }), disabled: pending, destructive: true },
                 ] : order.status === "CONFIRMED" ? [
                   { label: "Create goods receipt", icon: <CubeIcon />, onSelect: () => navigate(`/purchase-orders/${order.id}/receipt`) },
-                  { label: "Pre-close order", icon: <LockClosedIcon />, onSelect: () => { const reason = window.prompt("Why is this order being pre-closed?"); if (reason?.trim()) close.mutate({ id: order.id, reason }); }, disabled: pending },
+                  { label: "Pre-close order", icon: <LockClosedIcon />, onSelect: async () => { const reason = await actionDialog.prompt({ title: "Pre-close purchase order?", description: `Explain why ${order.orderNumber} is being closed before fulfillment.`, inputLabel: "Reason", inputPlaceholder: "Enter the reason for pre-closing this order", confirmLabel: "Pre-close order", destructive: true }); if (reason) close.mutate({ id: order.id, reason }); }, disabled: pending },
                   { label: "Create purchase draft", icon: <FilePlusIcon />, onSelect: () => convert.mutate(order.id), disabled: pending },
                 ] : [];
                 return <tr key={order.id}><td><strong>{order.orderNumber}</strong></td><td>{new Date(order.orderDate).toLocaleDateString()}</td><td>{order.status}</td><td>{order.items.length}</td><td><OrderActionsMenu label={`Actions for purchase order ${order.orderNumber}`} actions={actions} /></td></tr>;
@@ -88,6 +90,7 @@ export function PurchaseOrdersPage() {
           </table>
         </Card>
       </CrudPageState>
+      {actionDialog.dialog}
     </Flex>
   );
 }

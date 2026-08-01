@@ -3,6 +3,7 @@ import { EyeOpenIcon, Pencil1Icon, TrashIcon, UpdateIcon } from "@radix-ui/react
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { LoadingScreen } from "../../components/loading-screen";
+import { useActionDialog } from "../../components/action-dialog";
 import { OrderActionsMenu } from "../../components/order-actions-menu";
 import { Button } from "../../components/ui/button";
 import { AppSelect } from "../../components/ui/select";
@@ -201,6 +202,7 @@ function GroupForm({
 
 function AccountGroupsPage() {
   const navigate = useNavigate();
+  const actionDialog = useActionDialog();
   const [status, setStatus] = useState<"all" | "active" | "archived">("all");
   const [editing, setEditing] = useState<AccountGroup | null>(null);
   const [message, setMessage] = useState<MessageState>(null);
@@ -297,7 +299,7 @@ function AccountGroupsPage() {
                   <td>{group.isActive ? "Active" : "Archived"}</td>
                   <td><OrderActionsMenu label={`Actions for account group ${group.name}`} actions={group.isActive ? [
                     { label: "Edit account group", icon: <Pencil1Icon />, onSelect: () => { setMessage(null); navigate(`/accounting/account-groups/${group.id}/edit`); } },
-                    ...(!group.isSystem ? [{ label: "Archive account group", icon: <TrashIcon />, destructive: true, disabled: archive.isPending, onSelect: () => { if (window.confirm(`Archive ${group.name}?`)) void run(() => archive.mutateAsync(group.id), "Account group archived."); } }] : []),
+                    ...(!group.isSystem ? [{ label: "Archive account group", icon: <TrashIcon />, destructive: true, disabled: archive.isPending, onSelect: async () => { if (await actionDialog.confirm({ title: "Archive account group?", description: `“${group.name}” will no longer be available for new accounting entries.`, confirmLabel: "Archive account group", destructive: true })) void run(() => archive.mutateAsync(group.id), "Account group archived."); } }] : []),
                   ] : [
                     { label: "View account group", icon: <EyeOpenIcon />, onSelect: () => { setMessage(null); setEditing(group); } },
                     { label: "Restore account group", icon: <UpdateIcon />, disabled: restore.isPending, onSelect: () => void run(() => restore.mutateAsync(group.id), "Account group restored.") },
@@ -350,6 +352,7 @@ function AccountGroupsPage() {
           )}
         </Card>
       ) : null}
+      {actionDialog.dialog}
     </Flex>
   );
 }

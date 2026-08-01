@@ -4,6 +4,7 @@ import { CheckIcon, Cross2Icon, CubeIcon, FilePlusIcon, LockClosedIcon, Pencil1I
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { LoadingScreen } from "../../components/loading-screen";
+import { useActionDialog } from "../../components/action-dialog";
 import { OrderActionsMenu } from "../../components/order-actions-menu";
 import { Button } from "../../components/ui/button";
 import { NepaliDatePicker } from "../../components/ui/nepali-date-picker";
@@ -62,6 +63,7 @@ function SalesOrderForm({ order }: { order?: SalesOrder }) {
 export function SalesOrdersPage() {
   const navigate = useNavigate();
   const client = useQueryClient();
+  const actionDialog = useActionDialog();
   const { orderId } = useParams();
   const [branchId, setBranchId] = useState("");
   const [status, setStatus] = useState("all");
@@ -105,7 +107,7 @@ export function SalesOrdersPage() {
                 { label: "Cancel order", icon: <Cross2Icon />, onSelect: () => changeStatus.mutate({ id: order.id, status: "CANCELLED" }), disabled: pending, destructive: true },
               ] : order.status === "CONFIRMED" ? [
                 { label: "Create delivery note", icon: <CubeIcon />, onSelect: () => navigate(`/sales-orders/${order.id}/delivery`) },
-                { label: "Pre-close order", icon: <LockClosedIcon />, onSelect: () => { const reason = window.prompt("Why is this order being pre-closed?"); if (reason?.trim()) closeOrder.mutate({ id: order.id, reason }); }, disabled: pending },
+                { label: "Pre-close order", icon: <LockClosedIcon />, onSelect: async () => { const reason = await actionDialog.prompt({ title: "Pre-close sales order?", description: `Explain why ${order.orderNumber} is being closed before fulfillment.`, inputLabel: "Reason", inputPlaceholder: "Enter the reason for pre-closing this order", confirmLabel: "Pre-close order", destructive: true }); if (reason) closeOrder.mutate({ id: order.id, reason }); }, disabled: pending },
                 { label: "Create sales draft", icon: <FilePlusIcon />, onSelect: () => convert.mutate(order.id), disabled: pending },
               ] : [];
               return <tr key={order.id}><td><strong>{order.orderNumber}</strong></td><td>{new Date(order.orderDate).toLocaleDateString()}</td><td>{order.status}</td><td>{order.items.length}</td><td><OrderActionsMenu label={`Actions for sales order ${order.orderNumber}`} actions={actions} /></td></tr>;
@@ -114,6 +116,7 @@ export function SalesOrdersPage() {
           </tbody>
         </table>
       </Card>
+      {actionDialog.dialog}
     </Flex>
   );
 }

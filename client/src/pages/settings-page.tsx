@@ -11,6 +11,7 @@ import { CheckCircledIcon, LockClosedIcon } from "@radix-ui/react-icons";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CrudPageHeader, CrudPageState, requestMessage } from "../components/crud-page";
+import { useActionDialog } from "../components/action-dialog";
 import { FormSelect, FormTextField } from "../components/forms/form-fields";
 import { LoadingScreen } from "../components/loading-screen";
 import { OrderActionsMenu } from "../components/order-actions-menu";
@@ -609,6 +610,7 @@ function AccountingForm({
   );
 }
 function FiscalYears({ years }: { years: FiscalYear[] }) {
+  const actionDialog = useActionDialog();
   const defaults = getCurrentFiscalYearDefaults();
   const [form, setForm] = useState(defaults);
   const create = useFiscalYearMutation();
@@ -746,13 +748,13 @@ function FiscalYears({ years }: { years: FiscalYear[] }) {
                 size="1"
                 variant="outline"
                 disabled={close.isPending}
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      `Close ${year.name}? This locks the fiscal year.`,
-                    )
-                  )
-                    void close.mutateAsync(year.id);
+                onClick={async () => {
+                  if (await actionDialog.confirm({
+                    title: "Close fiscal year?",
+                    description: `Closing “${year.name}” locks its accounting period and prevents further entries.`,
+                    confirmLabel: "Close fiscal year",
+                    destructive: true,
+                  })) void close.mutateAsync(year.id);
                 }}
               >
                 Close
@@ -761,18 +763,20 @@ function FiscalYears({ years }: { years: FiscalYear[] }) {
           </Flex>
         </Flex>
       ))}
+      {actionDialog.dialog}
     </Flex>
   );
 }
 
 export function FiscalYearsPage() {
   const navigate = useNavigate();
+  const actionDialog = useActionDialog();
   const years = useFiscalYears();
   const activate = useActivateFiscalYear();
   const close = useCloseFiscalYear();
   const [status, setStatus] = useState("all");
   const filtered = years.data?.filter((year) => status === "all" || (status === "active" ? year.isActive : status === "closed" ? year.isLocked : !year.isLocked)) ?? [];
-  return <Flex direction="column" gap="5"><CrudPageHeader title="Fiscal years" description="Manage accounting periods, activation, and year-end locking." action={<Button onClick={() => navigate("/company/fiscal-years/new")}>Add fiscal year</Button>} /><Card size="3"><div className="accounting-filters"><label>Status<select className="app-select" value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">All fiscal years</option><option value="active">Active</option><option value="open">Open</option><option value="closed">Closed</option></select></label></div></Card><CrudPageState loading={years.isLoading} error={years.error} label="Loading fiscal years" description="Retrieving accounting periods…"><Card size="3" className="accounting-table-card order-actions-table"><table className="accounting-table"><thead><tr><th>Name</th><th>BS period</th><th>AD period</th><th>Status</th><th>Action</th></tr></thead><tbody>{filtered.map((year) => { const actions = !year.isLocked ? [...(!year.isActive ? [{ label: "Make active", icon: <CheckCircledIcon />, disabled: activate.isPending || close.isPending, onSelect: () => activate.mutate(year.id) }] : []), { label: "Close fiscal year", icon: <LockClosedIcon />, destructive: true, disabled: activate.isPending || close.isPending, onSelect: () => { if (window.confirm(`Close ${year.name}? This locks the fiscal year.`)) close.mutate(year.id); } }] : []; return <tr key={year.id}><td><strong>{year.name}</strong></td><td>{year.startDateBS} – {year.endDateBS}</td><td>{year.startDateAD ?? "—"} – {year.endDateAD ?? "—"}</td><td>{year.isActive ? "Active" : year.isLocked ? "Closed" : "Open"}</td><td><OrderActionsMenu label={`Actions for fiscal year ${year.name}`} actions={actions} /></td></tr>; })}{!filtered.length ? <tr><td colSpan={5}><Text color="gray">No fiscal years match your filter.</Text></td></tr> : null}</tbody></table></Card>{activate.error || close.error ? <Text color="red" role="alert">{requestMessage(activate.error || close.error)}</Text> : null}</CrudPageState></Flex>;
+  return <Flex direction="column" gap="5"><CrudPageHeader title="Fiscal years" description="Manage accounting periods, activation, and year-end locking." action={<Button onClick={() => navigate("/company/fiscal-years/new")}>Add fiscal year</Button>} /><Card size="3"><div className="accounting-filters"><label>Status<select className="app-select" value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">All fiscal years</option><option value="active">Active</option><option value="open">Open</option><option value="closed">Closed</option></select></label></div></Card><CrudPageState loading={years.isLoading} error={years.error} label="Loading fiscal years" description="Retrieving accounting periods…"><Card size="3" className="accounting-table-card order-actions-table"><table className="accounting-table"><thead><tr><th>Name</th><th>BS period</th><th>AD period</th><th>Status</th><th>Action</th></tr></thead><tbody>{filtered.map((year) => { const actions = !year.isLocked ? [...(!year.isActive ? [{ label: "Make active", icon: <CheckCircledIcon />, disabled: activate.isPending || close.isPending, onSelect: () => activate.mutate(year.id) }] : []), { label: "Close fiscal year", icon: <LockClosedIcon />, destructive: true, disabled: activate.isPending || close.isPending, onSelect: async () => { if (await actionDialog.confirm({ title: "Close fiscal year?", description: `Closing “${year.name}” locks its accounting period and prevents further entries.`, confirmLabel: "Close fiscal year", destructive: true })) close.mutate(year.id); } }] : []; return <tr key={year.id}><td><strong>{year.name}</strong></td><td>{year.startDateBS} – {year.endDateBS}</td><td>{year.startDateAD ?? "—"} – {year.endDateAD ?? "—"}</td><td>{year.isActive ? "Active" : year.isLocked ? "Closed" : "Open"}</td><td><OrderActionsMenu label={`Actions for fiscal year ${year.name}`} actions={actions} /></td></tr>; })}{!filtered.length ? <tr><td colSpan={5}><Text color="gray">No fiscal years match your filter.</Text></td></tr> : null}</tbody></table></Card>{activate.error || close.error ? <Text color="red" role="alert">{requestMessage(activate.error || close.error)}</Text> : null}</CrudPageState>{actionDialog.dialog}</Flex>;
 }
 
 export function FiscalYearCreatePage() {

@@ -3,6 +3,7 @@ import { Card, Flex, Heading, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { CrudPageHeader, CrudPageState } from "../../components/crud-page";
+import { useActionDialog } from "../../components/action-dialog";
 import { LoadingScreen } from "../../components/loading-screen";
 import { OrderActionsMenu } from "../../components/order-actions-menu";
 import { Button } from "../../components/ui/button";
@@ -87,6 +88,7 @@ export function TransactionsPage({
   create?: boolean;
 }) {
   const navigate = useNavigate();
+  const actionDialog = useActionDialog();
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState(drafts ? "DRAFT" : "");
   const [fromDate, setFromDate] = useState("");
@@ -244,10 +246,10 @@ export function TransactionsPage({
                 { label: "View voucher", icon: <EyeOpenIcon />, onSelect: () => navigate(`/vouchers/transactions/${item.id}`) },
                 ...(item.status === "DRAFT" ? [
                   { label: "Edit draft", icon: <Pencil1Icon />, onSelect: () => navigate(`/vouchers/transactions/${item.id}/edit`) },
-                  { label: "Post voucher", icon: <CheckCircledIcon />, disabled: pending, onSelect: () => { if (window.confirm("Post this transaction?")) void post.mutateAsync({ id: item.id, type: item.transactionType as VoucherTransactionType }); } },
+                  { label: "Post voucher", icon: <CheckCircledIcon />, disabled: pending, onSelect: async () => { if (await actionDialog.confirm({ title: "Post voucher?", description: "Posting makes this voucher part of the accounting records and prevents normal editing.", confirmLabel: "Post voucher" })) void post.mutateAsync({ id: item.id, type: item.transactionType as VoucherTransactionType }); } },
                 ] : []),
                 ...(item.status === "POSTED" && !item.reversedById ? [
-                  { label: "Reverse voucher", icon: <ResetIcon />, disabled: pending, destructive: true, onSelect: () => { if (window.confirm("Reverse this posted transaction?")) void reverse.mutateAsync({ id: item.id, type: item.transactionType as VoucherTransactionType }); } },
+                  { label: "Reverse voucher", icon: <ResetIcon />, disabled: pending, destructive: true, onSelect: async () => { if (await actionDialog.confirm({ title: "Reverse voucher?", description: "A reversing entry will be created for this posted voucher. This action cannot be undone.", confirmLabel: "Reverse voucher", destructive: true })) void reverse.mutateAsync({ id: item.id, type: item.transactionType as VoucherTransactionType }); } },
                 ] : []),
               ];
               return <tr key={item.id}>
@@ -301,6 +303,7 @@ export function TransactionsPage({
       ) : null}
         </>
       </CrudPageState>
+      {actionDialog.dialog}
     </Flex>
   );
 }
@@ -646,6 +649,7 @@ function DraftForm({
   );
 }
 function TransactionDetail() {
+  const actionDialog = useActionDialog();
   const { transactionId } = useParams();
   const transaction = useTransaction(transactionId);
   const taxInvoice = useTaxInvoice(
@@ -813,8 +817,13 @@ function TransactionDetail() {
       {item.status === "POSTED" && !item.reversedById ? (
         <Button
           variant="outline"
-          onClick={() => {
-            if (window.confirm("Reverse this posted transaction?"))
+          onClick={async () => {
+            if (await actionDialog.confirm({
+              title: "Reverse voucher?",
+              description: "A reversing entry will be created for this posted voucher. This action cannot be undone.",
+              confirmLabel: "Reverse voucher",
+              destructive: true,
+            }))
               void reverse.mutateAsync({
                 id: item.id,
                 type: item.transactionType as VoucherTransactionType,
@@ -824,6 +833,7 @@ function TransactionDetail() {
           Reverse transaction
         </Button>
       ) : null}
+      {actionDialog.dialog}
     </Flex>
   );
 }
