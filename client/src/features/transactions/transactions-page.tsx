@@ -210,46 +210,50 @@ export function TransactionsPage({
           voucher
         </Button>
       </Flex>
-      <Card size="2" className="voucher-list__filters">
-        <label>
-          Status
-          <AppSelect
-            value={status}
-            onChange={(event) => {
-              setStatus(event.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">All statuses</option>
-            <option value="DRAFT">Draft</option>
-            <option value="SUBMITTED">Submitted</option>
-            <option value="APPROVED">Approved</option>
-            <option value="POSTED">Posted</option>
-            <option value="REVERSED">Reversed</option>
-          </AppSelect>
-        </label>
-        <label>
-          From date
-          <input
-            type="date"
-            value={fromDate}
-            onChange={(event) => {
-              setFromDate(event.target.value);
-              setPage(1);
-            }}
-          />
-        </label>
-        <label>
-          To date
-          <input
-            type="date"
-            value={toDate}
-            onChange={(event) => {
-              setToDate(event.target.value);
-              setPage(1);
-            }}
-          />
-        </label>
+      <Card size="3">
+        <div className="accounting-filters voucher-list__filters">
+          <label>
+            Status
+            <AppSelect
+              value={status}
+              onChange={(event) => {
+                setStatus(event.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">All statuses</option>
+              <option value="DRAFT">Draft</option>
+              <option value="SUBMITTED">Submitted</option>
+              <option value="APPROVED">Approved</option>
+              <option value="POSTED">Posted</option>
+              <option value="REVERSED">Reversed</option>
+            </AppSelect>
+          </label>
+          <label>
+            From date
+            <input
+              type="date"
+              value={fromDate}
+              max={toDate || undefined}
+              onChange={(event) => {
+                setFromDate(event.target.value);
+                setPage(1);
+              }}
+            />
+          </label>
+          <label>
+            To date
+            <input
+              type="date"
+              value={toDate}
+              min={fromDate || undefined}
+              onChange={(event) => {
+                setToDate(event.target.value);
+                setPage(1);
+              }}
+            />
+          </label>
+        </div>
       </Card>
       {list.isLoading ? (
         <LoadingScreen
@@ -259,7 +263,7 @@ export function TransactionsPage({
         />
       ) : (
         <>
-      <Card size="2" className="voucher-list__table">
+      <Card size="3" className="accounting-table-card">
         <table className="accounting-table">
           <thead>
             <tr>
@@ -274,7 +278,7 @@ export function TransactionsPage({
               <tr key={item.id}>
                 <td>{new Date(item.transactionDate).toLocaleDateString()}</td>
                 <td>
-                  <Link to={`/vouchers/transactions/${item.id}`}>
+                  <Link className="voucher-list__link" to={`/vouchers/transactions/${item.id}`}>
                     {item.voucherNumber ?? "Draft"}
                   </Link>
                 </td>
@@ -284,7 +288,7 @@ export function TransactionsPage({
                   </span>
                 </td>
                 <td>
-                  <Flex gap="2">
+                  <div className="accounting-table__actions">
                     {item.status === "DRAFT" ? (
                       <Button
                         size="1"
@@ -316,15 +320,19 @@ export function TransactionsPage({
                         Reverse
                       </Button>
                     ) : null}
-                  </Flex>
+                  </div>
                 </td>
               </tr>
             ))}
+            {!list.data?.items.length ? (
+              <tr>
+                <td colSpan={4}>
+                  <Text color="gray">No transactions found.</Text>
+                </td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
-        {!list.data?.items.length ? (
-          <Text color="gray">No transactions found.</Text>
-        ) : null}
       </Card>
       {list.data?.meta.totalPages && list.data.meta.totalPages > 1 ? (
         <Flex justify="between">

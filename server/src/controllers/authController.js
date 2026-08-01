@@ -1,5 +1,4 @@
 const { loginUser, logoutUser, refreshUserToken, registerUser } = require("../services/authService");
-const { env } = require("../config/env");
 const { buildSessionPayload } = require("../services/sessionService");
 const { sendSuccess } = require("../utils/apiResponse");
 const { getRefreshCookieOptions, parseCookies } = require("../utils/cookies");
@@ -33,7 +32,7 @@ const login = asyncHandler(async (request, response) => {
     "refreshToken",
     result.tokens.refreshToken,
     {
-      ...getRefreshCookieOptions(env.nodeEnv),
+      ...getRefreshCookieOptions(request.secure),
       maxAge: 30 * 24 * 60 * 60 * 1000
     }
   );
@@ -55,7 +54,7 @@ const refresh = asyncHandler(async (request, response) => {
     "refreshToken",
     result.tokens.refreshToken,
     {
-      ...getRefreshCookieOptions(env.nodeEnv),
+      ...getRefreshCookieOptions(request.secure),
       maxAge: 30 * 24 * 60 * 60 * 1000
     }
   );
@@ -68,7 +67,7 @@ const refresh = asyncHandler(async (request, response) => {
 
 const logout = asyncHandler(async (request, response) => {
   await logoutUser(readRefreshToken(request));
-  response.clearCookie("refreshToken", getRefreshCookieOptions(env.nodeEnv));
+  response.clearCookie("refreshToken", getRefreshCookieOptions(request.secure));
 
   return sendSuccess(response, 200, "Logout successful.");
 });

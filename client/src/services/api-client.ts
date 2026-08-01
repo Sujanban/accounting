@@ -7,8 +7,31 @@ type ApiFailure = {
   success: false;
   message?: string;
   errorCode?: string;
-  errors?: Array<{ field: string; message: string }>;
+  errors?: unknown;
+  requestId?: string;
 };
+
+function normalizeFieldErrors(errors: unknown): Array<{ field: string; message: string }> {
+  if (Array.isArray(errors)) {
+    return errors.flatMap((error) => {
+      if (!error || typeof error !== "object") return [];
+      const item = error as Record<string, unknown>;
+      const field = item.field ?? item.path;
+      return typeof field === "string" && typeof item.message === "string"
+        ? [{ field, message: item.message }]
+        : [];
+    });
+  }
+
+  if (errors && typeof errors === "object") {
+    return Object.entries(errors).map(([field, value]) => ({
+      field,
+      message: typeof value === "string" ? value : JSON.stringify(value) ?? String(value),
+    }));
+  }
+
+  return [];
+}
 
 let accessToken: string | null = null;
 let refreshAccessToken: (() => Promise<boolean>) | null = null;
@@ -66,7 +89,8 @@ export async function apiClient<T>(
       error?.message ?? "The request could not be completed.",
       response.status,
       error?.errorCode,
-      error?.errors ?? []
+      normalizeFieldErrors(error?.errors),
+      error?.requestId,
     );
   }
 

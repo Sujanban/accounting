@@ -1,6 +1,10 @@
-import { QueryClient } from "@tanstack/react-query";
+import { MutationCache, QueryClient } from "@tanstack/react-query";
+import { showRequestError } from "./toast";
 
 export const queryClient = new QueryClient({
+  mutationCache: new MutationCache({
+    onError: (error) => showRequestError(error),
+  }),
   defaultOptions: {
     queries: {
       staleTime: 30_000,
@@ -9,6 +13,9 @@ export const queryClient = new QueryClient({
         return failureCount < 2;
       },
       refetchOnWindowFocus: false
+    },
+    mutations: {
+      retry: false,
     }
   }
 });
@@ -18,7 +25,8 @@ export class ApiClientError extends Error {
     message: string,
     public readonly status: number,
     public readonly code?: string,
-    public readonly fieldErrors: Array<{ field: string; message: string }> = []
+    public readonly fieldErrors: Array<{ field: string; message: string }> = [],
+    public readonly requestId?: string,
   ) {
     super(message);
     this.name = "ApiClientError";

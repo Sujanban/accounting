@@ -17,11 +17,11 @@ function parseCookies(headerValue = "") {
     }, {});
 }
 
-function getRefreshCookieOptions(nodeEnv) {
+function getRefreshCookieOptions(isSecureRequest = false) {
   return {
     httpOnly: true,
     sameSite: "lax",
-    secure: nodeEnv === "production",
+    secure: isSecureRequest,
     path: "/api/auth"
   };
 }
