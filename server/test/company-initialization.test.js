@@ -76,9 +76,7 @@ test("createCompanyForUser emits company created event after company and fiscal 
       fiscalYear: {
         name: "2082/83",
         startDateBS: "2082-04-01",
-        endDateBS: "2083-03-31",
-        startDateAD: "2025-07-17",
-        endDateAD: "2026-07-16"
+        endDateBS: "2083-03-31"
       }
     });
 

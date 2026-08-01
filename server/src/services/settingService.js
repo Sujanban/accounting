@@ -13,7 +13,7 @@ function mapSetting(setting) {
     currency: setting.currency,
     currencySymbol: setting.currencySymbol,
     language: setting.language,
-    dateFormat: setting.dateFormat,
+    dateFormat: "BS",
     timezone: setting.timezone,
     decimalPlaces: setting.decimalPlaces,
     allowNegativeStock: setting.allowNegativeStock,
@@ -95,7 +95,7 @@ async function createSettingsForCompany(userId, companyId, payload) {
     currency: payload.currency || "NPR",
     currencySymbol: payload.currencySymbol || "Rs.",
     language: payload.language || "en",
-    dateFormat: payload.dateFormat || "BS",
+    dateFormat: "BS",
     timezone: payload.timezone || "Asia/Kathmandu",
     decimalPlaces:
       payload.decimalPlaces !== undefined ? Number(payload.decimalPlaces) : 2,
@@ -145,6 +145,7 @@ async function updateGeneralSettings(userId, companyId, payload) {
   }
   if (payload.currency !== undefined) setting.currency = setting.currency.toUpperCase();
   if (payload.decimalPlaces !== undefined) setting.decimalPlaces = Number(payload.decimalPlaces);
+  setting.dateFormat = "BS";
   setting.updatedBy = userId;
   await setting.save();
   return mapSetting(setting);
@@ -183,6 +184,7 @@ async function updateAccountingPreferences(userId, companyId, payload) {
     };
   }
 
+  setting.dateFormat = "BS";
   setting.updatedBy = userId;
   await setting.save();
 

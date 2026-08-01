@@ -5,6 +5,7 @@ import { useParams } from "react-router-dom";
 import { OrderActionsMenu } from "../../components/order-actions-menu";
 import { Button } from "../../components/ui/button";
 import { AppSelect } from "../../components/ui/select";
+import { NepaliDatePicker } from "../../components/ui/nepali-date-picker";
 import { LoadingScreen } from "../../components/loading-screen";
 import { ApiClientError } from "../../lib/query-client";
 import { downloadCsv } from "../../lib/csv";
@@ -37,7 +38,7 @@ const money = new Intl.NumberFormat(undefined, {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
-const date = (value: string) => new Date(value).toLocaleDateString();
+const date = (value: string) => `${value} BS`;
 const errorMessage = (error: unknown) =>
   error instanceof ApiClientError
     ? error.message
@@ -125,22 +126,20 @@ function ReportFiltersForm({
       >
         {showFrom ? <label>
           From date
-          <input
-            type="date"
+          <NepaliDatePicker
             value={draft.from ?? ""}
-            onChange={(event) =>
-              setDraft({ ...draft, from: event.target.value || undefined })
-            }
+            max={draft.to}
+            onChange={(value) => setDraft({ ...draft, from: value || undefined })}
+            ariaLabel="Choose report start date in Bikram Sambat"
           />
         </label> : null}
         <label>
           To date
-          <input
-            type="date"
+          <NepaliDatePicker
             value={draft.to ?? ""}
-            onChange={(event) =>
-              setDraft({ ...draft, to: event.target.value || undefined })
-            }
+            min={draft.from}
+            onChange={(value) => setDraft({ ...draft, to: value || undefined })}
+            ariaLabel="Choose report end date in Bikram Sambat"
           />
         </label>
         <label>Branch<AppSelect value={draft.branchId ?? ""} onChange={(event) => setDraft({ ...draft, branchId: event.target.value || undefined })}><option value="">All branches</option>{branches.data?.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</AppSelect></label>

@@ -1,4 +1,5 @@
 const { isValidEmail } = require("../utils/email");
+const { isValidBsDate } = require("../services/nepalDateService");
 
 function rejectUnknownFields(body, allowedFields, errors) {
   for (const field of Object.keys(body)) {
@@ -8,6 +9,13 @@ function rejectUnknownFields(body, allowedFields, errors) {
 
 function validateCreateCompany(body) {
   const errors = [];
+  rejectUnknownFields(body, new Set(["name", "panNumber", "vatRegistered", "vatNumber", "phone", "email", "address", "logo", "fiscalYear"]), errors);
+
+  if (body.fiscalYear && typeof body.fiscalYear === "object" && !Array.isArray(body.fiscalYear)) {
+    const fiscalErrors = [];
+    rejectUnknownFields(body.fiscalYear, new Set(["name", "startDateBS", "endDateBS"]), fiscalErrors);
+    errors.push(...fiscalErrors.map((error) => ({ ...error, field: `fiscalYear.${error.field}` })));
+  }
 
   if (!body.name || body.name.trim().length < 2) {
     errors.push({
@@ -45,16 +53,17 @@ function validateCreateCompany(body) {
     !body.fiscalYear ||
     typeof body.fiscalYear !== "object" ||
     !body.fiscalYear.name ||
-    !body.fiscalYear.startDateBS ||
-    !body.fiscalYear.endDateBS ||
-    !body.fiscalYear.startDateAD ||
-    !body.fiscalYear.endDateAD
+    !isValidBsDate(body.fiscalYear.startDateBS) ||
+    !isValidBsDate(body.fiscalYear.endDateBS)
   ) {
     errors.push({
       field: "fiscalYear",
       message:
-        "Fiscal year name, BS dates, and AD dates are required."
+        "Fiscal-year dates must be valid Bikram Sambat dates in YYYY-MM-DD format."
     });
+  }
+  if (body.fiscalYear && isValidBsDate(body.fiscalYear.startDateBS) && isValidBsDate(body.fiscalYear.endDateBS) && body.fiscalYear.startDateBS > body.fiscalYear.endDateBS) {
+    errors.push({ field: "fiscalYear.endDateBS", message: "Fiscal-year end date must be on or after its start date." });
   }
 
   return errors;

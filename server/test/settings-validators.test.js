@@ -14,3 +14,8 @@ test("general settings updates reject accounting and invalid currency fields", (
   assert.ok(errors.some((error) => error.field === "currency"));
   assert.ok(errors.some((error) => error.field === "accounting"));
 });
+
+test("general settings enforce Bikram Sambat as the product date format", () => {
+  assert.deepEqual(validateSettingsUpdate({ dateFormat: "BS" }), []);
+  assert.ok(validateSettingsUpdate({ dateFormat: "AD" }).some((error) => error.field === "dateFormat"));
+});

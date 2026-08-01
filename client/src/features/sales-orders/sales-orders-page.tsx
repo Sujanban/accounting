@@ -9,7 +9,7 @@ import { OrderActionsMenu } from "../../components/order-actions-menu";
 import { Button } from "../../components/ui/button";
 import { NepaliDatePicker } from "../../components/ui/nepali-date-picker";
 import { AppSelect } from "../../components/ui/select";
-import { formatAdDate } from "../../lib/nepali-date";
+import { todayBsDate } from "../../lib/nepali-date";
 import { useBranches, useBranchWarehouses } from "../enterprise/use-enterprise";
 import { useContacts, useProducts } from "../masters/use-masters";
 import { salesOrdersApi, type SalesOrder, type SalesOrderInput } from "./sales-orders-api";
@@ -26,7 +26,7 @@ function SalesOrderForm({ order }: { order?: SalesOrder }) {
   const [branchId, setBranchId] = useState(order?.branchId ?? "");
   const [contactId, setContactId] = useState(order?.contactId ?? "");
   const [productId, setProductId] = useState(order?.items[0]?.productId ?? "");
-  const [orderDate, setOrderDate] = useState(order?.orderDate.slice(0, 10) ?? formatAdDate(new Date()));
+  const [orderDate, setOrderDate] = useState(order?.orderDate ?? todayBsDate());
   const branches = useBranches();
   const contacts = useContacts({ role: "CUSTOMER", page: 1, isActive: "true" });
   const products = useProducts();
@@ -110,7 +110,7 @@ export function SalesOrdersPage() {
                 { label: "Pre-close order", icon: <LockClosedIcon />, onSelect: async () => { const reason = await actionDialog.prompt({ title: "Pre-close sales order?", description: `Explain why ${order.orderNumber} is being closed before fulfillment.`, inputLabel: "Reason", inputPlaceholder: "Enter the reason for pre-closing this order", confirmLabel: "Pre-close order", destructive: true }); if (reason) closeOrder.mutate({ id: order.id, reason }); }, disabled: pending },
                 { label: "Create sales draft", icon: <FilePlusIcon />, onSelect: () => convert.mutate(order.id), disabled: pending },
               ] : [];
-              return <tr key={order.id}><td><strong>{order.orderNumber}</strong></td><td>{new Date(order.orderDate).toLocaleDateString()}</td><td>{order.status}</td><td>{order.items.length}</td><td><OrderActionsMenu label={`Actions for sales order ${order.orderNumber}`} actions={actions} /></td></tr>;
+              return <tr key={order.id}><td><strong>{order.orderNumber}</strong></td><td>{order.orderDate} BS</td><td>{order.status}</td><td>{order.items.length}</td><td><OrderActionsMenu label={`Actions for sales order ${order.orderNumber}`} actions={actions} /></td></tr>;
             })}
             {!matchingOrders.length ? <tr><td colSpan={5}><Text color="gray">No sales orders match your filters.</Text></td></tr> : null}
           </tbody>
@@ -131,7 +131,7 @@ export function SalesOrderDeliveryPage() {
   const order = orders.data?.items.find((item) => item.id === orderId);
   const warehouses = useBranchWarehouses(order?.branchId || "");
   const [warehouseId, setWarehouseId] = useState("");
-  const [fulfillmentDate, setFulfillmentDate] = useState(() => formatAdDate(new Date()));
+  const [fulfillmentDate, setFulfillmentDate] = useState(todayBsDate);
   const delivery = useMutation({ mutationFn: () => salesOrdersApi.createDelivery(order!.id, { warehouseId, fulfillmentDate }) });
   if (orders.isLoading || warehouses.isLoading) return <LoadingScreen fullScreen={false} label="Loading delivery note" description="Preparing the delivery form…" />;
   if (orders.error || warehouses.error || !order) return <Text color="red" role="alert">{order ? errorMessage(orders.error || warehouses.error) : "The sales order was not found."}</Text>;

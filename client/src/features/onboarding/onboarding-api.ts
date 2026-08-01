@@ -14,8 +14,6 @@ export type CreateCompanyInput = {
     name: string;
     startDateBS: string;
     endDateBS: string;
-    startDateAD: string;
-    endDateAD: string;
   };
 };
 
@@ -24,7 +22,7 @@ export type CreateSettingsInput = {
   currency: string;
   currencySymbol: string;
   language: string;
-  dateFormat: "BS" | "AD";
+  dateFormat: "BS";
   timezone: string;
   decimalPlaces: number;
   allowNegativeStock: boolean;

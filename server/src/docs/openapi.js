@@ -50,10 +50,8 @@ const openApiDocument = {
         properties: {
           id: { type: "string", example: "6878f8f6b2b52fb6c88ac110" },
           name: { type: "string", example: "2082/83" },
-          startDateBS: { type: "string", example: "2082-04-01" },
-          endDateBS: { type: "string", example: "2083-03-31" },
-          startDateAD: { type: "string", format: "date", example: "2025-07-17" },
-          endDateAD: { type: "string", format: "date", example: "2026-07-16" },
+          startDateBS: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$", example: "2082-04-01", description: "Bikram Sambat date." },
+          endDateBS: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$", example: "2083-03-31", description: "Bikram Sambat date." },
           isActive: { type: "boolean", example: true },
           isLocked: { type: "boolean", example: false }
         }
@@ -123,7 +121,7 @@ const openApiDocument = {
           currency: { type: "string", example: "NPR" },
           currencySymbol: { type: "string", example: "Rs." },
           language: { type: "string", example: "en" },
-          dateFormat: { type: "string", enum: ["BS", "AD"], example: "BS" },
+          dateFormat: { type: "string", enum: ["BS"], example: "BS" },
           timezone: { type: "string", example: "Asia/Kathmandu" },
           decimalPlaces: { type: "integer", example: 2 },
           allowNegativeStock: { type: "boolean", example: false },
@@ -140,7 +138,7 @@ const openApiDocument = {
           fiscalLock: {
             type: "object",
             properties: {
-              lockBeforeDate: { type: "string", format: "date-time", nullable: true, example: "2026-07-01T00:00:00.000Z" },
+              lockBeforeDate: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$", nullable: true, example: "2083-03-17", description: "Bikram Sambat date." },
               lockClosedFiscalYear: { type: "boolean", example: true },
               allowAdminOverride: { type: "boolean", example: false }
             }

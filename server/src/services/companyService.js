@@ -7,6 +7,7 @@ const { buildSessionPayload } = require("./sessionService");
 const { eventBus } = require("../events/eventBus");
 const { registerCoreListeners } = require("../events/registerCoreListeners");
 const { DOMAIN_EVENTS } = require("../shared/constants/events");
+const { bsToUtcDate } = require("./nepalDateService");
 
 registerCoreListeners();
 
@@ -73,12 +74,8 @@ async function createCompanyForUser(userId, payload) {
       name: payload.fiscalYear.name.trim(),
       startDateBS: payload.fiscalYear.startDateBS.trim(),
       endDateBS: payload.fiscalYear.endDateBS.trim(),
-      startDateAD: payload.fiscalYear.startDateAD
-        ? new Date(payload.fiscalYear.startDateAD)
-        : null,
-      endDateAD: payload.fiscalYear.endDateAD
-        ? new Date(payload.fiscalYear.endDateAD)
-        : null
+      startDateAD: bsToUtcDate(payload.fiscalYear.startDateBS),
+      endDateAD: bsToUtcDate(payload.fiscalYear.endDateBS)
     },
     createdBy: user._id,
     updatedBy: user._id

@@ -27,7 +27,7 @@ import { useVat } from "../settings/use-settings";
 import type { VoucherTransactionType } from "./transactions-api";
 import { useBranches, useBranchWarehouses } from "../enterprise/use-enterprise";
 import { useAuth } from "../auth/auth-provider";
-import { adToBsDate, formatAdDate, formatBsDate } from "../../lib/nepali-date";
+import { todayBsDate } from "../../lib/nepali-date";
 
 const types = [
   { value: "JOURNAL", voucher: "JV", path: "journal" },
@@ -51,9 +51,8 @@ const formatAmount = (value: number) => new Intl.NumberFormat("en-NP", {
 }).format(value);
 
 export const voucherDate = (value: string) => {
-  const ad = value.slice(0, 10);
-  const bs = adToBsDate(ad);
-  return { ad, bs: bs ? formatBsDate(bs) : null };
+  const bs = value.slice(0, 10);
+  return { bs };
 };
 
 export const voucherDebitTotal = (entries: Array<{ debit: number }>) =>
@@ -253,7 +252,7 @@ export function TransactionsPage({
                 ] : []),
               ];
               return <tr key={item.id}>
-                <td><span className="voucher-list__date"><strong>{date.bs ? `${date.bs} BS` : date.ad}</strong>{date.bs ? <small>{date.ad} AD</small> : null}</span></td>
+                <td><span className="voucher-list__date"><strong>{date.bs} BS</strong></span></td>
                 <td>
                   <Link className="voucher-list__link" to={`/vouchers/transactions/${item.id}`}>
                     {item.voucherNumber ?? "Draft"}
@@ -333,9 +332,7 @@ function DraftForm({
   onSave: (input: any) => Promise<void>;
 }) {
   const navigate = useNavigate();
-  const [transactionDate, setTransactionDate] = useState(
-    formatAdDate(new Date()),
-  );
+  const [transactionDate, setTransactionDate] = useState(todayBsDate);
   const [lines, setLines] = useState([
     { ledgerId: "", debit: "", credit: "" },
     { ledgerId: "", debit: "", credit: "" },
@@ -692,7 +689,7 @@ function TransactionDetail() {
     const draft = await duplicate.mutateAsync({
       type: item.transactionType as VoucherTransactionType,
       input: {
-        transactionDate: item.transactionDate.slice(0, 10),
+        transactionDate: item.transactionDate,
         narration: item.narration,
         accountingEntries: item.accountingEntries,
         inventoryEntries: item.inventoryEntries,
@@ -717,7 +714,7 @@ function TransactionDetail() {
         </div>
         <div className="voucher-receipt__header-actions">
           <Text className="voucher-receipt__date">
-            {detailDate.bs ? `${detailDate.bs} BS` : detailDate.ad}
+            {detailDate.bs} BS
           </Text>
           <Flex gap="2" justify="end">
             <Button variant="outline" onClick={() => window.print()}>Print</Button>
@@ -731,7 +728,7 @@ function TransactionDetail() {
           <span>Voucher status</span>
           <strong className={`voucher-status voucher-status--${item.status.toLowerCase()}`}>{item.status}</strong>
         </div>
-        <div><span>AD date</span><strong>{detailDate.ad}</strong></div>
+        <div><span>BS date</span><strong>{detailDate.bs}</strong></div>
         <div><span>Voucher amount</span><strong>Rs. {formatAmount(totals.debit)}</strong></div>
         <div><span>Accounting lines</span><strong>{item.accountingEntries.length}</strong></div>
       </Card>
@@ -899,7 +896,7 @@ export function TransactionEditPage() {
   if (!transaction.data || transaction.data.status !== "DRAFT")
     return <Text color="red">Only draft transactions can be edited.</Text>;
   const draft = transaction.data;
-  const effectiveTransactionDate = transactionDate || draft.transactionDate.slice(0, 10);
+  const effectiveTransactionDate = transactionDate || draft.transactionDate;
   const effectiveBranchId = branchId || draft.branchId || "";
   const lines = accounting ?? draft.accountingEntries;
   const stock = inventory ?? draft.inventoryEntries;

@@ -9,7 +9,7 @@ import { OrderActionsMenu } from "../../components/order-actions-menu";
 import { Button } from "../../components/ui/button";
 import { NepaliDatePicker } from "../../components/ui/nepali-date-picker";
 import { AppSelect } from "../../components/ui/select";
-import { formatAdDate } from "../../lib/nepali-date";
+import { todayBsDate } from "../../lib/nepali-date";
 import { useBranches, useBranchWarehouses } from "../enterprise/use-enterprise";
 import { useContacts, useProducts } from "../masters/use-masters";
 import { purchaseOrdersApi, type PurchaseOrder, type PurchaseOrderInput } from "./purchase-orders-api";
@@ -22,7 +22,7 @@ function PurchaseOrderForm({ order }: { order?: PurchaseOrder }) {
   const [branchId, setBranchId] = useState(order?.branchId ?? "");
   const [contactId, setContactId] = useState(order?.contactId ?? "");
   const [productId, setProductId] = useState(order?.items[0]?.productId ?? "");
-  const [orderDate, setOrderDate] = useState(order?.orderDate.slice(0, 10) ?? formatAdDate(new Date()));
+  const [orderDate, setOrderDate] = useState(order?.orderDate ?? todayBsDate());
   const branches = useBranches();
   const contacts = useContacts({ role: "SUPPLIER", page: 1, isActive: "true" });
   const products = useProducts();
@@ -83,7 +83,7 @@ export function PurchaseOrdersPage() {
                   { label: "Pre-close order", icon: <LockClosedIcon />, onSelect: async () => { const reason = await actionDialog.prompt({ title: "Pre-close purchase order?", description: `Explain why ${order.orderNumber} is being closed before fulfillment.`, inputLabel: "Reason", inputPlaceholder: "Enter the reason for pre-closing this order", confirmLabel: "Pre-close order", destructive: true }); if (reason) close.mutate({ id: order.id, reason }); }, disabled: pending },
                   { label: "Create purchase draft", icon: <FilePlusIcon />, onSelect: () => convert.mutate(order.id), disabled: pending },
                 ] : [];
-                return <tr key={order.id}><td><strong>{order.orderNumber}</strong></td><td>{new Date(order.orderDate).toLocaleDateString()}</td><td>{order.status}</td><td>{order.items.length}</td><td><OrderActionsMenu label={`Actions for purchase order ${order.orderNumber}`} actions={actions} /></td></tr>;
+                return <tr key={order.id}><td><strong>{order.orderNumber}</strong></td><td>{order.orderDate} BS</td><td>{order.status}</td><td>{order.items.length}</td><td><OrderActionsMenu label={`Actions for purchase order ${order.orderNumber}`} actions={actions} /></td></tr>;
               })}
               {!filtered.length ? <tr><td colSpan={5}><Text color="gray">No purchase orders match your filters.</Text></td></tr> : null}
             </tbody>
@@ -105,7 +105,7 @@ export function PurchaseOrderReceiptPage() {
   const order = orders.data?.items.find((item) => item.id === orderId);
   const warehouses = useBranchWarehouses(order?.branchId ?? "");
   const [warehouseId, setWarehouseId] = useState("");
-  const [fulfillmentDate, setFulfillmentDate] = useState(() => formatAdDate(new Date()));
+  const [fulfillmentDate, setFulfillmentDate] = useState(todayBsDate);
   const receipt = useMutation({ mutationFn: () => purchaseOrdersApi.createGoodsReceipt(order!.id, { warehouseId, fulfillmentDate }) });
   async function submit(event: React.FormEvent<HTMLFormElement>) { event.preventDefault(); try { await receipt.mutateAsync(); await client.invalidateQueries({ queryKey: purchaseKeys.all }); navigate("/purchase-orders", { replace: true }); } catch { /* rendered below */ } }
   return <Flex direction="column" gap="5"><CrudPageHeader title="Create goods receipt" description={order ? `Record receipt for purchase order ${order.orderNumber}.` : "Record received inventory."} /><CrudPageState loading={orders.isLoading || warehouses.isLoading} error={orders.error ?? warehouses.error} label="Loading goods receipt" description="Preparing the receipt form…">{order ? <Card size="3"><form className="accounting-form" onSubmit={(event) => void submit(event)}><label>Warehouse<AppSelect value={warehouseId} onChange={(event) => setWarehouseId(event.target.value)} required><option value="">Select warehouse</option>{warehouses.data?.map((warehouse) => <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>)}</AppSelect></label><label>Receipt date (BS)<NepaliDatePicker value={fulfillmentDate} onChange={setFulfillmentDate} required ariaLabel="Choose goods receipt date in Bikram Sambat" /></label><div className="accounting-form__actions accounting-form__wide"><Button type="button" variant="outline" onClick={() => navigate("/purchase-orders")}>Cancel</Button><Button type="submit" disabled={!warehouseId || !fulfillmentDate} loading={receipt.isPending}>Post goods receipt</Button></div></form>{receipt.error ? <Text color="red" role="alert">{requestMessage(receipt.error)}</Text> : null}</Card> : <Text color="red" role="alert">The purchase order was not found.</Text>}</CrudPageState></Flex>;

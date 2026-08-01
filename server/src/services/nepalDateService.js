@@ -27,10 +27,34 @@ function adToBs(adDate) {
 function bsToAd(bsDate) {
   const { year, month, day } = parseDate(bsDate, "BS date");
   try {
-    const converted = new NepaliDate(year, month - 1, day).toJsDate();
+    const nepaliDate = new NepaliDate(year, month - 1, day);
+    if (nepaliDate.getYear() !== year || nepaliDate.getMonth() !== month - 1 || nepaliDate.getDate() !== day) {
+      throw new Error("Invalid BS date");
+    }
+    const converted = nepaliDate.toJsDate();
     const result = { year: converted.getFullYear(), month: converted.getMonth() + 1, day: converted.getDate() };
     return { date: format(result), ...result };
   } catch (_error) { throw new ApiError(422, "BS date is invalid or outside the supported calendar range."); }
+}
+
+function isValidBsDate(value) {
+  try {
+    bsToAd(value);
+    return true;
+  } catch (_error) {
+    return false;
+  }
+}
+
+function bsToUtcDate(value) {
+  const converted = bsToAd(value);
+  return new Date(Date.UTC(converted.year, converted.month - 1, converted.day));
+}
+
+function dateToBs(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) throw new ApiError(422, "Stored date cannot be represented in Bikram Sambat.");
+  return adToBs(format({ year: date.getUTCFullYear(), month: date.getUTCMonth() + 1, day: date.getUTCDate() })).date;
 }
 
 function todayBs() {
@@ -44,4 +68,4 @@ function monthName(month, language = "en") {
   return MONTHS[language === "ne" ? "ne" : "en"][index];
 }
 
-module.exports = { adToBs, bsToAd, todayBs, monthName };
+module.exports = { adToBs, bsToAd, isValidBsDate, bsToUtcDate, dateToBs, todayBs, monthName };

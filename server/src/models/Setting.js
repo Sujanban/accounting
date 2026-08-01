@@ -39,7 +39,7 @@ const settingSchema = new mongoose.Schema(
     },
     dateFormat: {
       type: String,
-      enum: ["BS", "AD"],
+      enum: ["BS"],
       default: "BS"
     },
     timezone: {

@@ -7,6 +7,7 @@ const ACCOUNT_GROUP_TYPES = new Set([
 ]);
 
 const BALANCE_TYPES = new Set(["DEBIT", "CREDIT"]);
+const { isValidBsDate } = require("../services/nepalDateService");
 function rejectUnknownFields(body, allowedFields, errors) {
   for (const field of Object.keys(body)) {
     if (!allowedFields.has(field)) {
@@ -17,16 +18,20 @@ function rejectUnknownFields(body, allowedFields, errors) {
 
 function validateFiscalYear(body) {
   const errors = [];
+  rejectUnknownFields(body, new Set(["name", "startDateBS", "endDateBS"]), errors);
 
   if (!body.name || body.name.trim().length < 3) {
     errors.push({ field: "name", message: "Fiscal year name is required." });
   }
 
-  if (!body.startDateBS || !body.endDateBS) {
+  if (!isValidBsDate(body.startDateBS) || !isValidBsDate(body.endDateBS)) {
     errors.push({
       field: "fiscalYear",
-      message: "Fiscal year startDateBS and endDateBS are required."
+      message: "Fiscal-year dates must be valid Bikram Sambat dates in YYYY-MM-DD format."
     });
+  }
+  if (isValidBsDate(body.startDateBS) && isValidBsDate(body.endDateBS) && body.startDateBS > body.endDateBS) {
+    errors.push({ field: "endDateBS", message: "Fiscal-year end date must be on or after its start date." });
   }
 
   return errors;
@@ -218,11 +223,11 @@ function validateAccountingPreferences(body) {
     if (
       body.fiscalLock.lockBeforeDate !== undefined &&
       body.fiscalLock.lockBeforeDate &&
-      Number.isNaN(new Date(body.fiscalLock.lockBeforeDate).getTime())
+      !isValidBsDate(body.fiscalLock.lockBeforeDate)
     ) {
       errors.push({
         field: "fiscalLock.lockBeforeDate",
-        message: "Lock before date must be a valid date."
+        message: "Lock before date must be a valid Bikram Sambat date in YYYY-MM-DD format."
       });
     }
   }

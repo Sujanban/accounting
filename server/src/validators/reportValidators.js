@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { isValidBsDate } = require("../services/nepalDateService");
 
 const ALLOWED_FILTERS = new Set(["from", "to", "page", "limit", "branchId"]);
 const GENERAL_LEDGER_FILTERS = new Set([...ALLOWED_FILTERS, "ledgerId"]);
@@ -6,10 +7,7 @@ const STOCK_SUMMARY_FILTERS = new Set([...ALLOWED_FILTERS, "warehouseId"]);
 const STOCK_LEDGER_FILTERS = new Set([...ALLOWED_FILTERS, "productId", "warehouseId"]);
 const CONTACT_STATEMENT_FILTERS = new Set([...ALLOWED_FILTERS, "contactId"]);
 
-const isDate = (value) =>
-  typeof value === "string" &&
-  /^\d{4}-\d{2}-\d{2}$/.test(value) &&
-  !Number.isNaN(Date.parse(`${value}T00:00:00.000Z`));
+const isDate = isValidBsDate;
 
 const isPositiveInteger = (value) =>
   typeof value === "string" && /^(?:[1-9]\d*)$/.test(value);
@@ -25,12 +23,12 @@ function validateReportQuery(query, allowedFilters) {
   if (query.from !== undefined && !isDate(query.from))
     errors.push({
       field: "from",
-      message: "Enter a valid date in YYYY-MM-DD format.",
+      message: "Enter a valid Bikram Sambat date in YYYY-MM-DD format.",
     });
   if (query.to !== undefined && !isDate(query.to))
     errors.push({
       field: "to",
-      message: "Enter a valid date in YYYY-MM-DD format.",
+      message: "Enter a valid Bikram Sambat date in YYYY-MM-DD format.",
     });
   if (isDate(query.from) && isDate(query.to) && query.from > query.to)
     errors.push({

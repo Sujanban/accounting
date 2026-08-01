@@ -33,7 +33,7 @@ export type CompanySettings = {
   currency: string;
   currencySymbol: string;
   language: string;
-  dateFormat: "BS" | "AD";
+  dateFormat: "BS";
   timezone: string;
   decimalPlaces: number;
   allowNegativeStock: boolean;
@@ -59,8 +59,6 @@ export type FiscalYear = {
   name: string;
   startDateBS: string;
   endDateBS: string;
-  startDateAD: string | null;
-  endDateAD: string | null;
   isActive: boolean;
   isLocked: boolean;
 };
@@ -157,7 +155,7 @@ export const settingsApi = {
     }),
   fiscalYears: (signal?: AbortSignal) =>
     apiClient<FiscalYear[]>("/fiscal-years", { signal }),
-  createFiscalYear: (input: Omit<FiscalYear, "id" | "isActive" | "isLocked">) =>
+  createFiscalYear: (input: Pick<FiscalYear, "name" | "startDateBS" | "endDateBS">) =>
     apiClient<FiscalYear>("/fiscal-years", {
       method: "POST",
       body: JSON.stringify(input),

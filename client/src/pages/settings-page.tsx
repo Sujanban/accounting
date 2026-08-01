@@ -16,6 +16,7 @@ import { FormSelect, FormTextField } from "../components/forms/form-fields";
 import { LoadingScreen } from "../components/loading-screen";
 import { OrderActionsMenu } from "../components/order-actions-menu";
 import { Button } from "../components/ui/button";
+import { NepaliDatePicker } from "../components/ui/nepali-date-picker";
 import { useAuth } from "../features/auth/auth-provider";
 import {
   type CompanySettings,
@@ -274,15 +275,14 @@ export function SettingsPage() {
                     label="Date format"
                     required
                     value={String(general.dateFormat ?? "BS")}
-                    onValueChange={(dateFormat) =>
+                    onValueChange={() =>
                       setGeneral({
                         ...general,
-                        dateFormat: dateFormat as "BS" | "AD",
+                        dateFormat: "BS",
                       })
                     }
                     options={[
                       { value: "BS", label: "Bikram Sambat (BS)" },
-                      { value: "AD", label: "Gregorian (AD)" },
                     ]}
                   />
                   <FormSelect
@@ -431,7 +431,7 @@ function LocalizationTools() {
   const vatCalculation = useVatCalculation();
   const monthName = useBsMonthName();
   const error = (value: unknown) => value instanceof ApiClientError ? value.message : "Unable to complete the localization request.";
-  return <Flex direction="column" gap="4"><SettingsSection title="Bikram Sambat calendar" description="Convert dates while keeping the server as the calendar source of truth."><Flex direction="column" gap="3"><Text>Today in BS: <strong>{today.data ? `${today.data.date} (${today.data.monthName})` : "Loading…"}</strong></Text><form onSubmit={(event) => { event.preventDefault(); adToBs.mutate(adDate); }}><Flex direction="column" gap="2" className="settings-form"><FormTextField label="AD date" type="date" value={adDate} onChange={(event) => setAdDate(event.target.value)} required /><Button type="submit" loading={adToBs.isPending}>Convert AD to BS</Button>{adToBs.data ? <Text color="gray">BS: {adToBs.data.date} — {adToBs.data.monthName}</Text> : null}{adToBs.isError ? <Text color="red" role="alert">{error(adToBs.error)}</Text> : null}</Flex></form><form onSubmit={(event) => { event.preventDefault(); bsToAd.mutate(bsDate); }}><Flex direction="column" gap="2" className="settings-form"><FormTextField label="BS date" placeholder="2082-04-01" value={bsDate} onChange={(event) => setBsDate(event.target.value)} required /><Button type="submit" loading={bsToAd.isPending}>Convert BS to AD</Button>{bsToAd.data ? <Text color="gray">AD: {bsToAd.data.date}</Text> : null}{bsToAd.isError ? <Text color="red" role="alert">{error(bsToAd.error)}</Text> : null}</Flex></form><form onSubmit={(event) => { event.preventDefault(); monthName.mutate({ month: Number(month), language }); }}><Flex direction="column" gap="2" className="settings-form"><FormSelect label="BS month" value={month} onValueChange={setMonth} options={Array.from({ length: 12 }, (_, index) => ({ value: String(index + 1), label: String(index + 1) }))} /><FormSelect label="Language" value={language} onValueChange={(value) => setLanguage(value as "en" | "ne")} options={[{ value: "en", label: "English" }, { value: "ne", label: "Nepali" }]} /><Button type="submit" loading={monthName.isPending}>Get month name</Button>{monthName.data ? <Text color="gray">Month name: {monthName.data.name}</Text> : null}{monthName.isError ? <Text color="red" role="alert">{error(monthName.error)}</Text> : null}</Flex></form></Flex></SettingsSection><SettingsSection title="VAT calculator" description="Calculate inclusive or exclusive VAT using the server compliance rules."><form onSubmit={(event) => { event.preventDefault(); vatCalculation.mutate({ amount: Number(vatAmount), rate: Number(vatRate), mode: vatMode }); }}><Flex direction="column" gap="3" className="settings-form"><FormTextField label="Amount" type="number" value={vatAmount} onChange={(event) => setVatAmount(event.target.value)} required /><FormTextField label="VAT rate (%)" type="number" value={vatRate} onChange={(event) => setVatRate(event.target.value)} required /><FormSelect label="VAT mode" value={vatMode} onValueChange={(value) => setVatMode(value as "EXCLUSIVE" | "INCLUSIVE")} options={[{ value: "EXCLUSIVE", label: "Exclusive" }, { value: "INCLUSIVE", label: "Inclusive" }]} /><Button type="submit" loading={vatCalculation.isPending}>Calculate VAT</Button>{vatCalculation.data ? <div className="settings-summary"><Text>Taxable amount: <strong>{vatCalculation.data.taxableAmount.toFixed(2)}</strong></Text><Text>VAT amount: <strong>{vatCalculation.data.vatAmount.toFixed(2)}</strong></Text><Text>Total amount: <strong>{vatCalculation.data.totalAmount.toFixed(2)}</strong></Text></div> : null}{vatCalculation.isError ? <Text color="red" role="alert">{error(vatCalculation.error)}</Text> : null}</Flex></form></SettingsSection></Flex>;
+  return <Flex direction="column" gap="4"><SettingsSection title="Bikram Sambat calendar" description="Convert dates while keeping the server as the calendar source of truth."><Flex direction="column" gap="3"><Text>Today in BS: <strong>{today.data ? `${today.data.date} (${today.data.monthName})` : "Loading…"}</strong></Text><form onSubmit={(event) => { event.preventDefault(); adToBs.mutate(adDate); }}><Flex direction="column" gap="2" className="settings-form"><FormTextField label="AD date" placeholder="YYYY-MM-DD" value={adDate} onChange={(event) => setAdDate(event.target.value)} required /><Button type="submit" loading={adToBs.isPending}>Convert AD to BS</Button>{adToBs.data ? <Text color="gray">BS: {adToBs.data.date} — {adToBs.data.monthName}</Text> : null}{adToBs.isError ? <Text color="red" role="alert">{error(adToBs.error)}</Text> : null}</Flex></form><form onSubmit={(event) => { event.preventDefault(); bsToAd.mutate(bsDate); }}><Flex direction="column" gap="2" className="settings-form"><FormTextField label="BS date" placeholder="2082-04-01" value={bsDate} onChange={(event) => setBsDate(event.target.value)} required /><Button type="submit" loading={bsToAd.isPending}>Convert BS to AD</Button>{bsToAd.data ? <Text color="gray">AD: {bsToAd.data.date}</Text> : null}{bsToAd.isError ? <Text color="red" role="alert">{error(bsToAd.error)}</Text> : null}</Flex></form><form onSubmit={(event) => { event.preventDefault(); monthName.mutate({ month: Number(month), language }); }}><Flex direction="column" gap="2" className="settings-form"><FormSelect label="BS month" value={month} onValueChange={setMonth} options={Array.from({ length: 12 }, (_, index) => ({ value: String(index + 1), label: String(index + 1) }))} /><FormSelect label="Language" value={language} onValueChange={(value) => setLanguage(value as "en" | "ne")} options={[{ value: "en", label: "English" }, { value: "ne", label: "Nepali" }]} /><Button type="submit" loading={monthName.isPending}>Get month name</Button>{monthName.data ? <Text color="gray">Month name: {monthName.data.name}</Text> : null}{monthName.isError ? <Text color="red" role="alert">{error(monthName.error)}</Text> : null}</Flex></form></Flex></SettingsSection><SettingsSection title="VAT calculator" description="Calculate inclusive or exclusive VAT using the server compliance rules."><form onSubmit={(event) => { event.preventDefault(); vatCalculation.mutate({ amount: Number(vatAmount), rate: Number(vatRate), mode: vatMode }); }}><Flex direction="column" gap="3" className="settings-form"><FormTextField label="Amount" type="number" value={vatAmount} onChange={(event) => setVatAmount(event.target.value)} required /><FormTextField label="VAT rate (%)" type="number" value={vatRate} onChange={(event) => setVatRate(event.target.value)} required /><FormSelect label="VAT mode" value={vatMode} onValueChange={(value) => setVatMode(value as "EXCLUSIVE" | "INCLUSIVE")} options={[{ value: "EXCLUSIVE", label: "Exclusive" }, { value: "INCLUSIVE", label: "Inclusive" }]} /><Button type="submit" loading={vatCalculation.isPending}>Calculate VAT</Button>{vatCalculation.data ? <div className="settings-summary"><Text>Taxable amount: <strong>{vatCalculation.data.taxableAmount.toFixed(2)}</strong></Text><Text>VAT amount: <strong>{vatCalculation.data.vatAmount.toFixed(2)}</strong></Text><Text>Total amount: <strong>{vatCalculation.data.totalAmount.toFixed(2)}</strong></Text></div> : null}{vatCalculation.isError ? <Text color="red" role="alert">{error(vatCalculation.error)}</Text> : null}</Flex></form></SettingsSection></Flex>;
 }
 
 function SettingsSection({
@@ -500,14 +500,7 @@ function PanForm({
           }
           required
         />
-        <FormTextField
-          label="PAN registration date"
-          type="date"
-          value={form.registrationDate}
-          onChange={(event) =>
-            setForm({ ...form, registrationDate: event.target.value })
-          }
-        />
+        <label>PAN registration date (BS)<NepaliDatePicker value={form.registrationDate} onChange={(registrationDate) => setForm({ ...form, registrationDate })} ariaLabel="Choose PAN registration date in Bikram Sambat" /></label>
         <FormTextField
           label="PAN registration office"
           value={form.registrationOffice}
@@ -563,17 +556,7 @@ function AccountingForm({
             { value: "MANUAL", label: "Manual" },
           ]}
         />
-        <FormTextField
-          label="Lock entries before"
-          type="date"
-          value={fiscalLock.lockBeforeDate?.slice(0, 10) ?? ""}
-          onChange={(event) =>
-            setFiscalLock({
-              ...fiscalLock,
-              lockBeforeDate: event.target.value || null,
-            })
-          }
-        />
+        <label>Lock entries before (BS)<NepaliDatePicker value={fiscalLock.lockBeforeDate ?? ""} onChange={(lockBeforeDate) => setFiscalLock({ ...fiscalLock, lockBeforeDate: lockBeforeDate || null })} ariaLabel="Choose fiscal lock date in Bikram Sambat" /></label>
         <Flex justify="between" align="center">
           <div>
             <Text>Require transaction approval</Text>
@@ -616,21 +599,6 @@ function FiscalYears({ years }: { years: FiscalYear[] }) {
   const create = useFiscalYearMutation();
   const activate = useActivateFiscalYear();
   const close = useCloseFiscalYear();
-  const convertBsToAd = useBsToAd();
-
-  const fillAdDates = async () => {
-    try {
-      const start = await convertBsToAd.mutateAsync(form.startDateBS);
-      const end = await convertBsToAd.mutateAsync(form.endDateBS);
-      setForm((current) => ({
-        ...current,
-        startDateAD: start.date,
-        endDateAD: end.date,
-      }));
-    } catch {
-      // The mutation state provides the server's validation message below.
-    }
-  };
 
   return (
     <Flex direction="column" gap="3">
@@ -651,60 +619,14 @@ function FiscalYears({ years }: { years: FiscalYear[] }) {
               }
               required
             />
-            <FormTextField
-              label="Start BS"
-              value={form.startDateBS}
-              onChange={(event) =>
-                setForm({ ...form, startDateBS: event.target.value })
-              }
-              required
-            />
-            <FormTextField
-              label="End BS"
-              value={form.endDateBS}
-              onChange={(event) =>
-                setForm({ ...form, endDateBS: event.target.value })
-              }
-              required
-            />
-            <FormTextField
-              label="Start AD"
-              type="date"
-              value={form.startDateAD}
-              onChange={(event) =>
-                setForm({ ...form, startDateAD: event.target.value })
-              }
-              required
-            />
-            <FormTextField
-              label="End AD"
-              type="date"
-              value={form.endDateAD}
-              onChange={(event) =>
-                setForm({ ...form, endDateAD: event.target.value })
-              }
-              required
-            />
+            <label>Start date (BS)<NepaliDatePicker value={form.startDateBS} max={form.endDateBS || undefined} onChange={(startDateBS) => setForm({ ...form, startDateBS })} required ariaLabel="Choose fiscal-year start date in Bikram Sambat" /></label>
+            <label>End date (BS)<NepaliDatePicker value={form.endDateBS} min={form.startDateBS || undefined} onChange={(endDateBS) => setForm({ ...form, endDateBS })} required ariaLabel="Choose fiscal-year end date in Bikram Sambat" /></label>
           </div>
           <Flex justify="end" className="fiscal-year-actions">
-            <Button
-              type="button"
-              variant="outline"
-              loading={convertBsToAd.isPending}
-              disabled={!form.startDateBS || !form.endDateBS}
-              onClick={() => void fillAdDates()}
-            >
-              Fill AD dates from BS
-            </Button>
             <Button type="submit" loading={create.isPending}>
               Create and activate fiscal year
             </Button>
           </Flex>
-          {convertBsToAd.error instanceof Error ? (
-            <Text color="red" role="alert">
-              {convertBsToAd.error.message}
-            </Text>
-          ) : null}
         </Flex>
       </form>
       <Separator size="4" />
@@ -776,7 +698,7 @@ export function FiscalYearsPage() {
   const close = useCloseFiscalYear();
   const [status, setStatus] = useState("all");
   const filtered = years.data?.filter((year) => status === "all" || (status === "active" ? year.isActive : status === "closed" ? year.isLocked : !year.isLocked)) ?? [];
-  return <Flex direction="column" gap="5"><CrudPageHeader title="Fiscal years" description="Manage accounting periods, activation, and year-end locking." action={<Button onClick={() => navigate("/company/fiscal-years/new")}>Add fiscal year</Button>} /><Card size="3"><div className="accounting-filters"><label>Status<select className="app-select" value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">All fiscal years</option><option value="active">Active</option><option value="open">Open</option><option value="closed">Closed</option></select></label></div></Card><CrudPageState loading={years.isLoading} error={years.error} label="Loading fiscal years" description="Retrieving accounting periods…"><Card size="3" className="accounting-table-card order-actions-table"><table className="accounting-table"><thead><tr><th>Name</th><th>BS period</th><th>AD period</th><th>Status</th><th>Action</th></tr></thead><tbody>{filtered.map((year) => { const actions = !year.isLocked ? [...(!year.isActive ? [{ label: "Make active", icon: <CheckCircledIcon />, disabled: activate.isPending || close.isPending, onSelect: () => activate.mutate(year.id) }] : []), { label: "Close fiscal year", icon: <LockClosedIcon />, destructive: true, disabled: activate.isPending || close.isPending, onSelect: async () => { if (await actionDialog.confirm({ title: "Close fiscal year?", description: `Closing “${year.name}” locks its accounting period and prevents further entries.`, confirmLabel: "Close fiscal year", destructive: true })) close.mutate(year.id); } }] : []; return <tr key={year.id}><td><strong>{year.name}</strong></td><td>{year.startDateBS} – {year.endDateBS}</td><td>{year.startDateAD ?? "—"} – {year.endDateAD ?? "—"}</td><td>{year.isActive ? "Active" : year.isLocked ? "Closed" : "Open"}</td><td><OrderActionsMenu label={`Actions for fiscal year ${year.name}`} actions={actions} /></td></tr>; })}{!filtered.length ? <tr><td colSpan={5}><Text color="gray">No fiscal years match your filter.</Text></td></tr> : null}</tbody></table></Card>{activate.error || close.error ? <Text color="red" role="alert">{requestMessage(activate.error || close.error)}</Text> : null}</CrudPageState>{actionDialog.dialog}</Flex>;
+  return <Flex direction="column" gap="5"><CrudPageHeader title="Fiscal years" description="Manage Nepali accounting periods, activation, and year-end locking." action={<Button onClick={() => navigate("/company/fiscal-years/new")}>Add fiscal year</Button>} /><Card size="3"><div className="accounting-filters"><label>Status<select className="app-select" value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">All fiscal years</option><option value="active">Active</option><option value="open">Open</option><option value="closed">Closed</option></select></label></div></Card><CrudPageState loading={years.isLoading} error={years.error} label="Loading fiscal years" description="Retrieving accounting periods…"><Card size="3" className="accounting-table-card order-actions-table"><table className="accounting-table"><thead><tr><th>Name</th><th>BS period</th><th>Status</th><th>Action</th></tr></thead><tbody>{filtered.map((year) => { const actions = !year.isLocked ? [...(!year.isActive ? [{ label: "Make active", icon: <CheckCircledIcon />, disabled: activate.isPending || close.isPending, onSelect: () => activate.mutate(year.id) }] : []), { label: "Close fiscal year", icon: <LockClosedIcon />, destructive: true, disabled: activate.isPending || close.isPending, onSelect: async () => { if (await actionDialog.confirm({ title: "Close fiscal year?", description: `Closing “${year.name}” locks its accounting period and prevents further entries.`, confirmLabel: "Close fiscal year", destructive: true })) close.mutate(year.id); } }] : []; return <tr key={year.id}><td><strong>{year.name}</strong></td><td>{year.startDateBS} – {year.endDateBS}</td><td>{year.isActive ? "Active" : year.isLocked ? "Closed" : "Open"}</td><td><OrderActionsMenu label={`Actions for fiscal year ${year.name}`} actions={actions} /></td></tr>; })}{!filtered.length ? <tr><td colSpan={4}><Text color="gray">No fiscal years match your filter.</Text></td></tr> : null}</tbody></table></Card>{activate.error || close.error ? <Text color="red" role="alert">{requestMessage(activate.error || close.error)}</Text> : null}</CrudPageState>{actionDialog.dialog}</Flex>;
 }
 
 export function FiscalYearCreatePage() {
@@ -784,10 +706,8 @@ export function FiscalYearCreatePage() {
   const defaults = getCurrentFiscalYearDefaults();
   const [form, setForm] = useState(defaults);
   const create = useFiscalYearMutation();
-  const convert = useBsToAd();
-  async function fillDates() { try { const start = await convert.mutateAsync(form.startDateBS); const end = await convert.mutateAsync(form.endDateBS); setForm((current) => ({ ...current, startDateAD: start.date, endDateAD: end.date })); } catch { /* rendered below */ } }
   async function submit(event: React.FormEvent<HTMLFormElement>) { event.preventDefault(); try { await create.mutateAsync(form); navigate("/company/fiscal-years", { replace: true }); } catch { /* rendered below */ } }
-  return <Flex direction="column" gap="5"><CrudPageHeader title="Add fiscal year" description="Create and activate a new accounting period." /><Card size="3"><form className="accounting-form" onSubmit={(event) => void submit(event)}><FormTextField label="Name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required /><FormTextField label="Start BS" value={form.startDateBS} onChange={(event) => setForm({ ...form, startDateBS: event.target.value })} required /><FormTextField label="End BS" value={form.endDateBS} onChange={(event) => setForm({ ...form, endDateBS: event.target.value })} required /><FormTextField label="Start AD" type="date" value={form.startDateAD} onChange={(event) => setForm({ ...form, startDateAD: event.target.value })} required /><FormTextField label="End AD" type="date" value={form.endDateAD} onChange={(event) => setForm({ ...form, endDateAD: event.target.value })} required /><div className="accounting-form__actions accounting-form__wide"><Button type="button" variant="outline" onClick={() => navigate("/company/fiscal-years")}>Cancel</Button><Button type="button" variant="outline" loading={convert.isPending} disabled={!form.startDateBS || !form.endDateBS} onClick={() => void fillDates()}>Fill AD dates from BS</Button><Button type="submit" loading={create.isPending}>Create fiscal year</Button></div></form>{create.error || convert.error ? <Text color="red" role="alert">{requestMessage(create.error || convert.error)}</Text> : null}</Card></Flex>;
+  return <Flex direction="column" gap="5"><CrudPageHeader title="Add fiscal year" description="Create and activate a new Nepali accounting period." /><Card size="3"><form className="accounting-form" onSubmit={(event) => void submit(event)}><FormTextField label="Name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required /><label>Start date (BS)<NepaliDatePicker value={form.startDateBS} max={form.endDateBS || undefined} onChange={(startDateBS) => setForm({ ...form, startDateBS })} required ariaLabel="Choose fiscal-year start date in Bikram Sambat" /></label><label>End date (BS)<NepaliDatePicker value={form.endDateBS} min={form.startDateBS || undefined} onChange={(endDateBS) => setForm({ ...form, endDateBS })} required ariaLabel="Choose fiscal-year end date in Bikram Sambat" /></label><div className="accounting-form__actions accounting-form__wide"><Button type="button" variant="outline" onClick={() => navigate("/company/fiscal-years")}>Cancel</Button><Button type="submit" disabled={!form.startDateBS || !form.endDateBS} loading={create.isPending}>Create fiscal year</Button></div></form>{create.error ? <Text color="red" role="alert">{requestMessage(create.error)}</Text> : null}</Card></Flex>;
 }
 
 export function CompanyProfilePage() {
@@ -811,7 +731,7 @@ export function CompanyPreferencesPage() {
   const [general, setGeneral] = useState<Partial<CompanySettings>>({});
   useEffect(() => { if (settings.data) setGeneral(editableSettings(settings.data)); }, [settings.data]);
   async function saveGeneral(event: React.FormEvent<HTMLFormElement>) { event.preventDefault(); try { await update.mutateAsync(general); } catch { /* rendered below */ } }
-  return <Flex direction="column" gap="5"><CrudPageHeader title="Preferences" description="Configure business, display, accounting, and fiscal-lock defaults." /><CrudPageState loading={settings.isLoading} error={settings.error} label="Loading preferences" description="Retrieving company preferences…"><Card size="3"><form className="accounting-form" onSubmit={(event) => void saveGeneral(event)}><FormSelect label="Business type" required value={String(general.businessType ?? "RETAIL")} onValueChange={(businessType) => setGeneral({ ...general, businessType })} options={businessTypes.map((value) => ({ value, label: value.replaceAll("_", " ") }))} /><FormSelect label="Currency" required value={String(general.currency ?? "NPR")} onValueChange={(currency) => { const selected = currencies.find((item) => item.value === currency); setGeneral({ ...general, currency, currencySymbol: selected?.symbol ?? general.currencySymbol }); }} options={currencies.map(({ value, label }) => ({ value, label }))} /><FormSelect label="Currency symbol" required value={String(general.currencySymbol ?? "Rs.")} onValueChange={(currencySymbol) => setGeneral({ ...general, currencySymbol })} options={currencies.map(({ value, symbol }) => ({ value: symbol, label: `${symbol} (${value})` }))} /><FormSelect label="Date format" required value={String(general.dateFormat ?? "BS")} onValueChange={(dateFormat) => setGeneral({ ...general, dateFormat: dateFormat as "BS" | "AD" })} options={[{ value: "BS", label: "Bikram Sambat (BS)" }, { value: "AD", label: "Gregorian (AD)" }]} /><FormSelect label="Decimal places" required value={String(general.decimalPlaces ?? 2)} onValueChange={(decimalPlaces) => setGeneral({ ...general, decimalPlaces: Number(decimalPlaces) })} options={[0, 1, 2, 3, 4, 5, 6].map((value) => ({ value: String(value), label: String(value) }))} /><Flex justify="between" align="center" className="accounting-form__wide"><Text>Allow negative stock</Text><Switch checked={Boolean(general.allowNegativeStock)} onCheckedChange={(allowNegativeStock) => setGeneral({ ...general, allowNegativeStock })} /></Flex><div className="accounting-form__actions accounting-form__wide"><Button type="submit" loading={update.isPending}>Save business preferences</Button></div></form>{update.error ? <Text color="red" role="alert">{message(update.error)}</Text> : null}{update.isSuccess ? <Text color="green" role="status">Business preferences saved.</Text> : null}</Card><Card size="3"><AccountingForm settings={settings.data!} onSave={async (input) => { try { await updateAccounting.mutateAsync(input); } catch { /* rendered below */ } }} pending={updateAccounting.isPending} />{updateAccounting.error ? <Text color="red" role="alert">{message(updateAccounting.error)}</Text> : null}{updateAccounting.isSuccess ? <Text color="green" role="status">Accounting preferences saved.</Text> : null}</Card></CrudPageState></Flex>;
+  return <Flex direction="column" gap="5"><CrudPageHeader title="Preferences" description="Configure business, display, accounting, and fiscal-lock defaults." /><CrudPageState loading={settings.isLoading} error={settings.error} label="Loading preferences" description="Retrieving company preferences…"><Card size="3"><form className="accounting-form" onSubmit={(event) => void saveGeneral(event)}><FormSelect label="Business type" required value={String(general.businessType ?? "RETAIL")} onValueChange={(businessType) => setGeneral({ ...general, businessType })} options={businessTypes.map((value) => ({ value, label: value.replaceAll("_", " ") }))} /><FormSelect label="Currency" required value={String(general.currency ?? "NPR")} onValueChange={(currency) => { const selected = currencies.find((item) => item.value === currency); setGeneral({ ...general, currency, currencySymbol: selected?.symbol ?? general.currencySymbol }); }} options={currencies.map(({ value, label }) => ({ value, label }))} /><FormSelect label="Currency symbol" required value={String(general.currencySymbol ?? "Rs.")} onValueChange={(currencySymbol) => setGeneral({ ...general, currencySymbol })} options={currencies.map(({ value, symbol }) => ({ value: symbol, label: `${symbol} (${value})` }))} /><FormSelect label="Date format" required value={String(general.dateFormat ?? "BS")} onValueChange={() => setGeneral({ ...general, dateFormat: "BS" })} options={[{ value: "BS", label: "Bikram Sambat (BS)" }]} /><FormSelect label="Decimal places" required value={String(general.decimalPlaces ?? 2)} onValueChange={(decimalPlaces) => setGeneral({ ...general, decimalPlaces: Number(decimalPlaces) })} options={[0, 1, 2, 3, 4, 5, 6].map((value) => ({ value: String(value), label: String(value) }))} /><Flex justify="between" align="center" className="accounting-form__wide"><Text>Allow negative stock</Text><Switch checked={Boolean(general.allowNegativeStock)} onCheckedChange={(allowNegativeStock) => setGeneral({ ...general, allowNegativeStock })} /></Flex><div className="accounting-form__actions accounting-form__wide"><Button type="submit" loading={update.isPending}>Save business preferences</Button></div></form>{update.error ? <Text color="red" role="alert">{message(update.error)}</Text> : null}{update.isSuccess ? <Text color="green" role="status">Business preferences saved.</Text> : null}</Card><Card size="3"><AccountingForm settings={settings.data!} onSave={async (input) => { try { await updateAccounting.mutateAsync(input); } catch { /* rendered below */ } }} pending={updateAccounting.isPending} />{updateAccounting.error ? <Text color="red" role="alert">{message(updateAccounting.error)}</Text> : null}{updateAccounting.isSuccess ? <Text color="green" role="status">Accounting preferences saved.</Text> : null}</Card></CrudPageState></Flex>;
 }
 
 export function CompanyPanVatPage() {

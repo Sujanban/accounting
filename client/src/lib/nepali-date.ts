@@ -33,6 +33,19 @@ export function formatBsDate(date: BsDate) {
   return `${date.year}-${pad(date.month + 1)}-${pad(date.day)}`;
 }
 
+export function parseBsDate(value: string): BsDate | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+  const date = { year: Number(match[1]), month: Number(match[2]) - 1, day: Number(match[3]) };
+  if (date.year < MIN_BS_YEAR || date.year > MAX_BS_YEAR || date.month < 0 || date.month > 11) return null;
+  return date.day >= 1 && date.day <= daysInBsMonth(date.year, date.month) ? date : null;
+}
+
+export function todayBsDate() {
+  const converted = adToBsDate(formatAdDate(new Date()));
+  return converted ? formatBsDate(converted) : "";
+}
+
 export function adToBsDate(value: string): BsDate | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) return null;
@@ -73,5 +86,9 @@ export function firstWeekdayOfBsMonth(year: number, month: number) {
 }
 
 export function isAdDateInRange(value: string, min?: string, max?: string) {
+  return (!min || value >= min) && (!max || value <= max);
+}
+
+export function isBsDateInRange(value: string, min?: string, max?: string) {
   return (!min || value >= min) && (!max || value <= max);
 }

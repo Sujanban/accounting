@@ -10,9 +10,10 @@ import {
   firstWeekdayOfBsMonth,
   formatAdDate,
   formatBsDate,
-  isAdDateInRange,
+  isBsDateInRange,
   MAX_BS_YEAR,
   MIN_BS_YEAR,
+  parseBsDate,
   type BsDate,
 } from "../../lib/nepali-date";
 
@@ -52,7 +53,7 @@ export function NepaliDatePicker({
   const rootRef = useRef<HTMLDivElement>(null);
   const controlRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
-  const selected = useMemo(() => adToBsDate(value), [value]);
+  const selected = useMemo(() => parseBsDate(value), [value]);
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<BsDate>(() => selected ?? fallbackView());
   const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0, width: 336 });
@@ -116,14 +117,15 @@ export function NepaliDatePicker({
   };
 
   const selectDay = (day: number) => {
-    const adDate = bsToAdDate({ year: view.year, month: view.month, day });
-    if (!adDate || !isAdDateInRange(adDate, min, max)) return;
-    onChange(adDate);
+    const bsDate = formatBsDate({ year: view.year, month: view.month, day });
+    if (!bsToAdDate({ year: view.year, month: view.month, day }) || !isBsDateInRange(bsDate, min, max)) return;
+    onChange(bsDate);
     setOpen(false);
   };
 
   const todayAd = formatAdDate(new Date());
   const todayBs = adToBsDate(todayAd);
+  const todayBsValue = todayBs ? formatBsDate(todayBs) : "";
   const monthLength = daysInBsMonth(view.year, view.month);
   const leadingDays = firstWeekdayOfBsMonth(view.year, view.month);
 
@@ -184,7 +186,8 @@ export function NepaliDatePicker({
               const adDate = bsToAdDate(date);
               const isSelected = selected?.year === view.year && selected.month === view.month && selected.day === day;
               const isToday = todayBs?.year === view.year && todayBs.month === view.month && todayBs.day === day;
-              const unavailable = !adDate || !isAdDateInRange(adDate, min, max);
+              const bsDate = formatBsDate(date);
+              const unavailable = !adDate || !isBsDateInRange(bsDate, min, max);
               return (
                 <button
                   type="button"
@@ -208,7 +211,7 @@ export function NepaliDatePicker({
                 <Cross2Icon aria-hidden="true" /> Clear
               </button>
             ) : <span />}
-            <button type="button" disabled={!todayBs || !isAdDateInRange(todayAd, min, max)} onClick={() => { onChange(todayAd); setOpen(false); }}>
+            <button type="button" disabled={!todayBs || !isBsDateInRange(todayBsValue, min, max)} onClick={() => { onChange(todayBsValue); setOpen(false); }}>
               Today
             </button>
           </div>

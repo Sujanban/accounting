@@ -1,6 +1,7 @@
 const CONTACT_ROLES = new Set(["CUSTOMER", "SUPPLIER", "EMPLOYEE", "VENDOR", "TRANSPORTER", "OTHER"]);
 const mongoose = require("mongoose");
 const { isValidEmail } = require("../utils/email");
+const { isValidBsDate } = require("../services/nepalDateService");
 
 const catalogFields = {
   units: new Set(["name", "symbol", "decimalAllowed"]),
@@ -75,7 +76,7 @@ function validateCatalog(resource, body, { partial = false } = {}) {
     required("taxCode", !body.taxCode || !/^[A-Za-z0-9_-]{2,30}$/.test(body.taxCode.trim()), "Tax code is invalid.");
     required("name", !body.name || body.name.trim().length < 2, "Tax name is required.");
     required("percentage", !Number.isFinite(Number(body.percentage)) || Number(body.percentage) < 0 || Number(body.percentage) > 100, "Tax percentage must be between 0 and 100.");
-    required("effectiveDate", !body.effectiveDate || Number.isNaN(new Date(body.effectiveDate).getTime()), "Effective date is required.");
+    required("effectiveDate", !isValidBsDate(body.effectiveDate), "Effective date must be a valid Bikram Sambat date in YYYY-MM-DD format.");
     if (body.type !== undefined && !["VAT", "EXEMPT", "ZERO_RATED"].includes(body.type)) errors.push({ field: "type", message: "Tax type is invalid." });
     if (body.isDefault !== undefined && typeof body.isDefault !== "boolean") errors.push({ field: "isDefault", message: "Default must be a boolean." });
   }

@@ -18,7 +18,11 @@ function mapCompany(company) {
     logo: company.logo,
     onboardingCompleted: company.onboardingCompleted,
     activeFiscalYearId: company.activeFiscalYearId,
-    activeFiscalYear: company.activeFiscalYear
+    activeFiscalYear: company.activeFiscalYear ? {
+      name: company.activeFiscalYear.name,
+      startDateBS: company.activeFiscalYear.startDateBS,
+      endDateBS: company.activeFiscalYear.endDateBS
+    } : null
   };
 }
 
@@ -34,7 +38,7 @@ function mapSettings(settings) {
     currency: settings.currency,
     currencySymbol: settings.currencySymbol,
     language: settings.language,
-    dateFormat: settings.dateFormat,
+    dateFormat: "BS",
     timezone: settings.timezone,
     decimalPlaces: settings.decimalPlaces,
     allowNegativeStock: settings.allowNegativeStock,

@@ -4,6 +4,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { ApiClientError } from "../../lib/query-client";
 import { FormSelect, FormTextField } from "../../components/forms/form-fields";
 import { Button } from "../../components/ui/button";
+import { NepaliDatePicker } from "../../components/ui/nepali-date-picker";
 import { getCurrentFiscalYearDefaults } from "../../lib/fiscal-year";
 import { useAuth } from "../auth/auth-provider";
 import { type CreateCompanyInput, type CreateSettingsInput } from "./onboarding-api";
@@ -14,8 +15,6 @@ type CompanyForm = Omit<CreateCompanyInput, "fiscalYear" | "vatRegistered"> & {
   fiscalYear: string;
   startDateBS: string;
   endDateBS: string;
-  startDateAD: string;
-  endDateAD: string;
 };
 
 const currentFiscalYear = getCurrentFiscalYearDefaults();
@@ -24,9 +23,7 @@ const initialCompany: CompanyForm = {
   name: "", panNumber: "", vatRegistered: null, vatNumber: "", phone: "", email: "", address: "", logo: "",
   fiscalYear: currentFiscalYear.name,
   startDateBS: currentFiscalYear.startDateBS,
-  endDateBS: currentFiscalYear.endDateBS,
-  startDateAD: currentFiscalYear.startDateAD,
-  endDateAD: currentFiscalYear.endDateAD
+  endDateBS: currentFiscalYear.endDateBS
 };
 
 const initialSettings: CreateSettingsInput = {
@@ -82,7 +79,7 @@ export function OnboardingPage() {
         ...(company.vatRegistered ? { vatNumber: company.vatNumber } : {}),
         ...(company.phone ? { phone: company.phone } : {}), ...(company.email ? { email: company.email } : {}),
         ...(company.address ? { address: company.address } : {}), ...(company.logo ? { logo: company.logo } : {}),
-        fiscalYear: { name: company.fiscalYear, startDateBS: company.startDateBS, endDateBS: company.endDateBS, startDateAD: company.startDateAD, endDateAD: company.endDateAD }
+        fiscalYear: { name: company.fiscalYear, startDateBS: company.startDateBS, endDateBS: company.endDateBS }
       });
       updateSession(result.session);
       setStep(3);
@@ -123,13 +120,13 @@ export function OnboardingPage() {
           {step === 2 ? <form onSubmit={submitFiscalYear}><Flex direction="column" gap="4">
             <Heading size="5">Fiscal year</Heading><Text color="gray" size="2">The current Nepali fiscal year is selected automatically. You can adjust it if this company uses a different period.</Text>
             <FormTextField label="Fiscal-year name" value={company.fiscalYear} onChange={(event) => updateCompany("fiscalYear", event.target.value)} required />
-            <div className="grid gap-4 sm:grid-cols-2"><FormTextField label="Start date (BS)" value={company.startDateBS} onChange={(event) => updateCompany("startDateBS", event.target.value)} placeholder="2082-04-01" required /><FormTextField label="End date (BS)" value={company.endDateBS} onChange={(event) => updateCompany("endDateBS", event.target.value)} placeholder="2083-03-31" required /><FormTextField label="Start date (AD)" type="date" value={company.startDateAD} onChange={(event) => updateCompany("startDateAD", event.target.value)} required /><FormTextField label="End date (AD)" type="date" value={company.endDateAD} onChange={(event) => updateCompany("endDateAD", event.target.value)} required /></div>
+            <div className="grid gap-4 sm:grid-cols-2"><label>Start date (BS)<NepaliDatePicker value={company.startDateBS} max={company.endDateBS || undefined} onChange={(value) => updateCompany("startDateBS", value)} required ariaLabel="Choose fiscal-year start date in Bikram Sambat" /></label><label>End date (BS)<NepaliDatePicker value={company.endDateBS} min={company.startDateBS || undefined} onChange={(value) => updateCompany("endDateBS", value)} required ariaLabel="Choose fiscal-year end date in Bikram Sambat" /></label></div>
             {error ? <ErrorMessage message={error} /> : null}<Flex justify="between"><Button type="button" variant="outline" onClick={() => setStep(1)}>Back</Button><Button type="submit" size="3" loading={companyMutation.isPending}>Create company</Button></Flex>
           </Flex></form> : null}
           {step === 3 ? <form onSubmit={submitSettings}><Flex direction="column" gap="4">
             <Heading size="5">Company settings</Heading><Text color="gray" size="2">These settings complete your onboarding and can be adjusted later where supported.</Text>
             <FormSelect label="Business type" value={settings.businessType} onValueChange={(businessType) => setSettings((current) => ({ ...current, businessType: businessType as CreateSettingsInput["businessType"] }))} options={["RETAIL", "WHOLESALE", "SERVICE", "MANUFACTURING", "PHARMACY", "RESTAURANT", "OTHER"].map((value) => ({ value, label: value.replaceAll("_", " ") }))} required />
-            <div className="grid gap-4 sm:grid-cols-2"><FormSelect label="Currency" value={settings.currency} onValueChange={(currency) => { const selected = currencyOptions.find((option) => option.value === currency); setSettings((current) => ({ ...current, currency, currencySymbol: selected?.symbol ?? current.currencySymbol })); }} options={currencyOptions.map(({ value, label }) => ({ value, label }))} required /><FormSelect label="Currency symbol" value={settings.currencySymbol} onValueChange={(currencySymbol) => setSettings((current) => ({ ...current, currencySymbol }))} options={currencyOptions.map(({ symbol, value }) => ({ value: symbol, label: `${symbol} (${value})` }))} required /><FormSelect label="Date format" value={settings.dateFormat} onValueChange={(dateFormat) => setSettings((current) => ({ ...current, dateFormat: dateFormat as "BS" | "AD" }))} options={[{ value: "BS", label: "Bikram Sambat (BS)" }, { value: "AD", label: "Gregorian (AD)" }]} required /><FormSelect label="Decimal places" value={String(settings.decimalPlaces)} onValueChange={(decimalPlaces) => setSettings((current) => ({ ...current, decimalPlaces: Number(decimalPlaces) }))} options={[0, 1, 2, 3, 4, 5, 6].map((value) => ({ value: String(value), label: String(value) }))} required /></div>
+            <div className="grid gap-4 sm:grid-cols-2"><FormSelect label="Currency" value={settings.currency} onValueChange={(currency) => { const selected = currencyOptions.find((option) => option.value === currency); setSettings((current) => ({ ...current, currency, currencySymbol: selected?.symbol ?? current.currencySymbol })); }} options={currencyOptions.map(({ value, label }) => ({ value, label }))} required /><FormSelect label="Currency symbol" value={settings.currencySymbol} onValueChange={(currencySymbol) => setSettings((current) => ({ ...current, currencySymbol }))} options={currencyOptions.map(({ symbol, value }) => ({ value: symbol, label: `${symbol} (${value})` }))} required /><FormSelect label="Date format" value={settings.dateFormat} onValueChange={() => setSettings((current) => ({ ...current, dateFormat: "BS" }))} options={[{ value: "BS", label: "Bikram Sambat (BS)" }]} required /><FormSelect label="Decimal places" value={String(settings.decimalPlaces)} onValueChange={(decimalPlaces) => setSettings((current) => ({ ...current, decimalPlaces: Number(decimalPlaces) }))} options={[0, 1, 2, 3, 4, 5, 6].map((value) => ({ value: String(value), label: String(value) }))} required /></div>
             <Flex justify="between" align="center"><div><Text as="p" weight="medium">Allow negative stock</Text><Text as="p" color="gray" size="2">Keep this off unless your workflow requires it.</Text></div><Switch checked={settings.allowNegativeStock} onCheckedChange={(allowNegativeStock) => setSettings((current) => ({ ...current, allowNegativeStock }))} /></Flex>
             {error ? <ErrorMessage message={error} /> : null}<Flex justify="end"><Button type="submit" size="3" loading={settingsMutation.isPending}>Finish setup</Button></Flex>
           </Flex></form> : null}

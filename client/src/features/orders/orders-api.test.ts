@@ -12,7 +12,7 @@ describe("order fulfillment APIs", () => {
   beforeEach(() => mockApiClient.mockReset());
 
   it("posts delivery notes to the confirmed sales order endpoint", () => {
-    const input = { warehouseId: "warehouse-1", fulfillmentDate: "2026-07-29" };
+    const input = { warehouseId: "warehouse-1", fulfillmentDate: "2083-04-14" };
 
     salesOrdersApi.createDelivery("sales-order-1", input);
 
@@ -23,7 +23,7 @@ describe("order fulfillment APIs", () => {
   });
 
   it("posts goods receipts to the confirmed purchase order endpoint", () => {
-    const input = { warehouseId: "warehouse-1", fulfillmentDate: "2026-07-29" };
+    const input = { warehouseId: "warehouse-1", fulfillmentDate: "2083-04-14" };
 
     purchaseOrdersApi.createGoodsReceipt("purchase-order-1", input);
 

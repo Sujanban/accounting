@@ -4,16 +4,7 @@ type FiscalYearDefaults = {
   name: string;
   startDateBS: string;
   endDateBS: string;
-  startDateAD: string;
-  endDateAD: string;
 };
-
-function formatAdDate(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 /** Returns the current Nepali fiscal year (Shrawan 1 through the following Ashadh's final day). */
 export function getCurrentFiscalYearDefaults(today = new Date()): FiscalYearDefaults {
@@ -28,8 +19,6 @@ export function getCurrentFiscalYearDefaults(today = new Date()): FiscalYearDefa
   return {
     name: `${fiscalStartYear}/${String(fiscalStartYear + 1).slice(-2)}`,
     startDateBS: startBs.format("YYYY-MM-DD"),
-    endDateBS: endBs.format("YYYY-MM-DD"),
-    startDateAD: formatAdDate(startBs.toJsDate()),
-    endDateAD: formatAdDate(endAd)
+    endDateBS: endBs.format("YYYY-MM-DD")
   };
 }

@@ -7,6 +7,7 @@ const { AccountGroup } = require("../models/AccountGroup");
 const { Contact } = require("../models/Contact");
 const { ContactLedger } = require("../models/ContactLedger");
 const { ApiError } = require("../utils/apiError");
+const { dateToBs } = require("./nepalDateService");
 
 const MAX_LIMIT = 100;
 
@@ -145,7 +146,8 @@ async function getProfitLoss(companyId, fiscalYearId, query) {
 }
 
 async function getBalanceSheet(companyId, fiscalYearId, query) {
-  const asOf = query.to ? new Date(`${query.to}T23:59:59.999Z`) : null;
+  const asOf = query.to ? new Date(query.to) : null;
+  if (asOf) asOf.setUTCHours(23, 59, 59, 999);
   const journalFilters = { companyId, fiscalYearId, ...(query.branchId ? { branchId: query.branchId } : {}), ...(asOf ? { transactionDate: { $lte: asOf } } : {}) };
   const movements = await JournalLine.aggregate([
     { $match: { companyId } },
@@ -305,27 +307,42 @@ async function getNegativeStock(companyId, fiscalYearId, query) {
 async function getExpenseTrend(companyId, fiscalYearId, query) {
   const range = dateRange(query);
   const journalFilters = { companyId, fiscalYearId, ...(range ? { transactionDate: range } : {}) };
-  const items = await JournalLine.aggregate([
+  const dailyItems = await JournalLine.aggregate([
     { $match: { companyId } },
     { $lookup: { from: "journals", localField: "journalId", foreignField: "_id", as: "journal" } }, { $unwind: "$journal" },
     { $match: Object.fromEntries(Object.entries(journalFilters).map(([key, value]) => [`journal.${key}`, value])) },
     { $lookup: { from: "ledgers", localField: "ledgerId", foreignField: "_id", as: "ledger" } }, { $unwind: "$ledger" },
     { $lookup: { from: "accountgroups", localField: "ledger.groupId", foreignField: "_id", as: "group" } }, { $unwind: "$group" },
     { $match: { "group.category": "Expenses" } },
-    { $group: { _id: { $dateToString: { format: "%Y-%m", date: "$journal.transactionDate", timezone: "UTC" } }, amount: { $sum: { $subtract: ["$debit", "$credit"] } } } },
-    { $project: { _id: 0, month: "$_id", amount: 1 } }, { $sort: { month: 1 } }
+    { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$journal.transactionDate", timezone: "UTC" } }, amount: { $sum: { $subtract: ["$debit", "$credit"] } } } },
+    { $project: { _id: 0, date: "$_id", amount: 1 } }, { $sort: { date: 1 } }
   ]);
+  const months = new Map();
+  for (const item of dailyItems) {
+    const month = dateToBs(`${item.date}T00:00:00.000Z`).slice(0, 7);
+    months.set(month, (months.get(month) || 0) + Number(item.amount || 0));
+  }
+  const items = [...months.entries()].map(([month, amount]) => ({ month, amount }));
   return { items, totals: { expenses: items.reduce((total, item) => total + Number(item.amount || 0), 0) } };
 }
 
 async function getSalesTrend(companyId, fiscalYearId, query) {
   const range = dateRange(query);
   const filters = { companyId, fiscalYearId, transactionType: "SALE", status: "POSTED", ...(range ? { transactionDate: range } : {}) };
-  const items = await Transaction.aggregate([
+  const dailyItems = await Transaction.aggregate([
     { $match: filters }, { $unwind: "$accountingEntries" },
-    { $group: { _id: { $dateToString: { format: "%Y-%m", date: "$transactionDate", timezone: "UTC" } }, amount: { $sum: "$accountingEntries.debit" }, voucherIds: { $addToSet: "$_id" } } },
-    { $project: { _id: 0, month: "$_id", amount: 1, voucherCount: { $size: "$voucherIds" } } }, { $sort: { month: 1 } }
+    { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$transactionDate", timezone: "UTC" } }, amount: { $sum: "$accountingEntries.debit" }, voucherIds: { $addToSet: "$_id" } } },
+    { $project: { _id: 0, date: "$_id", amount: 1, voucherCount: { $size: "$voucherIds" } } }, { $sort: { date: 1 } }
   ]);
+  const months = new Map();
+  for (const item of dailyItems) {
+    const month = dateToBs(`${item.date}T00:00:00.000Z`).slice(0, 7);
+    const current = months.get(month) || { month, amount: 0, voucherCount: 0 };
+    current.amount += Number(item.amount || 0);
+    current.voucherCount += Number(item.voucherCount || 0);
+    months.set(month, current);
+  }
+  const items = [...months.values()];
   return { items, totals: { amount: items.reduce((total, item) => total + Number(item.amount || 0), 0), vouchers: items.reduce((total, item) => total + Number(item.voucherCount || 0), 0) } };
 }
 

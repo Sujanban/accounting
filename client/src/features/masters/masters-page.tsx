@@ -6,6 +6,8 @@ import { LoadingScreen } from "../../components/loading-screen";
 import { OrderActionsMenu } from "../../components/order-actions-menu";
 import { Button } from "../../components/ui/button";
 import { AppSelect } from "../../components/ui/select";
+import { NepaliDatePicker } from "../../components/ui/nepali-date-picker";
+import { todayBsDate } from "../../lib/nepali-date";
 import { ApiClientError } from "../../lib/query-client";
 import {
   type Contact,
@@ -737,6 +739,7 @@ function CatalogEditPage({ type, item, categories, contactGroups }: { type: Cata
   const navigate = useNavigate();
   const update = useUpdateCatalog<Record<string, unknown>>(type);
   const [error, setError] = useState<unknown>(null);
+  const [effectiveDate, setEffectiveDate] = useState(() => String(item.effectiveDate ?? ""));
   const value = (field: string) => String(item[field] ?? "");
   const boolean = (field: string) => String(Boolean(item[field]));
   const title = { units: "unit", categories: "product category", "tax-rates": "tax rate", "payment-terms": "payment term", "contact-groups": "contact group", warehouses: "warehouse", "price-lists": "price list", products: "product" }[type];
@@ -759,7 +762,7 @@ function CatalogEditPage({ type, item, categories, contactGroups }: { type: Cata
   const fields = () => {
     if (type === "units") return <><label>Name<RequiredMark /><input name="name" defaultValue={value("name")} required minLength={2} /></label><label>Symbol<RequiredMark /><input name="symbol" defaultValue={value("symbol")} required /></label><label>Precision<AppSelect name="decimalAllowed" defaultValue={boolean("decimalAllowed")}><option value="true">Decimals allowed</option><option value="false">Whole numbers only</option></AppSelect></label></>;
     if (type === "categories") return <><label>Code<RequiredMark /><input name="categoryCode" defaultValue={value("categoryCode")} required /></label><label>Name<RequiredMark /><input name="name" defaultValue={value("name")} required minLength={2} /></label><label>Parent<AppSelect name="parentId" defaultValue={value("parentId")}><option value="">No parent</option>{categories.filter((entry) => entry.isActive && entry.id !== item.id).map((entry) => <option key={entry.id} value={entry.id}>{entry.name}</option>)}</AppSelect></label><label className="accounting-form__wide">Description<textarea name="description" rows={2} defaultValue={value("description")} /></label></>;
-    if (type === "tax-rates") return <><label>Code<RequiredMark /><input name="taxCode" defaultValue={value("taxCode")} required /></label><label>Name<RequiredMark /><input name="name" defaultValue={value("name")} required minLength={2} /></label><label>Percentage<RequiredMark /><input name="percentage" type="number" min="0" max="100" step="any" defaultValue={value("percentage")} required /></label><label>Type<AppSelect name="type" defaultValue={value("type")}><option value="VAT">VAT</option><option value="EXEMPT">Exempt</option><option value="ZERO_RATED">Zero rated</option></AppSelect></label><label>Effective date<RequiredMark /><input name="effectiveDate" type="date" defaultValue={value("effectiveDate").slice(0, 10)} required /></label><label>Default<AppSelect name="isDefault" defaultValue={boolean("isDefault")}><option value="false">No</option><option value="true">Yes</option></AppSelect></label></>;
+    if (type === "tax-rates") return <><label>Code<RequiredMark /><input name="taxCode" defaultValue={value("taxCode")} required /></label><label>Name<RequiredMark /><input name="name" defaultValue={value("name")} required minLength={2} /></label><label>Percentage<RequiredMark /><input name="percentage" type="number" min="0" max="100" step="any" defaultValue={value("percentage")} required /></label><label>Type<AppSelect name="type" defaultValue={value("type")}><option value="VAT">VAT</option><option value="EXEMPT">Exempt</option><option value="ZERO_RATED">Zero rated</option></AppSelect></label><label>Effective date (BS)<RequiredMark /><NepaliDatePicker name="effectiveDate" value={effectiveDate} onChange={setEffectiveDate} required ariaLabel="Choose tax effective date in Bikram Sambat" /></label><label>Default<AppSelect name="isDefault" defaultValue={boolean("isDefault")}><option value="false">No</option><option value="true">Yes</option></AppSelect></label></>;
     if (type === "payment-terms") return <><label>Name<RequiredMark /><input name="name" defaultValue={value("name")} required minLength={2} /></label><label>Due days<RequiredMark /><input name="dueDays" type="number" min="0" max="3650" defaultValue={value("dueDays")} required /></label><label className="accounting-form__wide">Description<textarea name="description" rows={2} defaultValue={value("description")} /></label></>;
     if (type === "contact-groups") return <><label>Name<RequiredMark /><input name="name" defaultValue={value("name")} required minLength={2} /></label><label>Parent<AppSelect name="parentId" defaultValue={value("parentId")}><option value="">No parent</option>{contactGroups.filter((entry) => entry.isActive && entry.id !== item.id).map((entry) => <option key={entry.id} value={entry.id}>{entry.name}</option>)}</AppSelect></label><label className="accounting-form__wide">Description<textarea name="description" rows={2} defaultValue={value("description")} /></label></>;
     if (type === "warehouses") return <><label>Code<RequiredMark /><input name="warehouseCode" defaultValue={value("warehouseCode")} required /></label><label>Name<RequiredMark /><input name="name" defaultValue={value("name")} required minLength={2} /></label><label>Address<input name="address" defaultValue={value("address")} /></label><label>Default<AppSelect name="isDefault" defaultValue={boolean("isDefault")}><option value="false">No</option><option value="true">Yes</option></AppSelect></label><label className="accounting-form__wide">Description<textarea name="description" rows={2} defaultValue={value("description")} /></label></>;
@@ -965,6 +968,7 @@ function Catalog<T extends { id: string; isActive: boolean }>({
 }
 
 function MastersCatalogPage({ type, createPage, editId }: { type: string; createPage?: boolean; editId?: string }) {
+  const [effectiveDate, setEffectiveDate] = useState(todayBsDate);
   const units = useUnits("all"),
     categories = useCategories("all"),
     contactGroups = useContactGroups("all"),
@@ -1123,7 +1127,7 @@ function MastersCatalogPage({ type, createPage, editId }: { type: string; create
             <td>{x.name}</td>
             <td>{x.percentage}%</td>
             <td>{x.type}</td>
-            <td>{new Date(x.effectiveDate).toLocaleDateString()}</td>
+            <td>{x.effectiveDate} BS</td>
           </>
         )}
         form={simpleForm(
@@ -1157,8 +1161,8 @@ function MastersCatalogPage({ type, createPage, editId }: { type: string; create
               </AppSelect>
             </label>
             <label>
-              Effective date
-              <input name="effectiveDate" type="date" placeholder="YYYY-MM-DD" required />
+              Effective date (BS)
+              <NepaliDatePicker name="effectiveDate" value={effectiveDate} onChange={setEffectiveDate} required ariaLabel="Choose tax effective date in Bikram Sambat" />
             </label>
           </>,
         )}

@@ -2,6 +2,7 @@ const { Company } = require("../models/Company");
 const { FiscalYear } = require("../models/FiscalYear");
 const { ApiError } = require("../utils/apiError");
 const { initializeAccountingForFiscalYear } = require("./accountingBootstrapService");
+const { bsToUtcDate } = require("./nepalDateService");
 
 function mapFiscalYear(fiscalYear) {
   return {
@@ -10,8 +11,6 @@ function mapFiscalYear(fiscalYear) {
     name: fiscalYear.name,
     startDateBS: fiscalYear.startDateBS,
     endDateBS: fiscalYear.endDateBS,
-    startDateAD: fiscalYear.startDateAD,
-    endDateAD: fiscalYear.endDateAD,
     isActive: fiscalYear.isActive,
     isLocked: fiscalYear.isLocked,
     createdAt: fiscalYear.createdAt
@@ -36,8 +35,8 @@ async function createFiscalYear(companyId, payload) {
     name: payload.name.trim(),
     startDateBS: payload.startDateBS.trim(),
     endDateBS: payload.endDateBS.trim(),
-    startDateAD: payload.startDateAD ? new Date(payload.startDateAD) : null,
-    endDateAD: payload.endDateAD ? new Date(payload.endDateAD) : null,
+    startDateAD: bsToUtcDate(payload.startDateBS),
+    endDateAD: bsToUtcDate(payload.endDateBS),
     isActive: true,
     isLocked: false
   });

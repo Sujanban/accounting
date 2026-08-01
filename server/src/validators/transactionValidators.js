@@ -1,10 +1,13 @@
 const mongoose = require("mongoose");
+const { isValidBsDate } = require("../services/nepalDateService");
 
 const TRANSACTION_TYPES = new Set(["JOURNAL", "RECEIPT", "PAYMENT", "CONTRA", "SALE", "PURCHASE", "INVENTORY_ADJUSTMENT", "STOCK_TRANSFER", "DELIVERY_NOTE", "RECEIPT_NOTE"]);
 const VOUCHER_TYPES = new Set(["JV", "RV", "PMV", "CV", "SV", "PV", "DN", "RN"]);
 const VOUCHERS_BY_TRANSACTION = Object.freeze({ JOURNAL: "JV", RECEIPT: "RV", PAYMENT: "PMV", CONTRA: "CV", SALE: "SV", PURCHASE: "PV", INVENTORY_ADJUSTMENT: "JV", STOCK_TRANSFER: "JV", DELIVERY_NOTE: "DN", RECEIPT_NOTE: "RN" });
 const CREATE_FIELDS = new Set(["transactionType", "voucherType", "branchId", "transactionDate", "narration", "items", "taxDetails", "accountingEntries", "inventoryEntries"]);
 const UPDATE_FIELDS = new Set(["branchId", "transactionDate", "referenceNo", "narration", "items", "taxDetails", "accountingEntries", "inventoryEntries"]);
+const LIST_FIELDS = new Set(["page", "limit", "status", "transactionType", "branchId", "fromDate", "toDate"]);
+const TRANSACTION_STATUSES = new Set(["DRAFT", "SUBMITTED", "APPROVED", "POSTED", "CANCELLED", "REVERSED"]);
 
 const isValidId = (value) => typeof value === "string" && mongoose.isObjectIdOrHexString(value);
 const isFiniteNumber = (value) => typeof value === "number" && Number.isFinite(value);
@@ -66,7 +69,7 @@ function validateTransaction(body, partial = false) {
   if (!partial && !VOUCHER_TYPES.has(body.voucherType)) errors.push({ field: "voucherType", message: "A valid voucher type is required." });
   if (body.branchId !== undefined && !isValidId(body.branchId)) errors.push({ field: "branchId", message: "Branch must be a valid identifier." });
   if (!partial && TRANSACTION_TYPES.has(body.transactionType) && body.voucherType !== VOUCHERS_BY_TRANSACTION[body.transactionType]) errors.push({ field: "voucherType", message: "Voucher type is not compatible with the transaction type." });
-  if ((!partial || body.transactionDate !== undefined) && (!body.transactionDate || typeof body.transactionDate !== "string" || Number.isNaN(new Date(body.transactionDate).getTime()))) errors.push({ field: "transactionDate", message: "A valid transaction date is required." });
+  if ((!partial || body.transactionDate !== undefined) && !isValidBsDate(body.transactionDate)) errors.push({ field: "transactionDate", message: "Transaction date must be a valid Bikram Sambat date in YYYY-MM-DD format." });
   for (const field of ["accountingEntries", "inventoryEntries", "items"]) if (body[field] !== undefined && (!Array.isArray(body[field]) || body[field].length > 500)) errors.push({ field, message: `${field} must be an array with at most 500 entries.` });
   validateOptionalText(body, "narration", 2000, errors);
   validateAccountingEntries(body.accountingEntries, errors);
@@ -76,4 +79,20 @@ function validateTransaction(body, partial = false) {
   if (partial && !Object.keys(body).length) errors.push({ field: "body", message: "At least one field must be provided." });
   return errors;
 }
-module.exports = { validateCreateTransaction: (body) => validateTransaction(body), validateUpdateTransaction: (body) => validateTransaction(body, true), validateTransaction, VOUCHERS_BY_TRANSACTION };
+
+function validateListTransactions(query) {
+  const errors = [];
+  for (const field of Object.keys(query)) if (!LIST_FIELDS.has(field)) errors.push({ field, message: "This filter is not supported." });
+  if (query.page !== undefined && (!/^[1-9]\d*$/.test(query.page) || Number(query.page) > 100000)) errors.push({ field: "page", message: "Page must be a positive integer within range." });
+  if (query.limit !== undefined && (!/^[1-9]\d*$/.test(query.limit) || Number(query.limit) > 100)) errors.push({ field: "limit", message: "Limit must be a positive integer up to 100." });
+  if (query.status !== undefined && !TRANSACTION_STATUSES.has(query.status)) errors.push({ field: "status", message: "Status is invalid." });
+  if (query.transactionType !== undefined && !TRANSACTION_TYPES.has(query.transactionType)) errors.push({ field: "transactionType", message: "Transaction type is invalid." });
+  if (query.branchId !== undefined && !isValidId(query.branchId)) errors.push({ field: "branchId", message: "Branch must be a valid identifier." });
+  for (const field of ["fromDate", "toDate"]) {
+    if (query[field] !== undefined && !isValidBsDate(query[field])) errors.push({ field, message: `${field === "fromDate" ? "From" : "To"} date must be a valid Bikram Sambat date in YYYY-MM-DD format.` });
+  }
+  if (isValidBsDate(query.fromDate) && isValidBsDate(query.toDate) && query.fromDate > query.toDate) errors.push({ field: "toDate", message: "To date must be on or after from date." });
+  return errors;
+}
+
+module.exports = { validateCreateTransaction: (body) => validateTransaction(body), validateUpdateTransaction: (body) => validateTransaction(body, true), validateListTransactions, validateTransaction, VOUCHERS_BY_TRANSACTION };

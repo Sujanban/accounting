@@ -2,9 +2,8 @@ import { describe, expect, it } from "vitest";
 import { voucherDate, voucherDebitTotal } from "./transactions-page";
 
 describe("voucher list presentation", () => {
-  it("presents the stored AD date with its BS equivalent", () => {
-    expect(voucherDate("2026-04-14T00:00:00.000Z")).toEqual({
-      ad: "2026-04-14",
+  it("presents the API's BS business date", () => {
+    expect(voucherDate("2083-01-01")).toEqual({
       bs: "2083-01-01",
     });
   });
