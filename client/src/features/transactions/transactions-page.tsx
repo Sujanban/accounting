@@ -659,7 +659,7 @@ function DraftForm({
               Add inventory line
             </Button>
           </div>
-          <div className="accounting-form__actions accounting-form__wide voucher-form__actions">
+          <div className="accounting-form__actions accounting-form__wide">
             <Button type="button" variant="outline" onClick={() => navigate(`/vouchers/${selected.path}`)}>Cancel</Button>
             <Button type="submit" loading={pending}>
               Save draft
@@ -1191,7 +1191,7 @@ export function TransactionEditPage() {
               Add inventory line
             </Button>
           </div>
-          <div className="accounting-form__actions accounting-form__wide voucher-form__actions">
+          <div className="accounting-form__actions accounting-form__wide">
             <Button
               type="button"
               variant="outline"

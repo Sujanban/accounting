@@ -551,7 +551,7 @@
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{ \"branchId\": \"{{branchId}}\", \"assetCode\": \"COMP-001\", \"category\": \"Computer\", \"purchaseDate\": \"2026-07-27\", \"purchaseValue\": 100000, \"salvageValue\": 10000, \"usefulLifeMonths\": 60, \"depreciationMethod\": \"STRAIGHT_LINE\" }" },
+            "body": { "mode": "raw", "raw": "{ \"branchId\": \"{{branchId}}\", \"category\": \"Computer\", \"purchaseDate\": \"2026-07-27\", \"purchaseValue\": 100000, \"salvageValue\": 10000, \"usefulLifeMonths\": 60, \"depreciationMethod\": \"STRAIGHT_LINE\" }" },
             "url": "{{baseUrl}}/api/fixed-assets"
           }
         },

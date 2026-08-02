@@ -4,7 +4,7 @@ const { loadWithMocks } = require("./helpers/load-with-mocks");
 
 test("active fixed assets can be updated after company-scoped branch validation", async () => {
   const asset = { _id: "asset-1", status: "ACTIVE", save: async () => {} };
-  const input = { branchId: "branch-2", assetCode: "COMP-02", category: "Equipment", purchaseDate: "2026-01-01", purchaseValue: 1000, salvageValue: 100, usefulLifeMonths: 24, depreciationMethod: "STRAIGHT_LINE" };
+  const input = { branchId: "branch-2", category: "Equipment", purchaseDate: "2026-01-01", purchaseValue: 1000, salvageValue: 100, usefulLifeMonths: 24, depreciationMethod: "STRAIGHT_LINE" };
   const { module: service, restore } = loadWithMocks("../../src/services/fixedAssetService", {
     "../models/FixedAsset": { FixedAsset: { findOne: async () => asset } },
     "../models/Branch": { Branch: { findOne: () => ({ lean: async () => ({ _id: input.branchId }) }) } },
@@ -14,7 +14,7 @@ test("active fixed assets can be updated after company-scoped branch validation"
 
   try {
     const result = await service.update("company-1", "user-1", "asset-1", input);
-    assert.equal(asset.assetCode, "COMP-02");
+    assert.equal(asset.category, "Equipment");
     assert.equal(asset.branchId, "branch-2");
     assert.equal(asset.updatedBy, "user-1");
     assert.equal(result.id, "asset-1");
@@ -27,7 +27,7 @@ test("active fixed assets can be updated after company-scoped branch validation"
 });
 
 test("manual depreciation creates a calculated journal draft through the transaction engine", async () => {
-  const asset = { _id: "asset-1", assetCode: "COMP-01", branchId: "branch-1", status: "ACTIVE", purchaseValue: 1200, salvageValue: 0, usefulLifeMonths: 12, depreciationMethod: "STRAIGHT_LINE" };
+  const asset = { _id: "asset-1", category: "Computer", branchId: "branch-1", status: "ACTIVE", purchaseValue: 1200, salvageValue: 0, usefulLifeMonths: 12, depreciationMethod: "STRAIGHT_LINE" };
   const createDraft = async (_companyId, _fiscalYearId, payload) => payload;
   const { module: service, restore } = loadWithMocks("../../src/services/fixedAssetService", {
     "../models/FixedAsset": { FixedAsset: { findOne: () => ({ lean: async () => asset }) } },

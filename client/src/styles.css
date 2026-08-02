@@ -23,11 +23,14 @@ input {
   border-radius: 0.625rem;
   font-weight: 600;
   letter-spacing: -0.01em;
-  box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
   transition:
     transform 150ms ease,
     box-shadow 150ms ease,
     background-color 150ms ease;
+}
+
+.app-button-filled {
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
 }
 
 .app-button:focus-visible {
@@ -744,8 +747,7 @@ input {
   }
 }
 
-.app-button-ghost,
-.app-button-outline {
+.app-button-ghost {
   box-shadow: none;
 }
 
@@ -1113,15 +1115,6 @@ input {
   justify-content: center;
   padding: 0 !important;
 }
-.voucher-sequence-cancel {
-  border: 1px solid #9aa9a5 !important;
-  color: #415854 !important;
-  background: #fff !important;
-}
-.voucher-sequence-cancel:hover:not(:disabled) {
-  border-color: #168567 !important;
-  background: #eef7f3 !important;
-}
 .table-action-icon {
   width: 1.1rem;
   height: 1.1rem;
@@ -1348,6 +1341,11 @@ input {
   display: flex;
   justify-content: flex-end;
   gap: 0.65rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e4ece8;
+}
+.accounting-form__actions > .app-button {
+  min-width: 10rem;
 }
 .voucher-form-card {
   width: 100%;
@@ -1508,13 +1506,6 @@ input {
   color: #087f5b;
   background: #e5f7ef;
 }
-.voucher-form__actions {
-  padding-top: 1rem;
-  border-top: 1px solid #e4ece8;
-}
-.voucher-form__actions > .app-button {
-  min-width: 10rem;
-}
 /* The route selects the voucher type; users cannot change it within a voucher form. */
 .voucher-form > label:first-child .app-select {
   pointer-events: none;
@@ -1612,11 +1603,6 @@ input {
   outline: 3px solid rgb(17 128 102 / 0.2);
   outline-offset: 5px;
 }
-.contact-form__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.65rem;
-}
 .contact-tax-type {
   display: grid;
   gap: 0.38rem;
@@ -1684,16 +1670,6 @@ input {
 }
 .contact-role-chip__remove svg { width: 0.85rem; height: 0.85rem; }
 .contact-role-chip__remove:hover { color: #b42318; }
-.contact-form__cancel {
-  border: 1px solid #9fb7ae !important;
-  color: #36544b !important;
-  background: #fff !important;
-}
-.contact-form__cancel:hover:not(:disabled) {
-  border-color: #168567 !important;
-  color: #12614e !important;
-  background: #eef7f3 !important;
-}
 .contact-address-fields {
   margin: 0;
   border: 1px solid #d7e4df;
@@ -2112,13 +2088,6 @@ input {
   }
   .contact-additional-info .accounting-form__wide {
     grid-column: auto;
-  }
-  .contact-form__actions {
-    align-items: stretch;
-    flex-direction: column-reverse;
-  }
-  .contact-form__actions > .app-button {
-    width: 100%;
   }
   .accounting-form__actions {
     justify-content: stretch;

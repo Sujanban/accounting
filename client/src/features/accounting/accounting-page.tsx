@@ -1244,7 +1244,6 @@ function VoucherSequenceForm({
         <Button
           type="button"
           variant="outline"
-          className="voucher-sequence-cancel"
           onClick={onCancel}
         >
           Cancel

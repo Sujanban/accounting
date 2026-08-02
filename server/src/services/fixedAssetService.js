@@ -9,7 +9,6 @@ function map(asset) {
     id: asset._id,
     branchId: asset.branchId,
     warehouseId: asset.warehouseId,
-    assetCode: asset.assetCode,
     category: asset.category,
     purchaseDate: asset.purchaseDate,
     purchaseValue: asset.purchaseValue,
@@ -34,7 +33,6 @@ async function create(companyId, userId, input) {
   const asset = await FixedAsset.create({
     ...input,
     companyId,
-    assetCode: input.assetCode.trim().toUpperCase(),
     createdBy: userId,
     updatedBy: userId,
   });
@@ -47,13 +45,13 @@ async function update(companyId, userId, assetId, input) {
   if (asset.status !== "ACTIVE") throw new ApiError(409, "Disposed fixed assets cannot be edited.");
 
   await assertLocation(companyId, input.branchId, input.warehouseId);
-  Object.assign(asset, { ...input, assetCode: input.assetCode.trim().toUpperCase(), updatedBy: userId });
+  Object.assign(asset, { ...input, updatedBy: userId });
   await asset.save();
   return map(asset);
 }
 
 async function list(companyId) {
-  return (await FixedAsset.find({ companyId }).sort({ assetCode: 1 }).lean()).map(map);
+  return (await FixedAsset.find({ companyId }).sort({ category: 1, purchaseDate: 1, _id: 1 }).lean()).map(map);
 }
 
 async function depreciationSchedule(companyId, assetId) {
@@ -93,11 +91,11 @@ async function createDepreciationDraft(companyId, fiscalYearId, userId, role, as
     voucherType: "JV",
     branchId: asset.branchId,
     transactionDate: input.transactionDate,
-    narration: `Manual depreciation for ${asset.assetCode}, period ${input.periodMonth}`,
+    narration: `Manual depreciation for ${asset.category}, period ${input.periodMonth}`,
     items: [{ assetId: asset._id, type: "FIXED_ASSET_DEPRECIATION", periodMonth: input.periodMonth, amount: period.depreciation }],
     accountingEntries: [
-      { ledgerId: input.expenseLedgerId, debit: period.depreciation, credit: 0, narration: `Depreciation expense — ${asset.assetCode}` },
-      { ledgerId: input.accumulatedDepreciationLedgerId, debit: 0, credit: period.depreciation, narration: `Accumulated depreciation — ${asset.assetCode}` },
+      { ledgerId: input.expenseLedgerId, debit: period.depreciation, credit: 0, narration: `Depreciation expense — ${asset.category}` },
+      { ledgerId: input.accumulatedDepreciationLedgerId, debit: 0, credit: period.depreciation, narration: `Accumulated depreciation — ${asset.category}` },
     ],
     inventoryEntries: [],
   });
@@ -112,12 +110,12 @@ async function createDisposalDraft(companyId, fiscalYearId, userId, role, assetI
   const carryingValue = Number(asset.purchaseValue) - input.accumulatedDepreciation;
   const difference = Number(input.proceeds) - carryingValue;
   const accountingEntries = [
-    { ledgerId: input.accumulatedDepreciationLedgerId, debit: input.accumulatedDepreciation, credit: 0, narration: `Remove accumulated depreciation — ${asset.assetCode}` },
-    { ledgerId: input.proceedsLedgerId, debit: input.proceeds, credit: 0, narration: `Disposal proceeds — ${asset.assetCode}` },
-    { ledgerId: input.assetCostLedgerId, debit: 0, credit: Number(asset.purchaseValue), narration: `Remove asset cost — ${asset.assetCode}` },
+    { ledgerId: input.accumulatedDepreciationLedgerId, debit: input.accumulatedDepreciation, credit: 0, narration: `Remove accumulated depreciation — ${asset.category}` },
+    { ledgerId: input.proceedsLedgerId, debit: input.proceeds, credit: 0, narration: `Disposal proceeds — ${asset.category}` },
+    { ledgerId: input.assetCostLedgerId, debit: 0, credit: Number(asset.purchaseValue), narration: `Remove asset cost — ${asset.category}` },
   ];
-  if (difference < 0) accountingEntries.push({ ledgerId: input.gainLossLedgerId, debit: Math.abs(difference), credit: 0, narration: `Loss on disposal — ${asset.assetCode}` });
-  if (difference > 0) accountingEntries.push({ ledgerId: input.gainLossLedgerId, debit: 0, credit: difference, narration: `Gain on disposal — ${asset.assetCode}` });
+  if (difference < 0) accountingEntries.push({ ledgerId: input.gainLossLedgerId, debit: Math.abs(difference), credit: 0, narration: `Loss on disposal — ${asset.category}` });
+  if (difference > 0) accountingEntries.push({ ledgerId: input.gainLossLedgerId, debit: 0, credit: difference, narration: `Gain on disposal — ${asset.category}` });
 
   const draft = await transactionService.createDraft(companyId, fiscalYearId, {
     actorUserId: userId,
@@ -126,7 +124,7 @@ async function createDisposalDraft(companyId, fiscalYearId, userId, role, assetI
     voucherType: "JV",
     branchId: asset.branchId,
     transactionDate: input.transactionDate,
-    narration: `Fixed asset disposal — ${asset.assetCode}`,
+    narration: `Fixed asset disposal — ${asset.category}`,
     items: [{ assetId: asset._id, type: "FIXED_ASSET_DISPOSAL", proceeds: input.proceeds, accumulatedDepreciation: input.accumulatedDepreciation }],
     accountingEntries,
     inventoryEntries: [],

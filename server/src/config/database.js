@@ -28,13 +28,28 @@ async function removeLegacyContactCodeIndex() {
   console.info(JSON.stringify({ level: "info", event: "legacy_index_removed", collection: "contacts", index: legacyIndex.name }));
 }
 
+async function removeLegacyAssetCodeIndex() {
+  const collection = mongoose.connection.collection("fixedassets");
+  const indexes = await collection.indexes().catch((error) => {
+    if (error?.codeName === "NamespaceNotFound") return [];
+    throw error;
+  });
+  const legacyIndex = indexes.find(
+    (index) => index.key?.companyId === 1 && index.key?.assetCode === 1
+  );
+  if (!legacyIndex) return;
+  await collection.dropIndex(legacyIndex.name);
+  console.info(JSON.stringify({ level: "info", event: "legacy_index_removed", collection: "fixedassets", index: legacyIndex.name }));
+}
+
 async function connectDatabase() {
   mongoose.set("strictQuery", true);
 
   await mongoose.connect(env.mongoUri);
   await Promise.all([
     removeLegacyWarehouseCodeIndex(),
-    removeLegacyContactCodeIndex()
+    removeLegacyContactCodeIndex(),
+    removeLegacyAssetCodeIndex()
   ]);
 
   console.log("Connected to MongoDB");
@@ -42,6 +57,7 @@ async function connectDatabase() {
 
 module.exports = {
   connectDatabase,
+  removeLegacyAssetCodeIndex,
   removeLegacyContactCodeIndex,
   removeLegacyWarehouseCodeIndex
 };

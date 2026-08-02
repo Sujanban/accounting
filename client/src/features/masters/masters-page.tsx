@@ -454,9 +454,9 @@ function ContactForm({
         </div>
       </section>
 
-      <div className="contact-form__actions">
+      <div className="accounting-form__actions">
         {onCancel ? (
-          <Button type="button" variant="outline" className="contact-form__cancel" onClick={onCancel}>
+          <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>
         ) : null}
