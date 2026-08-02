@@ -21,7 +21,6 @@ import {
   useNavigate,
 } from "react-router-dom";
 import { useAuth } from "../features/auth/auth-provider";
-import { Button } from "./ui/button";
 import { notificationsApi } from "../features/notifications/notifications-api";
 
 type NavigationItem = { label: string; to: string };
@@ -136,25 +135,41 @@ const createActions = [
   { label: "Journal voucher", to: "/vouchers/journal/new" },
 ];
 
-function CreateVoucherMenu({ onNavigate }: { onNavigate?: () => void }) {
+function CreateVoucherMenu() {
   const navigate = useNavigate();
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
-        <Button className="create-voucher-button" size="2">
-          <PlusIcon /> Create
-        </Button>
+        <button
+          aria-label="Create voucher"
+          className="topbar-create"
+          type="button"
+        >
+          <PlusIcon />
+          <span className="topbar-create__label">Create</span>
+          <ChevronDownIcon />
+        </button>
       </DropdownMenu.Trigger>
-      <DropdownMenu.Content align="start" className="create-menu">
-        <DropdownMenu.Label>Create voucher</DropdownMenu.Label>
+      <DropdownMenu.Content
+        align="end"
+        className="topbar-create-menu"
+        sideOffset={8}
+      >
+        <DropdownMenu.Label>
+          <span className="topbar-create-menu__identity">
+            <strong>Create voucher</strong>
+            <small>Choose a voucher type</small>
+          </span>
+        </DropdownMenu.Label>
+        <DropdownMenu.Separator />
         {createActions.map(({ label, to }) => (
           <DropdownMenu.Item
             key={to}
             onSelect={() => {
               navigate(to);
-              onNavigate?.();
             }}
           >
+            <FileTextIcon />
             {label}
           </DropdownMenu.Item>
         ))}
@@ -357,9 +372,6 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <Link className="brand" to="/" onClick={onNavigate}>
           <span className="brand-mark">L</span>Ledgerly
         </Link>
-        <div className="workspace-sidebar__create">
-          <CreateVoucherMenu onNavigate={onNavigate} />
-        </div>
       </div>
       <nav
         aria-label="Main navigation"
@@ -425,6 +437,7 @@ function WorkspaceHeader({
         <strong>{session?.activeCompany?.name ?? "Company workspace"}</strong>
       </div>
       <div className="workspace-topbar__actions">
+        <CreateVoucherMenu />
         <NotificationsMenu />
         <AccountMenu />
       </div>
