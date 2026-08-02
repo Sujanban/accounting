@@ -13,7 +13,7 @@ class ApiError extends Error {
 }
 
 function inferDefaultErrorCode(statusCode) {
-  if (statusCode === 400) {
+  if (statusCode === 400 || statusCode === 422) {
     return "VALIDATION_ERROR";
   }
 

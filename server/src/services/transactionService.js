@@ -7,6 +7,7 @@ const { Product } = require("../models/Product");
 const { Warehouse } = require("../models/Warehouse");
 const { Setting } = require("../models/Setting");
 const { ApiError } = require("../utils/apiError");
+const { assertTaxAccountingTotal } = require("./transactionPostingValidation");
 const { assertFiscalYearWritable } = require("./fiscalYearGuardService");
 const { getNextVoucherNumber } = require("./voucherSequenceService");
 const { eventBus } = require("../events/eventBus");
@@ -86,12 +87,21 @@ function taxInvoiceNumber(fiscalYear, sequence) {
   return `TI-${fiscalYear.name.replace(/[^A-Za-z0-9]/g, "-")}-${String(sequence).padStart(6, "0")}`;
 }
 
+async function requireTaxInvoiceCompany(companyId, session = null) {
+  const { Company } = require("../models/Company");
+  let query = Company.findById(companyId).select("panNumber vatRegistered vatNumber");
+  if (session) query = query.session(session);
+  const company = await query.lean();
+  if (!company?.vatRegistered || !company.vatNumber || !company.panNumber) {
+    throw new ApiError(422, "A VAT-registered company with PAN and VAT numbers is required to issue a tax invoice.");
+  }
+  return company;
+}
+
 async function issueTaxInvoice(companyId, fiscalYearId, transaction, session) {
   if (transaction.transactionType !== "SALE" || !transaction.taxDetails) return;
-  const { Company } = require("../models/Company");
+  const company = await requireTaxInvoiceCompany(companyId, session);
   const { FiscalYear } = require("../models/FiscalYear");
-  const company = await Company.findById(companyId).select("panNumber vatRegistered vatNumber").session(session).lean();
-  if (!company?.vatRegistered || !company.vatNumber || !company.panNumber) throw new ApiError(422, "A VAT-registered company with PAN and VAT numbers is required to issue a tax invoice.");
   const fiscalYear = await FiscalYear.findOneAndUpdate(
     { _id: fiscalYearId, companyId, isLocked: false },
     { $inc: { taxInvoiceSequence: 1 } },
@@ -118,6 +128,7 @@ async function createDraft(companyId, fiscalYearId, payload) {
   const { actorUserId, actorRole, ...input } = payload;
   assertTransactionTypeAccess(actorRole, input.transactionType);
   if (input.taxDetails && !["SALE", "PURCHASE"].includes(input.transactionType)) throw new ApiError(422, "Tax details are only supported for sales and purchase transactions.");
+  if (input.transactionType === "SALE" && input.taxDetails) await requireTaxInvoiceCompany(companyId);
   await assertFiscalYearWritable(companyId, fiscalYearId, { transactionDate: payload.transactionDate });
   const branch = input.branchId ? await require("../models/Branch").Branch.findOne({ _id: input.branchId, companyId, isActive: true }) : await resolveDefaultBranch(companyId);
   if (!branch) throw new ApiError(422, "A valid active branch is required.");
@@ -133,6 +144,7 @@ async function updateDraft(companyId, fiscalYearId, transactionId, payload) {
   if (draft.status !== "DRAFT") throw new ApiError(409, "Only draft transactions can be edited.");
   await assertFiscalYearWritable(companyId, fiscalYearId, { transactionDate: input.transactionDate || draft.transactionDate });
   if (input.taxDetails !== undefined && !["SALE", "PURCHASE"].includes(draft.transactionType)) throw new ApiError(422, "Tax details are only supported for sales and purchase transactions.");
+  if (draft.transactionType === "SALE" && input.taxDetails) await requireTaxInvoiceCompany(companyId);
   if (input.branchId !== undefined) { const branch = await require("../models/Branch").Branch.findOne({ _id: input.branchId, companyId, isActive: true }); if (!branch) throw new ApiError(422, "A valid active branch is required."); draft.branchId = branch._id; }
   for (const field of ["transactionDate", "narration", "items", "taxDetails", "accountingEntries", "inventoryEntries"]) if (input[field] !== undefined) draft[field] = input[field];
   draft.updatedBy = actorUserId;
@@ -145,6 +157,8 @@ async function submitTransaction(companyId, fiscalYearId, transactionId, actorUs
   if (!transaction) throw new ApiError(404, "Transaction was not found.");
   assertTransactionTypeAccess(actorRole, transaction.transactionType);
   if (transaction.status !== "DRAFT") throw new ApiError(409, "Only draft transactions can be submitted for approval.");
+  const result = assertBalanced(transaction.accountingEntries);
+  assertTaxAccountingTotal(transaction, result);
   transaction.status = "SUBMITTED";
   transaction.submittedAt = new Date();
   transaction.submittedBy = actorUserId;
@@ -183,6 +197,7 @@ async function postTransactionInSession(companyId, fiscalYearId, transactionId, 
   const inventoryOnly = ["DELIVERY_NOTE", "RECEIPT_NOTE"].includes(transaction.transactionType);
   if (inventoryOnly && !transaction.inventoryEntries.length) throw new ApiError(422, "Inventory-only documents require at least one inventory entry.");
   const result = inventoryOnly ? { debit: 0, credit: 0 } : assertBalanced(transaction.accountingEntries);
+  assertTaxAccountingTotal(transaction, result);
   const settings = await Setting.findOne({ companyId }).select("accounting.requireTransactionApproval").session(session).lean();
   if (!isReversal && settings?.accounting?.requireTransactionApproval && transaction.status !== "APPROVED") {
     throw new ApiError(409, "This company requires an approved voucher before it can be made regular.");

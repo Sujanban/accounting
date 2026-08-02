@@ -23,12 +23,14 @@ import {
 } from "./use-transactions";
 import { mastersApi } from "../masters/masters-api";
 import { useAttachments, useDeleteAttachment, useProducts, useUploadAttachment, useWarehouses } from "../masters/use-masters";
-import { useVat } from "../settings/use-settings";
+import { usePan, useVat } from "../settings/use-settings";
 import type { VoucherTransactionType } from "./transactions-api";
+import type { TaxDetails } from "./transactions-api";
 import { useBranches, useBranchWarehouses } from "../enterprise/use-enterprise";
 import { useAuth } from "../auth/auth-provider";
 import { todayBsDate } from "../../lib/nepali-date";
 import { formatVoucherStatus } from "../../lib/voucher-status";
+import { areAccountingEntriesBalanced, calculateVatDetails } from "./voucher-calculations";
 
 const types = [
   { value: "JOURNAL", voucher: "JV", path: "journal" },
@@ -111,8 +113,9 @@ export function TransactionsPage({
   const warehouses = useWarehouses();
   const branches = useBranches();
   const vat = useVat();
+  const pan = usePan();
   if (transactionId) return <TransactionDetail />;
-  if (create && (ledgers.isLoading || products.isLoading || warehouses.isLoading || branches.isLoading || vat.isLoading)) {
+  if (create && (ledgers.isLoading || products.isLoading || warehouses.isLoading || branches.isLoading || vat.isLoading || pan.isLoading)) {
     return (
       <Flex direction="column" gap="5">
         <Heading size="7">New {formatVoucherType(activeType)} voucher</Heading>
@@ -134,6 +137,7 @@ export function TransactionsPage({
         branches={branches.data ?? []}
         defaultVatRate={vat.data?.defaultVatRate ?? 13}
         defaultVatMode={vat.data?.vatMode ?? "EXCLUSIVE"}
+        canIssueTaxInvoice={Boolean(vat.data?.vatRegistered && vat.data.vatNumber && pan.data?.panNumber)}
         initialInventory={[]}
         pending={createDraft.isPending}
         error={
@@ -224,6 +228,7 @@ export function TransactionsPage({
           ) : null}
         </div>
       </Card>
+      {post.error instanceof Error ? <Text color="red" role="alert">{post.error.message}</Text> : null}
       <CrudPageState loading={list.isLoading} error={list.error} label="Loading vouchers" description="Retrieving voucher transactions…">
         <>
       <Card size="3" className="accounting-table-card order-actions-table">
@@ -247,10 +252,10 @@ export function TransactionsPage({
                 { label: "View voucher", icon: <EyeOpenIcon />, onSelect: () => navigate(`/vouchers/transactions/${item.id}`) },
                 ...(item.status === "DRAFT" ? [
                   { label: "Edit draft", icon: <Pencil1Icon />, onSelect: () => navigate(`/vouchers/transactions/${item.id}/edit`) },
-                  { label: "Make regular", icon: <CheckCircledIcon />, disabled: pending, onSelect: async () => { if (await actionDialog.confirm({ title: "Make voucher regular?", description: "This will record the voucher in the accounts and inventory, assign its final number, and prevent normal editing.", confirmLabel: "Make regular" })) void post.mutateAsync({ id: item.id, type: item.transactionType as VoucherTransactionType }); } },
+                  { label: "Make regular", icon: <CheckCircledIcon />, disabled: pending, onSelect: async () => { if (await actionDialog.confirm({ title: "Make voucher regular?", description: "This will record the voucher in the accounts and inventory, assign its final number, and prevent normal editing.", confirmLabel: "Make regular" })) post.mutate({ id: item.id, type: item.transactionType as VoucherTransactionType }); } },
                 ] : []),
                 ...(item.status === "POSTED" && !item.reversedById ? [
-                  { label: "Reverse voucher", icon: <ResetIcon />, disabled: pending, destructive: true, onSelect: async () => { if (await actionDialog.confirm({ title: "Reverse voucher?", description: "A reversing entry will be created for this regular voucher. This action cannot be undone.", confirmLabel: "Reverse voucher", destructive: true })) void reverse.mutateAsync({ id: item.id, type: item.transactionType as VoucherTransactionType }); } },
+                  { label: "Reverse voucher", icon: <ResetIcon />, disabled: pending, destructive: true, onSelect: async () => { if (await actionDialog.confirm({ title: "Reverse voucher?", description: "A reversing entry will be created for this regular voucher. This action cannot be undone.", confirmLabel: "Reverse voucher", destructive: true })) reverse.mutate({ id: item.id, type: item.transactionType as VoucherTransactionType }); } },
                 ] : []),
               ];
               return <tr key={item.id}>
@@ -316,6 +321,7 @@ function DraftForm({
   branches,
   defaultVatRate,
   defaultVatMode,
+  canIssueTaxInvoice,
   initialInventory,
   pending,
   error,
@@ -328,6 +334,7 @@ function DraftForm({
   branches: Array<{ id: string; name: string; isDefault: boolean }>;
   defaultVatRate: number;
   defaultVatMode: "EXCLUSIVE" | "INCLUSIVE";
+  canIssueTaxInvoice: boolean;
   initialInventory: Array<{ productId: string; warehouseId: string; quantity: string; unitCost: string; direction: "IN" | "OUT" }>;
   pending: boolean;
   error?: string;
@@ -354,13 +361,13 @@ function DraftForm({
   const [tax, setTax] = useState({ customerName: "", customerPan: "", taxableAmount: "", vatRate: String(defaultVatRate), mode: defaultVatMode });
   const selected = types.find((item) => item.value === type)!;
   const voucherLabel = selected.value.toLowerCase().replaceAll("_", " ");
-  const taxableAmount = Number(tax.taxableAmount || 0);
+  const enteredTaxAmount = Number(tax.taxableAmount || 0);
   const vatRate = Number(tax.vatRate || 0);
-  const vatAmount = Number((taxableAmount * vatRate / 100).toFixed(2));
-  const totalAmount = Number((taxableAmount + vatAmount).toFixed(2));
+  const taxDetails = calculateVatDetails(enteredTaxAmount, vatRate, tax.mode);
   const debitTotal = lines.reduce((total, line) => total + Number(line.debit || 0), 0);
   const creditTotal = lines.reduce((total, line) => total + Number(line.credit || 0), 0);
-  const isBalanced = debitTotal > 0 && Math.abs(debitTotal - creditTotal) < .005;
+  const isBalanced = areAccountingEntriesBalanced(lines);
+  const taxMatchesAccounting = !includeTaxInvoice || Math.abs(debitTotal - taxDetails.totalAmount) < .005;
   return (
     <Flex direction="column" gap="5">
       <CrudPageHeader
@@ -381,7 +388,7 @@ function DraftForm({
               branchId: branchId || undefined,
               narration: form.get("narration") || null,
               items: [],
-              ...(type === "SALE" && includeTaxInvoice ? { taxDetails: { customerName: tax.customerName || null, customerPan: tax.customerPan || null, taxableAmount, vatRate, vatAmount, totalAmount, mode: tax.mode } } : {}),
+              ...(type === "SALE" && includeTaxInvoice ? { taxDetails: { customerName: tax.customerName || null, customerPan: tax.customerPan || null, ...taxDetails } } : {}),
               inventoryEntries: inventory
                 .filter((line) => line.productId && line.warehouseId)
                 .map((line) => ({
@@ -424,16 +431,19 @@ function DraftForm({
                   <Heading size="4">Tax invoice</Heading>
                   <Text size="2" color="gray">Tally-style VAT summary for a taxable sale.</Text>
                 </div>
-                <label className="voucher-tax__toggle"><input type="checkbox" checked={includeTaxInvoice} onChange={(event) => setIncludeTaxInvoice(event.target.checked)} /> Issue tax invoice</label>
+                <label className="voucher-tax__toggle"><input type="checkbox" checked={includeTaxInvoice} disabled={!canIssueTaxInvoice} onChange={(event) => setIncludeTaxInvoice(event.target.checked)} /> Issue tax invoice</label>
               </Flex>
+              {!canIssueTaxInvoice ? <Text size="2" color="amber">Complete the company PAN and VAT registration settings before issuing tax invoices.</Text> : null}
               {includeTaxInvoice ? (
                 <div className="voucher-tax__grid">
                   <label>Customer name<input value={tax.customerName} onChange={(event) => setTax({ ...tax, customerName: event.target.value })} placeholder="Enter customer name" /></label>
                   <label>Customer PAN<input value={tax.customerPan} onChange={(event) => setTax({ ...tax, customerPan: event.target.value.replace(/\D/g, "").slice(0, 9) })} inputMode="numeric" placeholder="Optional 9-digit PAN" /></label>
-                  <label>Taxable amount<input type="number" min="0" step="0.01" required value={tax.taxableAmount} onChange={(event) => setTax({ ...tax, taxableAmount: event.target.value })} placeholder="Enter taxable amount" /></label>
+                  <label>{tax.mode === "INCLUSIVE" ? "Invoice amount (VAT included)" : "Taxable amount (before VAT)"}<input type="number" min="0.01" step="0.01" required value={tax.taxableAmount} onChange={(event) => setTax({ ...tax, taxableAmount: event.target.value })} placeholder={tax.mode === "INCLUSIVE" ? "Enter VAT-inclusive total" : "Enter taxable amount"} /></label>
                   <label>VAT rate (%)<input type="number" min="0" max="100" step="0.01" required value={tax.vatRate} onChange={(event) => setTax({ ...tax, vatRate: event.target.value })} placeholder="Enter VAT rate" /></label>
                   <label>VAT mode<AppSelect value={tax.mode} onChange={(event) => setTax({ ...tax, mode: event.target.value as "EXCLUSIVE" | "INCLUSIVE" })}><option value="EXCLUSIVE">Exclusive</option><option value="INCLUSIVE">Inclusive</option></AppSelect></label>
-                  <div className="voucher-tax__totals"><span>VAT: Rs. {vatAmount.toFixed(2)}</span><strong>Total: Rs. {totalAmount.toFixed(2)}</strong></div>
+                  <div className="voucher-tax__totals"><span>Taxable: Rs. {taxDetails.taxableAmount.toFixed(2)}</span><span>VAT: Rs. {taxDetails.vatAmount.toFixed(2)}</span><strong>Total: Rs. {taxDetails.totalAmount.toFixed(2)}</strong></div>
+                  <Text size="2" color="gray">Tally-style posting: debit Party/Cash for the total, credit Sales for the taxable amount, and credit VAT Payable for VAT.</Text>
+                  {!taxMatchesAccounting ? <Text size="2" color="red" role="alert">The accounting debit total must equal the tax invoice total of Rs. {taxDetails.totalAmount.toFixed(2)}.</Text> : null}
                 </div>
               ) : null}
             </div>
@@ -475,7 +485,7 @@ function DraftForm({
                     onChange={(e) =>
                       setLines(
                         lines.map((x, i) =>
-                          i === index ? { ...x, debit: e.target.value } : x,
+                          i === index ? { ...x, debit: e.target.value, ...(Number(e.target.value) > 0 ? { credit: "" } : {}) } : x,
                         ),
                       )
                     }
@@ -491,7 +501,7 @@ function DraftForm({
                     onChange={(e) =>
                       setLines(
                         lines.map((x, i) =>
-                          i === index ? { ...x, credit: e.target.value } : x,
+                          i === index ? { ...x, credit: e.target.value, ...(Number(e.target.value) > 0 ? { debit: "" } : {}) } : x,
                         ),
                       )
                     }
@@ -513,7 +523,7 @@ function DraftForm({
             <div className={`voucher-entry-summary${isBalanced ? " is-balanced" : ""}`}>
               <span>Debit <strong>Rs. {formatAmount(debitTotal)}</strong></span>
               <span>Credit <strong>Rs. {formatAmount(creditTotal)}</strong></span>
-              <span className="voucher-entry-summary__balance">{isBalanced ? "Balanced" : `Difference Rs. ${formatAmount(Math.abs(debitTotal - creditTotal))}`}</span>
+              <span className="voucher-entry-summary__balance">{isBalanced ? "Balanced" : lines.some((line) => line.ledgerId && Number(line.debit || 0) > 0 && Number(line.credit || 0) > 0) ? "Use debit or credit on each row—not both" : `Difference Rs. ${formatAmount(Math.abs(debitTotal - creditTotal))}`}</span>
             </div>
             <Button
               type="button"
@@ -679,6 +689,7 @@ function TransactionDetail() {
     transactionId,
     Boolean(
       transaction.data?.transactionType === "SALE" &&
+        Boolean(transaction.data.taxDetails) &&
         ["POSTED", "REVERSED"].includes(transaction.data.status),
     ),
   );
@@ -710,6 +721,9 @@ function TransactionDetail() {
     }),
     { debit: 0, credit: 0 },
   );
+  const accountingReady = areAccountingEntriesBalanced(item.accountingEntries);
+  const taxTotalMatches = !item.taxDetails || Math.abs(totals.debit - item.taxDetails.totalAmount) < .005;
+  const canMakeRegular = accountingReady && taxTotalMatches;
   const detailDate = voucherDate(item.transactionDate);
   const duplicateVoucher = async () => {
     const draft = await duplicate.mutateAsync({
@@ -717,6 +731,7 @@ function TransactionDetail() {
       input: {
         transactionDate: item.transactionDate,
         narration: item.narration,
+        taxDetails: item.taxDetails ?? undefined,
         accountingEntries: item.accountingEntries,
         inventoryEntries: item.inventoryEntries,
       },
@@ -758,6 +773,23 @@ function TransactionDetail() {
         <div><span>Voucher amount</span><strong>Rs. {formatAmount(totals.debit)}</strong></div>
         <div><span>Accounting lines</span><strong>{item.accountingEntries.length}</strong></div>
       </Card>
+      {item.taxDetails && !taxInvoice.data ? (
+        <Card size="3" className="voucher-tax-invoice">
+          <Flex justify="between" align="start" gap="3" wrap="wrap">
+            <div>
+              <Text className="voucher-tax-invoice__eyebrow">Tax invoice details</Text>
+              <Heading size="5">Pending official invoice number</Heading>
+              <Text size="2" color="gray">The final tax invoice is issued when this voucher is made regular.</Text>
+            </div>
+            <div className="voucher-tax-invoice__amounts">
+              <span>Taxable Rs. {item.taxDetails.taxableAmount.toFixed(2)}</span>
+              <span>VAT {item.taxDetails.vatRate}%: Rs. {item.taxDetails.vatAmount.toFixed(2)}</span>
+              <strong>Total Rs. {item.taxDetails.totalAmount.toFixed(2)}</strong>
+            </div>
+          </Flex>
+          {item.taxDetails.customerName || item.taxDetails.customerPan ? <Text mt="3" size="2">Customer: {item.taxDetails.customerName ?? "—"}{item.taxDetails.customerPan ? ` · PAN ${item.taxDetails.customerPan}` : ""}</Text> : null}
+        </Card>
+      ) : null}
       {taxInvoice.data ? (
         <Card size="3" className="voucher-tax-invoice">
           <Flex justify="between" align="start" gap="3" wrap="wrap">
@@ -798,6 +830,7 @@ function TransactionDetail() {
               {post.error.message}
             </Text>
           ) : null}
+          {!canMakeRegular ? <Text color="red" role="alert">Edit this draft before posting: every accounting row must use one side, totals must balance, and the journal total must match the tax invoice total.</Text> : null}
           <Flex gap="2">
             <Button
               variant="outline"
@@ -807,13 +840,14 @@ function TransactionDetail() {
             </Button>
             <Button
               loading={post.isPending}
+              disabled={!canMakeRegular}
               onClick={async () => {
                 if (await actionDialog.confirm({
                   title: "Make voucher regular?",
                   description: "This will record the voucher in the accounts and inventory, assign its final number, and prevent normal editing.",
                   confirmLabel: "Make regular",
                 })) {
-                  void post.mutateAsync({
+                  post.mutate({
                     id: item.id,
                     type: item.transactionType as VoucherTransactionType,
                   });
@@ -822,7 +856,7 @@ function TransactionDetail() {
             >
               Make regular
             </Button>
-            <Button variant="outline" loading={submit.isPending} onClick={() => void submit.mutateAsync(item.id)}>
+            <Button variant="outline" loading={submit.isPending} disabled={!canMakeRegular} onClick={() => submit.mutate(item.id)}>
               Submit for approval
             </Button>
           </Flex>
@@ -832,7 +866,7 @@ function TransactionDetail() {
         <Flex direction="column" gap="2">
           <Text color="gray">Submitted {item.submittedAt ? new Date(item.submittedAt).toLocaleString() : ""}. This voucher is read-only until approved.</Text>
           {["OWNER", "ADMIN"].includes(session?.activeMembership?.role ?? "") ? (
-            <Button loading={approve.isPending} onClick={() => void approve.mutateAsync(item.id)}>Approve transaction</Button>
+              <Button loading={approve.isPending} onClick={() => approve.mutate(item.id)}>Approve transaction</Button>
           ) : null}
           {approve.error instanceof Error ? <Text color="red" role="alert">{approve.error.message}</Text> : null}
         </Flex>
@@ -840,7 +874,7 @@ function TransactionDetail() {
       {item.status === "APPROVED" ? (
         <Flex direction="column" gap="2">
           <Text color="gray">Approved {item.approvedAt ? new Date(item.approvedAt).toLocaleString() : ""}. Ready to make regular.</Text>
-          <Button loading={post.isPending} onClick={async () => { if (await actionDialog.confirm({ title: "Make approved voucher regular?", description: "This will record the voucher in the accounts and inventory, assign its final number, and prevent normal editing.", confirmLabel: "Make regular" })) void post.mutateAsync({ id: item.id, type: item.transactionType as VoucherTransactionType }); }}>Make regular</Button>
+          <Button loading={post.isPending} disabled={!canMakeRegular} onClick={async () => { if (await actionDialog.confirm({ title: "Make approved voucher regular?", description: "This will record the voucher in the accounts and inventory, assign its final number, and prevent normal editing.", confirmLabel: "Make regular" })) post.mutate({ id: item.id, type: item.transactionType as VoucherTransactionType }); }}>Make regular</Button>
         </Flex>
       ) : null}
       {item.status === "POSTED" && !item.reversedById ? (
@@ -902,6 +936,8 @@ export function TransactionEditPage() {
   const products = useProducts();
   const warehouses = useWarehouses();
   const branches = useBranches();
+  const vat = useVat();
+  const pan = usePan();
   const [accounting, setAccounting] = useState<
     Array<{ ledgerId: string; debit: number; credit: number }>
   | null>(null);
@@ -916,6 +952,8 @@ export function TransactionEditPage() {
   | null>(null);
   const [transactionDate, setTransactionDate] = useState("");
   const [branchId, setBranchId] = useState("");
+  const [includeTaxInvoice, setIncludeTaxInvoice] = useState<boolean | null>(null);
+  const [tax, setTax] = useState<{ customerName: string; customerPan: string; amount: string; vatRate: string; mode: TaxDetails["mode"] } | null>(null);
   if (transaction.isLoading) {
     return (
       <LoadingScreen
@@ -932,10 +970,21 @@ export function TransactionEditPage() {
   const effectiveBranchId = branchId || draft.branchId || "";
   const lines = accounting ?? draft.accountingEntries;
   const stock = inventory ?? draft.inventoryEntries;
+  const canIssueTaxInvoice = Boolean(vat.data?.vatRegistered && vat.data.vatNumber && pan.data?.panNumber);
+  const effectiveIncludeTaxInvoice = includeTaxInvoice ?? Boolean(draft.taxDetails);
+  const effectiveTax = tax ?? {
+    customerName: draft.taxDetails?.customerName ?? "",
+    customerPan: draft.taxDetails?.customerPan ?? "",
+    amount: draft.taxDetails ? String(draft.taxDetails.mode === "INCLUSIVE" ? draft.taxDetails.totalAmount : draft.taxDetails.taxableAmount) : "",
+    vatRate: String(draft.taxDetails?.vatRate ?? vat.data?.defaultVatRate ?? 13),
+    mode: draft.taxDetails?.mode ?? vat.data?.vatMode ?? "EXCLUSIVE",
+  };
+  const calculatedTaxDetails = calculateVatDetails(Number(effectiveTax.amount || 0), Number(effectiveTax.vatRate || 0), effectiveTax.mode);
   const voucherPath = types.find((item) => item.value === draft.transactionType)?.path ?? "journal";
   const debitTotal = lines.reduce((total, line) => total + Number(line.debit || 0), 0);
   const creditTotal = lines.reduce((total, line) => total + Number(line.credit || 0), 0);
-  const isBalanced = debitTotal > 0 && Math.abs(debitTotal - creditTotal) < .005;
+  const isBalanced = areAccountingEntriesBalanced(lines);
+  const taxMatchesAccounting = !effectiveIncludeTaxInvoice || Math.abs(debitTotal - calculatedTaxDetails.totalAmount) < .005;
   return (
     <Flex direction="column" gap="5">
       <CrudPageHeader
@@ -960,6 +1009,13 @@ export function TransactionEditPage() {
                   transactionDate: effectiveTransactionDate,
                   branchId: effectiveBranchId || undefined,
                   narration: String(form.get("narration") || "") || null,
+                  ...(draft.transactionType === "SALE" ? {
+                    taxDetails: effectiveIncludeTaxInvoice ? {
+                      customerName: effectiveTax.customerName || null,
+                      customerPan: effectiveTax.customerPan || null,
+                      ...calculatedTaxDetails,
+                    } : null,
+                  } : {}),
                   accountingEntries: lines.filter((line) => line.ledgerId),
                   inventoryEntries: stock.filter(
                     (line) => line.productId && line.warehouseId,
@@ -983,6 +1039,27 @@ export function TransactionEditPage() {
               placeholder="Add a brief description"
             />
           </label>
+          {draft.transactionType === "SALE" ? (
+            <div className="accounting-form__wide voucher-tax">
+              <Flex justify="between" align="center" gap="3" wrap="wrap">
+                <div><Heading size="4">Tax invoice</Heading><Text size="2" color="gray">Review or change the tax treatment before posting.</Text></div>
+                <label className="voucher-tax__toggle"><input type="checkbox" checked={effectiveIncludeTaxInvoice} disabled={!canIssueTaxInvoice && !effectiveIncludeTaxInvoice} onChange={(event) => setIncludeTaxInvoice(event.target.checked)} /> Issue tax invoice</label>
+              </Flex>
+              {!canIssueTaxInvoice ? <Text size="2" color="amber">Complete the company PAN and VAT registration settings before issuing this invoice.</Text> : null}
+              {effectiveIncludeTaxInvoice ? (
+                <div className="voucher-tax__grid">
+                  <label>Customer name<input value={effectiveTax.customerName} onChange={(event) => setTax({ ...effectiveTax, customerName: event.target.value })} placeholder="Enter customer name" /></label>
+                  <label>Customer PAN<input value={effectiveTax.customerPan} onChange={(event) => setTax({ ...effectiveTax, customerPan: event.target.value.replace(/\D/g, "").slice(0, 9) })} inputMode="numeric" placeholder="Optional 9-digit PAN" /></label>
+                  <label>{effectiveTax.mode === "INCLUSIVE" ? "Invoice amount (VAT included)" : "Taxable amount (before VAT)"}<input type="number" min="0.01" step="0.01" required value={effectiveTax.amount} onChange={(event) => setTax({ ...effectiveTax, amount: event.target.value })} /></label>
+                  <label>VAT rate (%)<input type="number" min="0" max="100" step="0.01" required value={effectiveTax.vatRate} onChange={(event) => setTax({ ...effectiveTax, vatRate: event.target.value })} /></label>
+                  <label>VAT mode<AppSelect value={effectiveTax.mode} onChange={(event) => setTax({ ...effectiveTax, mode: event.target.value as TaxDetails["mode"] })}><option value="EXCLUSIVE">Exclusive</option><option value="INCLUSIVE">Inclusive</option></AppSelect></label>
+                  <div className="voucher-tax__totals"><span>Taxable: Rs. {calculatedTaxDetails.taxableAmount.toFixed(2)}</span><span>VAT: Rs. {calculatedTaxDetails.vatAmount.toFixed(2)}</span><strong>Total: Rs. {calculatedTaxDetails.totalAmount.toFixed(2)}</strong></div>
+                  <Text size="2" color="gray">Tally-style posting: debit Party/Cash for the total, credit Sales for the taxable amount, and credit VAT Payable for VAT.</Text>
+                  {!taxMatchesAccounting ? <Text size="2" color="red" role="alert">The accounting debit total must equal the tax invoice total of Rs. {calculatedTaxDetails.totalAmount.toFixed(2)}.</Text> : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           <div className="accounting-form__wide voucher-form__accounting">
             <div className="voucher-form__section-heading">
               <div><Heading size="4">Accounting entries</Heading><Text size="2" color="gray">Keep total debit and credit equal.</Text></div>
@@ -1021,7 +1098,7 @@ export function TransactionEditPage() {
                       setAccounting(
                         lines.map((x, i) =>
                           i === index
-                            ? { ...x, debit: Number(e.target.value) }
+                            ? { ...x, debit: Number(e.target.value), ...(Number(e.target.value) > 0 ? { credit: 0 } : {}) }
                             : x,
                         ),
                       )
@@ -1039,7 +1116,7 @@ export function TransactionEditPage() {
                       setAccounting(
                         lines.map((x, i) =>
                           i === index
-                            ? { ...x, credit: Number(e.target.value) }
+                            ? { ...x, credit: Number(e.target.value), ...(Number(e.target.value) > 0 ? { debit: 0 } : {}) }
                             : x,
                         ),
                       )
@@ -1054,7 +1131,7 @@ export function TransactionEditPage() {
             <div className={`voucher-entry-summary${isBalanced ? " is-balanced" : ""}`}>
               <span>Debit <strong>Rs. {formatAmount(debitTotal)}</strong></span>
               <span>Credit <strong>Rs. {formatAmount(creditTotal)}</strong></span>
-              <span className="voucher-entry-summary__balance">{isBalanced ? "Balanced" : `Difference Rs. ${formatAmount(Math.abs(debitTotal - creditTotal))}`}</span>
+              <span className="voucher-entry-summary__balance">{isBalanced ? "Balanced" : lines.some((line) => line.ledgerId && Number(line.debit || 0) > 0 && Number(line.credit || 0) > 0) ? "Use debit or credit on each row—not both" : `Difference Rs. ${formatAmount(Math.abs(debitTotal - creditTotal))}`}</span>
             </div>
             <Button
               type="button"

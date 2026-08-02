@@ -26,6 +26,7 @@ function validateAccountingEntries(entries, errors) {
     if (!isValidId(entry.ledgerId)) errors.push({ field: `${field}.ledgerId`, message: "Ledger must be a valid identifier." });
     if (!isFiniteNumber(entry.debit) || entry.debit < 0) errors.push({ field: `${field}.debit`, message: "Debit must be a non-negative number." });
     if (!isFiniteNumber(entry.credit) || entry.credit < 0) errors.push({ field: `${field}.credit`, message: "Credit must be a non-negative number." });
+    if (isFiniteNumber(entry.debit) && isFiniteNumber(entry.credit) && entry.debit > 0 && entry.credit > 0) errors.push({ field, message: "Use either debit or credit on an accounting entry, not both." });
     if (entry.narration !== undefined && entry.narration !== null && (typeof entry.narration !== "string" || entry.narration.length > 1000)) errors.push({ field: `${field}.narration`, message: "Narration must be text with at most 1000 characters." });
   });
 }
@@ -43,8 +44,9 @@ function validateInventoryEntries(entries, errors) {
   });
 }
 
-function validateTaxDetails(taxDetails, errors) {
+function validateTaxDetails(taxDetails, errors, allowNull = false) {
   if (taxDetails === undefined) return;
+  if (allowNull && taxDetails === null) return;
   if (!taxDetails || typeof taxDetails !== "object" || Array.isArray(taxDetails)) {
     errors.push({ field: "taxDetails", message: "Tax details must be an object." });
     return;
@@ -54,6 +56,8 @@ function validateTaxDetails(taxDetails, errors) {
   if (taxDetails.customerName !== undefined && (typeof taxDetails.customerName !== "string" || taxDetails.customerName.trim().length > 200)) errors.push({ field: "taxDetails.customerName", message: "Customer name must be text with at most 200 characters." });
   if (taxDetails.customerPan !== undefined && taxDetails.customerPan !== null && !/^\d{9}$/.test(String(taxDetails.customerPan).trim())) errors.push({ field: "taxDetails.customerPan", message: "Customer PAN must contain 9 digits." });
   for (const field of ["taxableAmount", "vatRate", "vatAmount", "totalAmount"]) if (!isFiniteNumber(taxDetails[field]) || taxDetails[field] < 0 || (field === "vatRate" && taxDetails[field] > 100)) errors.push({ field: `taxDetails.${field}`, message: `${field} must be a valid non-negative amount.` });
+  if (isFiniteNumber(taxDetails.taxableAmount) && taxDetails.taxableAmount <= 0) errors.push({ field: "taxDetails.taxableAmount", message: "Taxable amount must be greater than zero." });
+  if (isFiniteNumber(taxDetails.totalAmount) && taxDetails.totalAmount <= 0) errors.push({ field: "taxDetails.totalAmount", message: "Tax invoice total must be greater than zero." });
   if (!["EXCLUSIVE", "INCLUSIVE"].includes(taxDetails.mode)) errors.push({ field: "taxDetails.mode", message: "Tax mode must be EXCLUSIVE or INCLUSIVE." });
   const expectedVat = Number(taxDetails.taxableAmount) * Number(taxDetails.vatRate) / 100;
   const expectedTotal = Number(taxDetails.taxableAmount) + expectedVat;
@@ -74,7 +78,7 @@ function validateTransaction(body, partial = false) {
   validateOptionalText(body, "narration", 2000, errors);
   validateAccountingEntries(body.accountingEntries, errors);
   validateInventoryEntries(body.inventoryEntries, errors);
-  validateTaxDetails(body.taxDetails, errors);
+  validateTaxDetails(body.taxDetails, errors, partial);
   if (body.taxDetails !== undefined && !partial && !["SALE", "PURCHASE"].includes(body.transactionType)) errors.push({ field: "taxDetails", message: "Tax details are only supported for sales and purchase vouchers." });
   if (partial && !Object.keys(body).length) errors.push({ field: "body", message: "At least one field must be provided." });
   return errors;

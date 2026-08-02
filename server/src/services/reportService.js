@@ -8,6 +8,7 @@ const { Contact } = require("../models/Contact");
 const { ContactLedger } = require("../models/ContactLedger");
 const { ApiError } = require("../utils/apiError");
 const { dateToBs } = require("./nepalDateService");
+const mongoose = require("mongoose");
 
 const MAX_LIMIT = 100;
 
@@ -263,9 +264,18 @@ function getPurchasesByProduct(companyId, fiscalYearId, query) { return getProdu
 
 async function getVatRegister(companyId, fiscalYearId, query, transactionType) {
   const { value, limit } = page(query); const filters = { companyId, fiscalYearId, transactionType, status: "POSTED", taxDetails: { $ne: null } }; if (query.branchId) filters.branchId = query.branchId; const range = dateRange(query); if (range) filters.transactionDate = range;
-  const [items, total] = await Promise.all([Transaction.find(filters).select("voucherNumber transactionDate taxDetails taxInvoice").sort({ transactionDate: -1, _id: -1 }).skip((value - 1) * limit).limit(limit).lean(), Transaction.countDocuments(filters)]);
+  const aggregateFilters = { ...filters, companyId: new mongoose.Types.ObjectId(String(companyId)), fiscalYearId: new mongoose.Types.ObjectId(String(fiscalYearId)) };
+  if (query.branchId) aggregateFilters.branchId = new mongoose.Types.ObjectId(String(query.branchId));
+  const [items, total, aggregateTotals] = await Promise.all([
+    Transaction.find(filters).select("voucherNumber transactionDate taxDetails taxInvoice").sort({ transactionDate: -1, _id: -1 }).skip((value - 1) * limit).limit(limit).lean(),
+    Transaction.countDocuments(filters),
+    Transaction.aggregate([
+      { $match: aggregateFilters },
+      { $group: { _id: null, taxableAmount: { $sum: "$taxDetails.taxableAmount" }, vatAmount: { $sum: "$taxDetails.vatAmount" }, totalAmount: { $sum: "$taxDetails.totalAmount" } } },
+    ]),
+  ]);
   const rows = items.map((item) => ({ id: item._id, voucherNumber: item.voucherNumber, taxInvoiceNumber: item.taxInvoice?.number || null, transactionDate: item.transactionDate, partyName: item.taxDetails.customerName || null, panNumber: item.taxDetails.customerPan || null, taxableAmount: Number(item.taxDetails.taxableAmount), vatAmount: Number(item.taxDetails.vatAmount), totalAmount: Number(item.taxDetails.totalAmount) }));
-  const totals = rows.reduce((result, item) => ({ taxableAmount: result.taxableAmount + item.taxableAmount, vatAmount: result.vatAmount + item.vatAmount, totalAmount: result.totalAmount + item.totalAmount }), { taxableAmount: 0, vatAmount: 0, totalAmount: 0 });
+  const totals = { taxableAmount: Number(aggregateTotals[0]?.taxableAmount || 0), vatAmount: Number(aggregateTotals[0]?.vatAmount || 0), totalAmount: Number(aggregateTotals[0]?.totalAmount || 0) };
   return { items: rows, totals, meta: { page: value, limit, total, totalPages: Math.ceil(total / limit), hasNextPage: value * limit < total } };
 }
 function getVatSalesRegister(companyId, fiscalYearId, query) { return getVatRegister(companyId, fiscalYearId, query, "SALE"); }

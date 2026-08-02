@@ -113,6 +113,8 @@ const navigation: NavigationGroup[] = [
       { label: "Cash flow", to: "/reports/cash-flow" },
       { label: "Sales summary", to: "/reports/sales-summary" },
       { label: "Purchase summary", to: "/reports/purchase-summary" },
+      { label: "VAT sales register", to: "/reports/vat-sales-register" },
+      { label: "VAT purchase register", to: "/reports/vat-purchase-register" },
       { label: "Sales by product", to: "/reports/sales-by-product" },
       { label: "Purchases by product", to: "/reports/purchases-by-product" },
       { label: "Expense summary", to: "/reports/expense-summary" },

@@ -51,3 +51,16 @@ test("draft updates cannot change transaction or voucher types", () => {
   const errors = validateUpdateTransaction({ transactionType: "SALE" });
   assert.deepEqual(errors, [{ field: "transactionType", message: "This field cannot be modified." }]);
 });
+
+test("accounting entries cannot debit and credit the same row", () => {
+  const errors = validateCreateTransaction({
+    transactionType: "SALE", voucherType: "SV", transactionDate: "2026-07-24",
+    accountingEntries: [{ ledgerId: "507f1f77bcf86cd799439011", debit: 100, credit: 100 }], inventoryEntries: [],
+  });
+  assert.deepEqual(errors, [{ field: "accountingEntries[0]", message: "Use either debit or credit on an accounting entry, not both." }]);
+});
+
+test("draft updates can remove tax details", () => {
+  const { validateUpdateTransaction } = require("../src/validators/transactionValidators");
+  assert.deepEqual(validateUpdateTransaction({ taxDetails: null }), []);
+});
