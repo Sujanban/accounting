@@ -2,13 +2,19 @@ import {
   BarChartIcon,
   BellIcon,
   ChevronDownIcon,
+  ClipboardIcon,
+  CubeIcon,
   DashboardIcon,
   ExitIcon,
   FileTextIcon,
   GearIcon,
   HamburgerMenuIcon,
+  HomeIcon,
+  IdCardIcon,
+  LayersIcon,
   PersonIcon,
   PlusIcon,
+  ReaderIcon,
 } from "@radix-ui/react-icons";
 import { Dialog, DropdownMenu, Tooltip } from "@radix-ui/themes";
 import { useEffect, useState, type ComponentType } from "react";
@@ -51,7 +57,7 @@ const navigation: NavigationGroup[] = [
   },
   {
     label: "Orders",
-    icon: FileTextIcon,
+    icon: ClipboardIcon,
     items: [
       { label: "Sales orders", to: "/sales-orders" },
       { label: "Purchase orders", to: "/purchase-orders" },
@@ -59,17 +65,17 @@ const navigation: NavigationGroup[] = [
   },
   {
     label: "Assets",
-    icon: FileTextIcon,
+    icon: CubeIcon,
     items: [{ label: "Fixed assets", to: "/fixed-assets" }],
   },
   {
     label: "Payroll",
-    icon: FileTextIcon,
+    icon: IdCardIcon,
     items: [{ label: "Attendance", to: "/payroll" }],
   },
   {
     label: "Masters",
-    icon: GearIcon,
+    icon: LayersIcon,
     items: [
       { label: "Parties", to: "/masters/parties" },
       { label: "Products & services", to: "/masters/products" },
@@ -84,7 +90,7 @@ const navigation: NavigationGroup[] = [
   },
   {
     label: "Accounting",
-    icon: FileTextIcon,
+    icon: ReaderIcon,
     items: [
       { label: "Chart of accounts", to: "/accounting/chart-of-accounts" },
       { label: "Account groups", to: "/accounting/account-groups" },
@@ -121,7 +127,7 @@ const navigation: NavigationGroup[] = [
   },
   {
     label: "Company",
-    icon: GearIcon,
+    icon: HomeIcon,
     items: [
       { label: "Company profile", to: "/company/profile" },
       { label: "Preferences", to: "/company/preferences" },
