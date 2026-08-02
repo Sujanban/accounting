@@ -73,7 +73,7 @@ export function FixedAssetsPage() {
             </tbody>
           </table>
         </Card>
-        {schedule.data && scheduleAsset ? <Card size="3" className="accounting-table-card"><CrudPageHeader title={`Depreciation schedule: ${scheduleAsset.category}`} description="Preview only; no journal is posted automatically." /><table className="accounting-table"><thead><tr><th>Month</th><th>Depreciation</th><th>Closing value</th></tr></thead><tbody>{schedule.data.items.map((item) => <tr key={item.month}><td>{item.month}</td><td>{item.depreciation.toFixed(2)}</td><td>{item.closingValue.toFixed(2)}</td></tr>)}</tbody></table></Card> : null}
+        {schedule.data && scheduleAsset ? <Card size="3" className="accounting-table-card"><CrudPageHeader title={`Depreciation schedule: ${scheduleAsset.category}`} description="Preview only; no journal is recorded automatically." /><table className="accounting-table"><thead><tr><th>Month</th><th>Depreciation</th><th>Closing value</th></tr></thead><tbody>{schedule.data.items.map((item) => <tr key={item.month}><td>{item.month}</td><td>{item.depreciation.toFixed(2)}</td><td>{item.closingValue.toFixed(2)}</td></tr>)}</tbody></table></Card> : null}
       </CrudPageState>
     </Flex>
   );

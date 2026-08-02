@@ -28,6 +28,7 @@ import type { VoucherTransactionType } from "./transactions-api";
 import { useBranches, useBranchWarehouses } from "../enterprise/use-enterprise";
 import { useAuth } from "../auth/auth-provider";
 import { todayBsDate } from "../../lib/nepali-date";
+import { formatVoucherStatus } from "../../lib/voucher-status";
 
 const types = [
   { value: "JOURNAL", voucher: "JV", path: "journal" },
@@ -158,7 +159,7 @@ export function TransactionsPage({
     <Flex direction="column" gap="5">
       <CrudPageHeader
         title={drafts ? "Voucher drafts" : routeType ? `${formatVoucherType(routeType.value)} vouchers` : "Transactions"}
-        description={drafts ? "Review unfinished vouchers before posting them." : `Review and manage ${routeType ? formatVoucherType(routeType.value).toLowerCase() : "company"} vouchers.`}
+        description={drafts ? "Review unfinished vouchers before making them regular." : `Review and manage ${routeType ? formatVoucherType(routeType.value).toLowerCase() : "company"} vouchers.`}
         action={<Button
           onClick={() =>
             navigate(`/vouchers/${routeType?.path ?? "journal"}/new`)
@@ -186,7 +187,7 @@ export function TransactionsPage({
               <option value="DRAFT">Draft</option>
               <option value="SUBMITTED">Submitted</option>
               <option value="APPROVED">Approved</option>
-              <option value="POSTED">Posted</option>
+              <option value="POSTED">Regular</option>
               <option value="REVERSED">Reversed</option>
             </AppSelect>
           </label>
@@ -246,10 +247,10 @@ export function TransactionsPage({
                 { label: "View voucher", icon: <EyeOpenIcon />, onSelect: () => navigate(`/vouchers/transactions/${item.id}`) },
                 ...(item.status === "DRAFT" ? [
                   { label: "Edit draft", icon: <Pencil1Icon />, onSelect: () => navigate(`/vouchers/transactions/${item.id}/edit`) },
-                  { label: "Post voucher", icon: <CheckCircledIcon />, disabled: pending, onSelect: async () => { if (await actionDialog.confirm({ title: "Post voucher?", description: "Posting makes this voucher part of the accounting records and prevents normal editing.", confirmLabel: "Post voucher" })) void post.mutateAsync({ id: item.id, type: item.transactionType as VoucherTransactionType }); } },
+                  { label: "Make regular", icon: <CheckCircledIcon />, disabled: pending, onSelect: async () => { if (await actionDialog.confirm({ title: "Make voucher regular?", description: "This will record the voucher in the accounts and inventory, assign its final number, and prevent normal editing.", confirmLabel: "Make regular" })) void post.mutateAsync({ id: item.id, type: item.transactionType as VoucherTransactionType }); } },
                 ] : []),
                 ...(item.status === "POSTED" && !item.reversedById ? [
-                  { label: "Reverse voucher", icon: <ResetIcon />, disabled: pending, destructive: true, onSelect: async () => { if (await actionDialog.confirm({ title: "Reverse voucher?", description: "A reversing entry will be created for this posted voucher. This action cannot be undone.", confirmLabel: "Reverse voucher", destructive: true })) void reverse.mutateAsync({ id: item.id, type: item.transactionType as VoucherTransactionType }); } },
+                  { label: "Reverse voucher", icon: <ResetIcon />, disabled: pending, destructive: true, onSelect: async () => { if (await actionDialog.confirm({ title: "Reverse voucher?", description: "A reversing entry will be created for this regular voucher. This action cannot be undone.", confirmLabel: "Reverse voucher", destructive: true })) void reverse.mutateAsync({ id: item.id, type: item.transactionType as VoucherTransactionType }); } },
                 ] : []),
               ];
               return <tr key={item.id}>
@@ -263,7 +264,7 @@ export function TransactionsPage({
                 <td className="voucher-list__amount">Rs. {formatAmount(amount)}</td>
                 <td>
                   <span className={`voucher-status voucher-status--${item.status.toLowerCase()}`}>
-                    {item.status}
+                    {formatVoucherStatus(item.status)}
                   </span>
                 </td>
                 <td><OrderActionsMenu label={`Actions for voucher ${item.voucherNumber ?? "draft"}`} actions={actions} /></td>
@@ -751,7 +752,7 @@ function TransactionDetail() {
       <Card size="3" className="voucher-detail__summary">
         <div>
           <span>Voucher status</span>
-          <strong className={`voucher-status voucher-status--${item.status.toLowerCase()}`}>{item.status}</strong>
+          <strong className={`voucher-status voucher-status--${item.status.toLowerCase()}`}>{formatVoucherStatus(item.status)}</strong>
         </div>
         <div><span>BS date</span><strong>{detailDate.bs}</strong></div>
         <div><span>Voucher amount</span><strong>Rs. {formatAmount(totals.debit)}</strong></div>
@@ -776,7 +777,7 @@ function TransactionDetail() {
       ) : null}
       <Card size="3" className="voucher-detail__section">
         <Heading size="4">Accounting entries</Heading>
-        {item.accountingEntries.length ? <table className="accounting-table voucher-detail__entries"><thead><tr><th>Ledger</th><th>Debit</th><th>Credit</th></tr></thead><tbody>{item.accountingEntries.map((line, index) => <tr key={index}><td>{line.ledgerId}</td><td>{Number(line.debit || 0).toFixed(2)}</td><td>{Number(line.credit || 0).toFixed(2)}</td></tr>)}</tbody><tfoot><tr><th>Total</th><th>{totals.debit.toFixed(2)}</th><th>{totals.credit.toFixed(2)}</th></tr></tfoot></table> : <Text color="gray">No accounting entries yet. Add balanced debit and credit entries before posting.</Text>}
+        {item.accountingEntries.length ? <table className="accounting-table voucher-detail__entries"><thead><tr><th>Ledger</th><th>Debit</th><th>Credit</th></tr></thead><tbody>{item.accountingEntries.map((line, index) => <tr key={index}><td>{line.ledgerId}</td><td>{Number(line.debit || 0).toFixed(2)}</td><td>{Number(line.credit || 0).toFixed(2)}</td></tr>)}</tbody><tfoot><tr><th>Total</th><th>{totals.debit.toFixed(2)}</th><th>{totals.credit.toFixed(2)}</th></tr></tfoot></table> : <Text color="gray">No accounting entries yet. Add balanced debit and credit entries before making this voucher regular.</Text>}
       </Card>
       <Card size="3" className="voucher-detail__section">
         <Heading size="4">Inventory movements</Heading>
@@ -786,7 +787,7 @@ function TransactionDetail() {
         <Heading size="4">Audit timeline</Heading>
         <Text as="p" color="gray">Created {item.createdAt ? new Date(item.createdAt).toLocaleString() : "—"}</Text>
         <Text as="p" color="gray">Last updated {item.updatedAt ? new Date(item.updatedAt).toLocaleString() : "—"}</Text>
-        {item.postedAt ? <Text as="p" color="gray">Posted {new Date(item.postedAt).toLocaleString()}</Text> : null}
+        {item.postedAt ? <Text as="p" color="gray">Made regular {new Date(item.postedAt).toLocaleString()}</Text> : null}
       </Card>
       <VoucherAttachments transactionId={item.id} />
       {item.status === "DRAFT" ? (
@@ -806,14 +807,20 @@ function TransactionDetail() {
             </Button>
             <Button
               loading={post.isPending}
-              onClick={() => {
-                void post.mutateAsync({
-                  id: item.id,
-                  type: item.transactionType as VoucherTransactionType,
-                });
+              onClick={async () => {
+                if (await actionDialog.confirm({
+                  title: "Make voucher regular?",
+                  description: "This will record the voucher in the accounts and inventory, assign its final number, and prevent normal editing.",
+                  confirmLabel: "Make regular",
+                })) {
+                  void post.mutateAsync({
+                    id: item.id,
+                    type: item.transactionType as VoucherTransactionType,
+                  });
+                }
               }}
             >
-              Post transaction
+              Make regular
             </Button>
             <Button variant="outline" loading={submit.isPending} onClick={() => void submit.mutateAsync(item.id)}>
               Submit for approval
@@ -832,8 +839,8 @@ function TransactionDetail() {
       ) : null}
       {item.status === "APPROVED" ? (
         <Flex direction="column" gap="2">
-          <Text color="gray">Approved {item.approvedAt ? new Date(item.approvedAt).toLocaleString() : ""}. Ready to post.</Text>
-          <Button loading={post.isPending} onClick={() => void post.mutateAsync({ id: item.id, type: item.transactionType as VoucherTransactionType })}>Post approved transaction</Button>
+          <Text color="gray">Approved {item.approvedAt ? new Date(item.approvedAt).toLocaleString() : ""}. Ready to make regular.</Text>
+          <Button loading={post.isPending} onClick={async () => { if (await actionDialog.confirm({ title: "Make approved voucher regular?", description: "This will record the voucher in the accounts and inventory, assign its final number, and prevent normal editing.", confirmLabel: "Make regular" })) void post.mutateAsync({ id: item.id, type: item.transactionType as VoucherTransactionType }); }}>Make regular</Button>
         </Flex>
       ) : null}
       {item.status === "POSTED" && !item.reversedById ? (
@@ -842,7 +849,7 @@ function TransactionDetail() {
           onClick={async () => {
             if (await actionDialog.confirm({
               title: "Reverse voucher?",
-              description: "A reversing entry will be created for this posted voucher. This action cannot be undone.",
+              description: "A reversing entry will be created for this regular voucher. This action cannot be undone.",
               confirmLabel: "Reverse voucher",
               destructive: true,
             }))
@@ -933,7 +940,7 @@ export function TransactionEditPage() {
     <Flex direction="column" gap="5">
       <CrudPageHeader
         title={`Edit ${formatVoucherType(draft.transactionType)} voucher`}
-        description={`Update ${draft.voucherNumber ?? "this draft"} before it is posted.`}
+        description={`Update ${draft.voucherNumber ?? "this draft"} before it is made regular.`}
         action={<Button variant="outline" onClick={() => navigate(`/vouchers/${voucherPath}`)}>Back to vouchers</Button>}
       />
       {update.error ? (

@@ -9,6 +9,7 @@ import { NepaliDatePicker } from "../../components/ui/nepali-date-picker";
 import { LoadingScreen } from "../../components/loading-screen";
 import { ApiClientError } from "../../lib/query-client";
 import { downloadCsv } from "../../lib/csv";
+import { formatVoucherStatus } from "../../lib/voucher-status";
 import { useLedgers } from "../accounting/use-accounting";
 import { useContacts, useCreateContactLedgerMapping, useProducts, useWarehouses } from "../masters/use-masters";
 import { useBranches } from "../enterprise/use-enterprise";
@@ -55,11 +56,11 @@ const reportMetadata: Record<string, { title: string; description: string }> = {
   },
   "journal-register": {
     title: "Journal register",
-    description: "Review posted journals in date order.",
+    description: "Review regular journals in date order.",
   },
   "day-book": {
     title: "Day book",
-    description: "Review posted and reversed vouchers by transaction date.",
+    description: "Review regular and reversed vouchers by transaction date.",
   },
   "stock-summary": {
     title: "Stock summary",
@@ -81,8 +82,8 @@ const reportMetadata: Record<string, { title: string; description: string }> = {
     title: "Cash flow",
     description: "Review operating, investing, and financing cash movements for the selected period.",
   },
-  "sales-summary": { title: "Sales summary", description: "Review posted sales vouchers and total sales for the selected period." },
-  "purchase-summary": { title: "Purchase summary", description: "Review posted purchase vouchers and total purchases for the selected period." },
+  "sales-summary": { title: "Sales summary", description: "Review regular sales vouchers and total sales for the selected period." },
+  "purchase-summary": { title: "Purchase summary", description: "Review regular purchase vouchers and total purchases for the selected period." },
   "vat-sales-register": { title: "VAT sales register", description: "Review taxable sales, VAT collected, and issued tax invoices." },
   "vat-purchase-register": { title: "VAT purchase register", description: "Review taxable purchases and input VAT." },
   "sales-by-product": { title: "Sales by product", description: "Review sold stock quantities and their movement value by product." },
@@ -91,7 +92,7 @@ const reportMetadata: Record<string, { title: string; description: string }> = {
   "low-stock": { title: "Low stock", description: "Review products at or below their configured reorder level." },
   "negative-stock": { title: "Negative stock", description: "Review products with a calculated inventory balance below zero." },
   "expense-trend": { title: "Expense trend", description: "Review total expenses by calendar month for the selected period." },
-  "sales-trend": { title: "Sales trend", description: "Review posted sales totals by calendar month for the selected period." },
+  "sales-trend": { title: "Sales trend", description: "Review regular sales totals by calendar month for the selected period." },
   "customer-statement": {
     title: "Customer statement",
     description: "Review receivable activity and the running balance for one customer.",
@@ -501,7 +502,7 @@ function DayBookReport() {
                   <td>{item.voucherNumber || "—"}</td>
                   <td>{item.transactionType}</td>
                   <td>{item.narration || "—"}</td>
-                  <td>{item.status}</td>
+                  <td>{formatVoucherStatus(item.status)}</td>
                 </tr>
               ))}
             </tbody>
@@ -570,7 +571,7 @@ function VoucherSummaryReport({ type }: { type: "sales" | "purchase" }) {
   const [filters, setFilters] = useState<ReportFilters>({ page: 1, limit: 20 });
   const report = useVoucherSummary(type, filters);
   const title = type === "sales" ? "Sales" : "Purchase";
-  return <><ReportFiltersForm filters={filters} onApply={setFilters} />{report.isLoading ? <LoadingScreen fullScreen={false} label={`Loading ${type} summary`} description={`Retrieving posted ${type} vouchers…`} /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle={`${title} summary`}><Button className="no-print report-export" variant="outline" onClick={() => downloadCsv(`${type}-summary.csv`, ["Date", "Voucher", "Narration", "Items", "Amount"], [...report.data.items.map((item) => [date(item.transactionDate), item.voucherNumber, item.narration || "", item.itemCount, item.amount]), ["", "", "Total", report.data.totals.count, report.data.totals.amount]])}>Export CSV</Button><div className="report-summary"><span>Posted vouchers<strong>{report.data.totals.count}</strong></span><span>Total {type}<strong>{money.format(report.data.totals.amount)}</strong></span></div><table className="accounting-table"><thead><tr><th>Date</th><th>Voucher</th><th>Narration</th><th>Items</th><th>Amount</th></tr></thead><tbody>{report.data.items.map((item) => <tr key={item.id}><td>{date(item.transactionDate)}</td><td>{item.voucherNumber}</td><td>{item.narration || "—"}</td><td>{item.itemCount}</td><td>{money.format(item.amount)}</td></tr>)}</tbody><tfoot><tr><th colSpan={3}>Total</th><th>{report.data.totals.count}</th><th>{money.format(report.data.totals.amount)}</th></tr></tfoot></table><ReportPagination meta={report.data.meta} onPageChange={(page) => setFilters({ ...filters, page })} />{report.data.items.length === 0 ? <Text as="p" color="gray" className="accounting-empty">No posted {type} vouchers match these filters.</Text> : null}</ReportFrame> : null}</>;
+  return <><ReportFiltersForm filters={filters} onApply={setFilters} />{report.isLoading ? <LoadingScreen fullScreen={false} label={`Loading ${type} summary`} description={`Retrieving regular ${type} vouchers…`} /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle={`${title} summary`}><Button className="no-print report-export" variant="outline" onClick={() => downloadCsv(`${type}-summary.csv`, ["Date", "Voucher", "Narration", "Items", "Amount"], [...report.data.items.map((item) => [date(item.transactionDate), item.voucherNumber, item.narration || "", item.itemCount, item.amount]), ["", "", "Total", report.data.totals.count, report.data.totals.amount]])}>Export CSV</Button><div className="report-summary"><span>Regular vouchers<strong>{report.data.totals.count}</strong></span><span>Total {type}<strong>{money.format(report.data.totals.amount)}</strong></span></div><table className="accounting-table"><thead><tr><th>Date</th><th>Voucher</th><th>Narration</th><th>Items</th><th>Amount</th></tr></thead><tbody>{report.data.items.map((item) => <tr key={item.id}><td>{date(item.transactionDate)}</td><td>{item.voucherNumber}</td><td>{item.narration || "—"}</td><td>{item.itemCount}</td><td>{money.format(item.amount)}</td></tr>)}</tbody><tfoot><tr><th colSpan={3}>Total</th><th>{report.data.totals.count}</th><th>{money.format(report.data.totals.amount)}</th></tr></tfoot></table><ReportPagination meta={report.data.meta} onPageChange={(page) => setFilters({ ...filters, page })} />{report.data.items.length === 0 ? <Text as="p" color="gray" className="accounting-empty">No regular {type} vouchers match these filters.</Text> : null}</ReportFrame> : null}</>;
 }
 
 function VatRegisterReport({ type }: { type: "sales" | "purchase" }) {
@@ -610,7 +611,7 @@ function ExpenseTrendReport() {
 function SalesTrendReport() {
   const [filters, setFilters] = useState<ReportFilters>({});
   const report = useSalesTrend(filters);
-  return <><ReportFiltersForm filters={filters} onApply={setFilters} />{report.isLoading ? <LoadingScreen fullScreen={false} label="Loading sales trend" description="Calculating monthly sales…" /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle="Sales trend"><Button className="no-print report-export" variant="outline" onClick={() => downloadCsv("sales-trend.csv", ["Month", "Vouchers", "Sales"], [...report.data.items.map((item) => [item.month, item.voucherCount, item.amount]), ["Total", report.data.totals.vouchers, report.data.totals.amount]])}>Export CSV</Button><div className="report-summary"><span>Posted vouchers<strong>{report.data.totals.vouchers}</strong></span><span>Total sales<strong>{money.format(report.data.totals.amount)}</strong></span></div><table className="accounting-table"><thead><tr><th>Month</th><th>Posted vouchers</th><th>Sales</th></tr></thead><tbody>{report.data.items.map((item) => <tr key={item.month}><td>{item.month}</td><td>{item.voucherCount}</td><td>{money.format(item.amount)}</td></tr>)}</tbody><tfoot><tr><th>Total</th><th>{report.data.totals.vouchers}</th><th>{money.format(report.data.totals.amount)}</th></tr></tfoot></table>{report.data.items.length === 0 ? <Text as="p" color="gray" className="accounting-empty">No posted sales match these filters.</Text> : null}</ReportFrame> : null}</>;
+  return <><ReportFiltersForm filters={filters} onApply={setFilters} />{report.isLoading ? <LoadingScreen fullScreen={false} label="Loading sales trend" description="Calculating monthly sales…" /> : report.isError ? <Text color="red" role="alert">{errorMessage(report.error)}</Text> : report.data ? <ReportFrame printTitle="Sales trend"><Button className="no-print report-export" variant="outline" onClick={() => downloadCsv("sales-trend.csv", ["Month", "Vouchers", "Sales"], [...report.data.items.map((item) => [item.month, item.voucherCount, item.amount]), ["Total", report.data.totals.vouchers, report.data.totals.amount]])}>Export CSV</Button><div className="report-summary"><span>Regular vouchers<strong>{report.data.totals.vouchers}</strong></span><span>Total sales<strong>{money.format(report.data.totals.amount)}</strong></span></div><table className="accounting-table"><thead><tr><th>Month</th><th>Regular vouchers</th><th>Sales</th></tr></thead><tbody>{report.data.items.map((item) => <tr key={item.month}><td>{item.month}</td><td>{item.voucherCount}</td><td>{money.format(item.amount)}</td></tr>)}</tbody><tfoot><tr><th>Total</th><th>{report.data.totals.vouchers}</th><th>{money.format(report.data.totals.amount)}</th></tr></tfoot></table>{report.data.items.length === 0 ? <Text as="p" color="gray" className="accounting-empty">No regular sales match these filters.</Text> : null}</ReportFrame> : null}</>;
 }
 
 function ContactStatementReport({ role }: { role: "customer" | "supplier" }) {

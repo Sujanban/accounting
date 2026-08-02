@@ -635,7 +635,7 @@ function LedgersPage() {
     <Flex direction="column" gap="5">
       <PageHeader
         title="Ledgers"
-        description="Manage fiscal-year opening balances and posting permissions."
+        description="Manage fiscal-year opening balances and voucher finalization permissions."
         action={
           <Button
             onClick={() => {

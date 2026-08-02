@@ -168,7 +168,7 @@ async function approveTransaction(companyId, fiscalYearId, transactionId, actorU
 async function postTransactionInSession(companyId, fiscalYearId, transactionId, actorUserId, session, { isReversal = false } = {}) {
   const transaction = await Transaction.findOne({ _id: transactionId, companyId, fiscalYearId }).session(session);
   if (!transaction) throw new ApiError(404, "Transaction was not found.");
-  if (!["DRAFT", "APPROVED"].includes(transaction.status)) throw new ApiError(409, "Only draft or approved transactions can be posted.");
+  if (!["DRAFT", "APPROVED"].includes(transaction.status)) throw new ApiError(409, "Only draft or approved vouchers can be made regular.");
   await assertFiscalYearWritable(companyId, fiscalYearId, { transactionDate: transaction.transactionDate });
   const disposal = (transaction.items || []).find((item) => item?.type === "FIXED_ASSET_DISPOSAL");
   if (disposal?.assetId) {
@@ -185,7 +185,7 @@ async function postTransactionInSession(companyId, fiscalYearId, transactionId, 
   const result = inventoryOnly ? { debit: 0, credit: 0 } : assertBalanced(transaction.accountingEntries);
   const settings = await Setting.findOne({ companyId }).select("accounting.requireTransactionApproval").session(session).lean();
   if (!isReversal && settings?.accounting?.requireTransactionApproval && transaction.status !== "APPROVED") {
-    throw new ApiError(409, "This company requires an approved transaction before posting.");
+    throw new ApiError(409, "This company requires an approved voucher before it can be made regular.");
   }
   if (!inventoryOnly) await assertActiveLedgers(companyId, fiscalYearId, transaction.accountingEntries, session);
   await validateInventoryEntries(companyId, transaction.branchId, transaction.inventoryEntries, session);
@@ -215,7 +215,7 @@ async function reverseTransaction(companyId, fiscalYearId, transactionId, actorU
   try { await session.withTransaction(async () => {
     const original = await Transaction.findOne({ _id: transactionId, companyId, fiscalYearId }).session(session);
     if (!original) throw new ApiError(404, "Transaction was not found.");
-    if (original.status !== "POSTED" || original.reversedById) throw new ApiError(409, "Only unreversed posted transactions can be reversed.");
+    if (original.status !== "POSTED" || original.reversedById) throw new ApiError(409, "Only unreversed regular vouchers can be reversed.");
     const reversal = await Transaction.create([{ companyId, branchId: original.branchId, fiscalYearId, transactionType: "JOURNAL", voucherType: "JV", transactionDate: original.transactionDate, narration: `Reversal of ${original.voucherNumber}`, accountingEntries: original.accountingEntries.map((entry) => ({ ledgerId: entry.ledgerId, debit: entry.credit, credit: entry.debit, narration: entry.narration })), inventoryEntries: original.inventoryEntries.map((entry) => ({ productId: entry.productId, warehouseId: entry.warehouseId, quantity: entry.quantity, unitCost: entry.unitCost, direction: entry.direction === "IN" ? "OUT" : "IN" })), reversalOfId: original._id, status: "DRAFT", createdBy: actorUserId, updatedBy: actorUserId }], { session });
     posted = await postTransactionInSession(companyId, fiscalYearId, reversal[0]._id, actorUserId, session, { isReversal: true });
     original.status = "REVERSED"; original.reversedById = posted._id; original.updatedBy = actorUserId; await original.save({ session });

@@ -560,7 +560,7 @@ function AccountingForm({
         <Flex justify="between" align="center">
           <div>
             <Text>Require transaction approval</Text>
-            <Text as="p" size="1" color="gray">Submitted vouchers must be approved before posting.</Text>
+            <Text as="p" size="1" color="gray">Submitted vouchers must be approved before they can be made regular.</Text>
           </div>
           <Switch
             checked={accounting.requireTransactionApproval}
