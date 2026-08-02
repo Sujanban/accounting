@@ -353,22 +353,18 @@ function AccountMenu() {
 
 function NavigationGroup({
   group,
+  hasActiveChild,
+  isOpen,
   onNavigate,
+  onToggle,
 }: {
   group: NavigationGroup;
+  hasActiveChild: boolean;
+  isOpen: boolean;
   onNavigate?: () => void;
+  onToggle: () => void;
 }) {
-  const location = useLocation();
-  const hasActiveChild = group.items.some(
-    ({ to }) =>
-      location.pathname === to || location.pathname.startsWith(`${to}/`),
-  );
-  const [isOpen, setIsOpen] = useState(hasActiveChild);
   const Icon = group.icon;
-
-  useEffect(() => {
-    if (hasActiveChild) setIsOpen(true);
-  }, [hasActiveChild]);
 
   return (
     <section className="nav-group">
@@ -376,7 +372,7 @@ function NavigationGroup({
         className={`nav-group__trigger ${hasActiveChild ? "nav-group__trigger--active" : ""}`}
         type="button"
         aria-expanded={isOpen}
-        onClick={() => setIsOpen((open) => !open)}
+        onClick={onToggle}
       >
         <Icon />
         <span>{group.label}</span>
@@ -404,7 +400,23 @@ function NavigationGroup({
   );
 }
 
-function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+  const location = useLocation();
+  const activeGroup = navigation.find((group) =>
+    group.items.some(
+      ({ to }) =>
+        location.pathname === to || location.pathname.startsWith(`${to}/`),
+    ),
+  );
+  const activeGroupLabel = activeGroup?.label ?? null;
+  const [openGroupLabel, setOpenGroupLabel] = useState<string | null>(
+    activeGroupLabel,
+  );
+
+  useEffect(() => {
+    setOpenGroupLabel(activeGroupLabel);
+  }, [activeGroupLabel]);
+
   return (
     <aside className="workspace-sidebar">
       <div className="workspace-sidebar__top">
@@ -430,8 +442,15 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         {navigation.map((group) => (
           <NavigationGroup
             group={group}
+            hasActiveChild={group.label === activeGroupLabel}
+            isOpen={group.label === openGroupLabel}
             key={group.label}
             onNavigate={onNavigate}
+            onToggle={() =>
+              setOpenGroupLabel((openLabel) =>
+                openLabel === group.label ? null : group.label,
+              )
+            }
           />
         ))}
       </nav>
