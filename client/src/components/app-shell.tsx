@@ -10,7 +10,7 @@ import {
   PersonIcon,
   PlusIcon,
 } from "@radix-ui/react-icons";
-import { Dialog, DropdownMenu } from "@radix-ui/themes";
+import { Dialog, DropdownMenu, Tooltip } from "@radix-ui/themes";
 import { useEffect, useState, type ComponentType } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -22,6 +22,12 @@ import {
 } from "react-router-dom";
 import { useAuth } from "../features/auth/auth-provider";
 import { notificationsApi } from "../features/notifications/notifications-api";
+import {
+  createVoucherShortcutHint,
+  createVoucherShortcutLabel,
+  createVoucherActions,
+  findCreateVoucherShortcut,
+} from "./create-voucher-shortcuts";
 
 type NavigationItem = { label: string; to: string };
 type NavigationGroup = {
@@ -127,16 +133,34 @@ const navigation: NavigationGroup[] = [
   },
 ];
 
-const createActions = [
-  { label: "Sales voucher", to: "/vouchers/sales/new" },
-  { label: "Purchase voucher", to: "/vouchers/purchase/new" },
-  { label: "Receipt voucher", to: "/vouchers/receipt/new" },
-  { label: "Payment voucher", to: "/vouchers/payment/new" },
-  { label: "Journal voucher", to: "/vouchers/journal/new" },
-];
-
 function CreateVoucherMenu() {
   const navigate = useNavigate();
+  const platform = window.navigator.platform;
+
+  useEffect(() => {
+    function handleShortcut(event: KeyboardEvent) {
+      const target = event.target;
+      const isEditing =
+        target instanceof Element &&
+        Boolean(
+          target.closest(
+            "input, textarea, select, [contenteditable]:not([contenteditable='false'])",
+          ),
+        );
+
+      if (event.defaultPrevented || isEditing) return;
+
+      const action = findCreateVoucherShortcut(event);
+      if (!action) return;
+
+      event.preventDefault();
+      navigate(action.to);
+    }
+
+    window.addEventListener("keydown", handleShortcut);
+    return () => window.removeEventListener("keydown", handleShortcut);
+  }, [navigate]);
+
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
@@ -158,21 +182,30 @@ function CreateVoucherMenu() {
         <DropdownMenu.Label>
           <span className="topbar-create-menu__identity">
             <strong>Create voucher</strong>
-            <small>Choose a voucher type</small>
+            <small>{createVoucherShortcutHint(platform)}</small>
           </span>
         </DropdownMenu.Label>
         <DropdownMenu.Separator />
-        {createActions.map(({ label, to }) => (
-          <DropdownMenu.Item
-            key={to}
-            onSelect={() => {
-              navigate(to);
-            }}
-          >
-            <FileTextIcon />
-            {label}
-          </DropdownMenu.Item>
-        ))}
+        {createVoucherActions.map(({ ariaShortcut, label, shortcut, to }) => {
+          const shortcutLabel = createVoucherShortcutLabel(shortcut, platform);
+          return (
+            <Tooltip
+              content={`${label} shortcut: ${shortcutLabel}`}
+              key={to}
+            >
+              <DropdownMenu.Item
+                aria-keyshortcuts={ariaShortcut}
+                shortcut={shortcutLabel}
+                onSelect={() => {
+                  navigate(to);
+                }}
+              >
+                <FileTextIcon />
+                {label}
+              </DropdownMenu.Item>
+            </Tooltip>
+          );
+        })}
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   );
