@@ -95,7 +95,7 @@ export type NegativeStock = { items: Array<{ productId: string; productName: str
 export type ExpenseTrend = { items: Array<{ month: string; amount: number }>; totals: { expenses: number } };
 export type SalesTrend = { items: Array<{ month: string; amount: number; voucherCount: number }>; totals: { amount: number; vouchers: number } };
 export type ContactStatement = {
-  contact: { id: string; contactCode: string; name: string; role: "CUSTOMER" | "SUPPLIER" };
+  contact: { id: string; name: string; role: "CUSTOMER" | "SUPPLIER" };
   ledger: { id: string; name: string };
   openingBalance: number;
   closingBalance: number;

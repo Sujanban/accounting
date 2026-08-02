@@ -1,5 +1,5 @@
 import { Card, Dialog, Flex, Heading, Text } from "@radix-ui/themes";
-import { Cross2Icon, Pencil1Icon, TrashIcon, UpdateIcon } from "@radix-ui/react-icons";
+import { ChevronDownIcon, Cross2Icon, Pencil1Icon, TrashIcon, UpdateIcon } from "@radix-ui/react-icons";
 import { useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { LoadingScreen } from "../../components/loading-screen";
@@ -167,7 +167,7 @@ function AddressFields({
   return (
     <fieldset className="contact-address-fields accounting-form__wide">
       <legend>{label}</legend>
-      <div className="contact-address-fields__grid">
+      <div className="contact-address-fields__grid accounting-form">
         <label>
           Address line 1
           <input placeholder="Street address" value={value.line1 ?? ""} onChange={(event) => update("line1", event.target.value)} />
@@ -271,7 +271,6 @@ function ContactForm({
   onCancel?: () => void;
 }) {
   const [form, setForm] = useState<ContactInput>(() => ({
-    contactCode: value?.contactCode ?? "",
     name: value?.name ?? "",
     displayName: value?.displayName ?? "",
     roles: value?.roles ?? ["CUSTOMER"],
@@ -289,23 +288,25 @@ function ContactForm({
     notes: value?.notes ?? "",
   }));
   const [roleToAdd, setRoleToAdd] = useState("");
+  const [taxRegistrationType, setTaxRegistrationType] = useState<"PAN" | "VAT">(
+    value?.vatNumber ? "VAT" : "PAN",
+  );
   const [showAdditionalInfo, setShowAdditionalInfo] = useState(false);
+  const contactGroups = useContactGroups();
   const paymentTerms = usePaymentTerms();
   return (
     <form
-      className="accounting-form"
+      className="contact-form"
       onSubmit={(event) => {
         event.preventDefault();
-        if (!form.name.trim() || !form.contactCode.trim() || !form.roles.length)
-          return;
+        if (!form.name.trim() || !form.roles.length) return;
         void onSubmit({
           ...form,
-          contactCode: form.contactCode.trim(),
           name: form.name.trim(),
           displayName: form.displayName?.trim() || null,
           contactGroupId: form.contactGroupId?.trim() || null,
-          panNumber: form.panNumber?.trim() || null,
-          vatNumber: form.vatNumber?.trim() || null,
+          panNumber: taxRegistrationType === "PAN" ? form.panNumber?.trim() || null : null,
+          vatNumber: taxRegistrationType === "VAT" ? form.vatNumber?.trim() || null : null,
           phone: form.phone?.trim() || null,
           mobile: form.mobile?.trim() || null,
           email: form.email?.trim() || null,
@@ -318,122 +319,148 @@ function ContactForm({
         });
       }}
     >
-      <label>
-        <span>Contact code<RequiredMark /></span>
-        <input
-          placeholder="CUS-001"
-          value={form.contactCode}
-          disabled={Boolean(value)}
-          onChange={(e) => setForm({ ...form, contactCode: e.target.value })}
-          required
-        />
-      </label>
-      <label>
-        <span>Name<RequiredMark /></span>
-        <input
-          placeholder="ABC Traders"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          required
-        />
-      </label>
-      <label>
-        <span>Roles<RequiredMark /></span>
-        <AppSelect
-          value={roleToAdd}
-          onChange={(e) => {
-            const role = e.target.value as ContactRole;
-            if (role && !form.roles.includes(role)) {
-              setForm({ ...form, roles: [...form.roles, role] });
-            }
-            setRoleToAdd("");
-          }}
-        >
-          <option value="">Select a role to add</option>
-          {roles.map((role) => (
-            <option value={role} key={role} disabled={form.roles.includes(role)}>
-              {role}
-            </option>
-          ))}
-        </AppSelect>
-        <span className="contact-role-list" aria-label="Selected roles">
-          {form.roles.map((role) => (
-            <span key={role} className="contact-role-chip">
-              {role}
-              <button
-                type="button"
-                className="contact-role-chip__remove"
-                onClick={() => setForm({ ...form, roles: form.roles.filter((item) => item !== role) })}
-                aria-label={`Remove ${role} role`}
-              >
-                <Cross2Icon aria-hidden="true" />
-              </button>
-            </span>
-          ))}
-        </span>
-      </label>
-      <label>
-        Display name
-        <input placeholder="Name used on invoices" value={form.displayName ?? ""} onChange={(e) => setForm({ ...form, displayName: e.target.value })} />
-      </label>
-      <label>
-        PAN number
-        <input placeholder="9-digit PAN" inputMode="numeric" maxLength={9} pattern="[0-9]{9}" value={form.panNumber ?? ""} onChange={(e) => setForm({ ...form, panNumber: e.target.value })} />
-      </label>
-      <label>
-        VAT number
-        <input placeholder="9-digit VAT number" inputMode="numeric" maxLength={9} pattern="[0-9]{9}" value={form.vatNumber ?? ""} onChange={(e) => setForm({ ...form, vatNumber: e.target.value })} />
-      </label>
-      <label>
-        Phone
-        <input placeholder="01-4000000" value={form.phone ?? ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-      </label>
-      <label>
-        Mobile
-        <input placeholder="98XXXXXXXX" value={form.mobile ?? ""} onChange={(e) => setForm({ ...form, mobile: e.target.value })} />
-      </label>
-      <label>
-        Email
-        <input type="email" placeholder="name@example.com" value={form.email ?? ""} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-      </label>
-      <label>
-        Website
-        <input type="url" placeholder="https://example.com" value={form.website ?? ""} onChange={(e) => setForm({ ...form, website: e.target.value })} />
-      </label>
-      <label>
-        Payment term
-        <AppSelect value={form.paymentTermId ?? ""} onChange={(e) => setForm({ ...form, paymentTermId: e.target.value || null })} disabled={paymentTerms.isLoading}>
-          <option value="">No payment term</option>
-          {paymentTerms.data?.map((term) => <option value={term.id} key={term.id}>{`${term.name} (${term.dueDays} days)`}</option>)}
-        </AppSelect>
-      </label>
-      <label>
-        Credit limit
-        <input type="number" min="0" placeholder="0.00" value={form.creditLimit ?? ""} onChange={(e) => setForm({ ...form, creditLimit: e.target.value === "" ? undefined : Number(e.target.value) })} />
-      </label>
-      <div className="accounting-form__wide contact-additional-info-toggle">
-        <Button type="button" variant="outline" onClick={() => setShowAdditionalInfo((visible) => !visible)} aria-expanded={showAdditionalInfo} aria-controls="party-additional-information">
-          {showAdditionalInfo ? "Hide addresses" : "Additional information"}
-        </Button>
-      </div>
-      {showAdditionalInfo ? (
-        <div id="party-additional-information" className="contact-additional-info accounting-form__wide">
-          <AddressFields label="Billing address" value={form.billingAddress ?? emptyAddress()} onChange={(billingAddress) => setForm({ ...form, billingAddress })} />
-          <AddressFields label="Shipping address" value={form.shippingAddress ?? emptyAddress()} onChange={(shippingAddress) => setForm({ ...form, shippingAddress })} />
+      <section className="contact-form__section" aria-labelledby="party-basic-details">
+        <div className="contact-form__section-heading">
+          <Heading as="h2" id="party-basic-details" size="4">Basic details</Heading>
+          <Text as="p" color="gray">Identify the party and how it is used in transactions.</Text>
         </div>
-      ) : null}
-      <label className="accounting-form__wide">
-        Notes
-        <textarea rows={2} placeholder="Add any internal notes" value={form.notes ?? ""} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-      </label>
-      <div className="accounting-form__actions accounting-form__wide">
+        <div className="accounting-form contact-form__grid">
+          <label>
+            <span>Name<RequiredMark /></span>
+            <input placeholder="ABC Traders" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+          </label>
+          <label>
+            Display name
+            <input placeholder="Name used on invoices" value={form.displayName ?? ""} onChange={(e) => setForm({ ...form, displayName: e.target.value })} />
+          </label>
+          <label>
+            Contact group
+            <AppSelect value={form.contactGroupId ?? ""} onChange={(e) => setForm({ ...form, contactGroupId: e.target.value || null })} disabled={contactGroups.isLoading}>
+              <option value="">No contact group</option>
+              {contactGroups.data?.map((group) => <option value={group.id} key={group.id}>{group.name}</option>)}
+            </AppSelect>
+          </label>
+          <label>
+            <span>Roles<RequiredMark /></span>
+            <AppSelect
+              value={roleToAdd}
+              onChange={(e) => {
+                const role = e.target.value as ContactRole;
+                if (role && !form.roles.includes(role)) setForm({ ...form, roles: [...form.roles, role] });
+                setRoleToAdd("");
+              }}
+            >
+              <option value="">Select a role to add</option>
+              {roles.map((role) => <option value={role} key={role} disabled={form.roles.includes(role)}>{role}</option>)}
+            </AppSelect>
+            <span className="contact-role-list" aria-label="Selected roles">
+              {form.roles.map((role) => (
+                <span key={role} className="contact-role-chip">
+                  {role}
+                  <button type="button" className="contact-role-chip__remove" onClick={() => setForm({ ...form, roles: form.roles.filter((item) => item !== role) })} aria-label={`Remove ${role} role`}>
+                    <Cross2Icon aria-hidden="true" />
+                  </button>
+                </span>
+              ))}
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <section className="contact-form__section" aria-labelledby="party-contact-details">
+        <div className="contact-form__section-heading">
+          <Heading as="h2" id="party-contact-details" size="4">Contact information</Heading>
+          <Text as="p" color="gray">Add the details your team uses to reach this party.</Text>
+        </div>
+        <div className="accounting-form contact-form__grid">
+          <label>Phone<input placeholder="01-4000000" value={form.phone ?? ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></label>
+          <label>Mobile<input placeholder="98XXXXXXXX" value={form.mobile ?? ""} onChange={(e) => setForm({ ...form, mobile: e.target.value })} /></label>
+          <label>Email<input type="email" placeholder="name@example.com" value={form.email ?? ""} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
+          <label>Website<input type="url" placeholder="https://example.com" value={form.website ?? ""} onChange={(e) => setForm({ ...form, website: e.target.value })} /></label>
+        </div>
+      </section>
+
+      <section className="contact-form__section" aria-labelledby="party-financial-details">
+        <div className="contact-form__section-heading">
+          <Heading as="h2" id="party-financial-details" size="4">Tax and payment details</Heading>
+          <Text as="p" color="gray">Optional information used for tax documents and credit control.</Text>
+        </div>
+        <div className="accounting-form contact-form__grid">
+          <div className="contact-tax-type">
+            <span>Registration type</span>
+            <div className="contact-tax-type__options" role="group" aria-label="Tax registration type">
+              {(["PAN", "VAT"] as const).map((type) => (
+                <button
+                  type="button"
+                  className={taxRegistrationType === type ? "is-selected" : undefined}
+                  aria-pressed={taxRegistrationType === type}
+                  key={type}
+                  onClick={() => setTaxRegistrationType(type)}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+          </div>
+          <label>
+            {taxRegistrationType} number
+            <input
+              placeholder={`9-digit ${taxRegistrationType}`}
+              inputMode="numeric"
+              maxLength={9}
+              pattern="[0-9]{9}"
+              value={taxRegistrationType === "PAN" ? form.panNumber ?? "" : form.vatNumber ?? ""}
+              onChange={(event) => setForm({ ...form, [taxRegistrationType === "PAN" ? "panNumber" : "vatNumber"]: event.target.value })}
+            />
+          </label>
+          <label>
+            Payment term
+            <AppSelect value={form.paymentTermId ?? ""} onChange={(e) => setForm({ ...form, paymentTermId: e.target.value || null })} disabled={paymentTerms.isLoading}>
+              <option value="">No payment term</option>
+              {paymentTerms.data?.map((term) => <option value={term.id} key={term.id}>{`${term.name} (${term.dueDays} days)`}</option>)}
+            </AppSelect>
+          </label>
+          <label>Credit limit<input type="number" min="0" placeholder="0.00" value={form.creditLimit ?? ""} onChange={(e) => setForm({ ...form, creditLimit: e.target.value === "" ? undefined : Number(e.target.value) })} /></label>
+        </div>
+      </section>
+
+      <section className="contact-form__section contact-form__section--collapsible">
+        <button type="button" className="contact-form__section-toggle" onClick={() => setShowAdditionalInfo((visible) => !visible)} aria-expanded={showAdditionalInfo} aria-controls="party-addresses">
+          <span>
+            <strong>Addresses</strong>
+            <small>Add billing and shipping details when needed.</small>
+          </span>
+          <ChevronDownIcon className={showAdditionalInfo ? "is-open" : undefined} aria-hidden="true" />
+        </button>
+        {showAdditionalInfo ? (
+          <div id="party-addresses" className="contact-additional-info">
+            <AddressFields label="Billing address" value={form.billingAddress ?? emptyAddress()} onChange={(billingAddress) => setForm({ ...form, billingAddress })} />
+            <AddressFields label="Shipping address" value={form.shippingAddress ?? emptyAddress()} onChange={(shippingAddress) => setForm({ ...form, shippingAddress })} />
+          </div>
+        ) : null}
+      </section>
+
+      <section className="contact-form__section" aria-labelledby="party-notes">
+        <div className="contact-form__section-heading">
+          <Heading as="h2" id="party-notes" size="4">Notes</Heading>
+          <Text as="p" color="gray">Keep internal context visible to your team.</Text>
+        </div>
+        <div className="accounting-form contact-form__grid">
+          <label className="accounting-form__wide">
+            Internal notes
+            <textarea rows={3} placeholder="Add any internal notes" value={form.notes ?? ""} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+          </label>
+        </div>
+      </section>
+
+      <div className="contact-form__actions">
         {onCancel ? (
           <Button type="button" variant="outline" className="contact-form__cancel" onClick={onCancel}>
             Cancel
           </Button>
         ) : null}
         <Button type="submit" loading={pending}>
-          {value ? "Save contact" : "Create contact"}
+          {value ? "Save party" : "Create party"}
         </Button>
       </div>
     </form>
@@ -491,7 +518,7 @@ function PartiesPage() {
             Search
             <input
               value={search}
-              placeholder="Name, code, phone"
+              placeholder="Name, phone, or mobile"
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
           </label>
@@ -540,7 +567,6 @@ function PartiesPage() {
                 <tr key={contact.id} className={contact.isActive ? undefined : "archived-party-row"}>
                   <td>
                     <strong>{contact.name}</strong>
-                    <span>{contact.contactCode}</span>
                   </td>
                   <td>{contact.roles.join(", ")}</td>
                   <td>
@@ -621,10 +647,10 @@ export function PartyCreatePage() {
   }
 
   return (
-    <Flex direction="column" gap="5">
+    <Flex direction="column" gap="5" className="contact-page">
       <Header title="Add party" description="Create a customer, supplier, or other reusable business contact." />
       <Status error={error} />
-      <Card size="3">
+      <Card size="3" className="contact-form-card">
         <ContactForm pending={create.isPending} onSubmit={save} onCancel={() => navigate("/masters/parties")} />
       </Card>
     </Flex>
@@ -641,8 +667,7 @@ export function PartyEditPage() {
   async function save(input: ContactInput) {
     if (!partyId) return;
     try {
-      const { contactCode: _contactCode, ...updateInput } = input;
-      await update.mutateAsync({ id: partyId, input: updateInput });
+      await update.mutateAsync({ id: partyId, input });
       navigate("/masters/parties", { replace: true });
     } catch (requestError) {
       setError(requestError);
@@ -650,13 +675,13 @@ export function PartyEditPage() {
   }
 
   return (
-    <Flex direction="column" gap="5">
+    <Flex direction="column" gap="5" className="contact-page">
       <Header title="Edit party" description="Update a reusable customer, supplier, or other business contact." />
       <Status error={error ?? contact.error} />
       <Content loading={contact.isLoading} error={contact.error}>
         {contact.data ? (
           <>
-            <Card size="3">
+            <Card size="3" className="contact-form-card">
               <ContactForm value={contact.data} pending={update.isPending} onSubmit={save} onCancel={() => navigate("/masters/parties")} />
             </Card>
             <AttachmentUploader entityType="contact" entityId={contact.data.id} />

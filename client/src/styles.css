@@ -1534,6 +1534,127 @@ input {
   gap: 0.65rem;
   margin-top: 0.35rem;
 }
+.contact-page {
+  width: min(100%, 70rem);
+  margin-inline: auto;
+}
+.contact-form-card {
+  overflow: hidden;
+  border-color: #d9e6e1;
+  box-shadow: 0 12px 34px rgb(19 50 46 / 0.055);
+}
+.contact-form {
+  display: grid;
+  gap: 1.5rem;
+}
+.contact-form__section {
+  display: grid;
+  gap: 1rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e2ebe8;
+}
+.contact-form__section-heading {
+  display: grid;
+  gap: 0.2rem;
+}
+.contact-form__section-heading h2 {
+  color: #173b4a;
+  letter-spacing: -0.015em;
+}
+.contact-form__section-heading p {
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+.contact-form__grid {
+  gap: 1rem 1.25rem;
+}
+.contact-form__section--collapsible {
+  gap: 1.15rem;
+}
+.contact-form__section-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 0;
+  padding: 0;
+  color: #173b4a;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.contact-form__section-toggle > span {
+  display: grid;
+  gap: 0.2rem;
+}
+.contact-form__section-toggle strong {
+  font-size: 1rem;
+  letter-spacing: -0.015em;
+}
+.contact-form__section-toggle small {
+  color: #71837f;
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+.contact-form__section-toggle > svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: none;
+  color: #617872;
+  transition: transform 150ms ease;
+}
+.contact-form__section-toggle > svg.is-open {
+  transform: rotate(180deg);
+}
+.contact-form__section-toggle:focus-visible {
+  border-radius: 0.35rem;
+  outline: 3px solid rgb(17 128 102 / 0.2);
+  outline-offset: 5px;
+}
+.contact-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+.contact-tax-type {
+  display: grid;
+  gap: 0.38rem;
+  color: #415854;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+.contact-tax-type__options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  border: 1px solid #cfded8;
+  border-radius: 0.55rem;
+  padding: 0.2rem;
+  background: #f4f8f6;
+}
+.contact-tax-type__options button {
+  min-height: 2.25rem;
+  border: 0;
+  border-radius: 0.4rem;
+  color: #60736e;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.contact-tax-type__options button:hover {
+  color: #12614e;
+}
+.contact-tax-type__options button.is-selected {
+  color: #0b664f;
+  background: #fff;
+  box-shadow: 0 1px 4px rgb(18 72 58 / 0.12);
+}
+.contact-tax-type__options button:focus-visible {
+  outline: 3px solid rgb(17 128 102 / 0.2);
+  outline-offset: 1px;
+}
 .form-required-mark {
   color: #b42318;
 }
@@ -1575,9 +1696,10 @@ input {
 }
 .contact-address-fields {
   margin: 0;
-  border: 1px solid #cfded8;
-  border-radius: 0.55rem;
-  padding: 0.85rem;
+  border: 1px solid #d7e4df;
+  border-radius: 0.7rem;
+  padding: 1rem;
+  background: #fbfdfc;
 }
 .contact-address-fields legend {
   padding: 0 0.3rem;
@@ -1590,16 +1712,10 @@ input {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
 }
-.contact-additional-info-toggle {
-  display: flex;
-  justify-content: flex-start;
-}
 .contact-additional-info {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
-  border-top: 1px solid #dbe7e2;
-  padding-top: 1rem;
 }
 .contact-additional-info .accounting-form__wide {
   grid-column: 1 / -1;
@@ -1996,6 +2112,13 @@ input {
   }
   .contact-additional-info .accounting-form__wide {
     grid-column: auto;
+  }
+  .contact-form__actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+  .contact-form__actions > .app-button {
+    width: 100%;
   }
   .accounting-form__actions {
     justify-content: stretch;

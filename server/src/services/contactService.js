@@ -19,7 +19,6 @@ function mapContact(contact) {
   return {
     id: contact._id,
     companyId: contact.companyId,
-    contactCode: contact.contactCode,
     name: contact.name,
     displayName: contact.displayName,
     roles: contact.roles,
@@ -62,7 +61,7 @@ async function listContacts(companyId, query = {}) {
   if (query.contactGroupId) filters.contactGroupId = query.contactGroupId;
   if (query.search) {
     const search = new RegExp(escapeRegex(String(query.search).slice(0, 100)), "i");
-    filters.$or = [{ name: search }, { displayName: search }, { contactCode: search }, { phone: search }, { mobile: search }];
+    filters.$or = [{ name: search }, { displayName: search }, { phone: search }, { mobile: search }];
   }
   const [contacts, total] = await Promise.all([
     Contact.find(filters).sort({ name: 1, _id: 1 }).skip((page - 1) * limit).limit(limit).lean(),
@@ -85,7 +84,6 @@ async function createContact(companyId, payload) {
   const contact = await Contact.create({
     ...payload,
     companyId,
-    contactCode: payload.contactCode.trim().toUpperCase(),
     name: payload.name.trim(),
     displayName: payload.displayName ? payload.displayName.trim() : null,
     email: payload.email ? payload.email.trim().toLowerCase() : null,
@@ -106,6 +104,8 @@ async function updateContact(companyId, contactId, payload) {
   if (payload.name) contact.name = payload.name.trim();
   if (payload.displayName !== undefined) contact.displayName = payload.displayName ? payload.displayName.trim() : null;
   if (payload.email !== undefined) contact.email = payload.email ? payload.email.trim().toLowerCase() : null;
+  if (payload.panNumber) contact.vatNumber = null;
+  if (payload.vatNumber) contact.panNumber = null;
   if (payload.creditLimit !== undefined) contact.creditLimit = Number(payload.creditLimit);
   contact.updatedBy = payload.actorUserId;
   await contact.save();

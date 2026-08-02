@@ -16,7 +16,6 @@ export type ContactRole =
   | "OTHER";
 export type Contact = {
   id: string;
-  contactCode: string;
   name: string;
   displayName: string | null;
   roles: ContactRole[];
@@ -90,7 +89,6 @@ export type Product = {
 export type PaginatedMasters<T> = { items: T[]; meta: { page: number; limit: number; total: number; totalPages: number; hasNextPage: boolean } };
 
 export type ContactInput = {
-  contactCode: string;
   name: string;
   displayName?: string | null;
   roles: ContactRole[];

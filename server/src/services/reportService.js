@@ -348,7 +348,7 @@ async function getSalesTrend(companyId, fiscalYearId, query) {
 
 async function getContactStatement(companyId, fiscalYearId, query, role) {
   const contact = await Contact.findOne({ _id: query.contactId, companyId, isActive: true })
-    .select("contactCode name displayName roles")
+    .select("name displayName roles")
     .lean();
   if (!contact) throw new ApiError(404, "Contact was not found.");
   if (!contact.roles.includes(role)) throw new ApiError(422, `The contact is not a ${role.toLowerCase()}.`);
@@ -389,7 +389,7 @@ async function getContactStatement(companyId, fiscalYearId, query, role) {
   });
   const total = entries.length;
   return {
-    contact: { id: contact._id, contactCode: contact.contactCode, name: contact.displayName || contact.name, role },
+    contact: { id: contact._id, name: contact.displayName || contact.name, role },
     ledger: { id: ledger._id, name: ledger.name },
     openingBalance,
     entries: entries.slice((value - 1) * limit, value * limit),

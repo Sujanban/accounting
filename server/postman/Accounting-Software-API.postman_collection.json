@@ -359,7 +359,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{ \"contactCode\": \"CUS-001\", \"name\": \"Example Customer\", \"roles\": [\"CUSTOMER\"], \"mobile\": \"9800000000\" }"
+              "raw": "{ \"name\": \"Example Customer\", \"roles\": [\"CUSTOMER\"], \"mobile\": \"9800000000\" }"
             },
             "url": "{{baseUrl}}/api/contacts"
           }

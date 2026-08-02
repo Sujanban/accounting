@@ -238,7 +238,6 @@ Future roles may be added.
 ## Fields
 
 - companyId
-- contactCode
 - name
 - displayName
 - roles[]
@@ -700,8 +699,6 @@ Contacts
 
 companyId
 
-contactCode
-
 name
 
 roles
@@ -803,8 +800,6 @@ POST /price-lists
 # Validation
 
 Contacts
-
-Unique contact code
 
 Valid PAN
 

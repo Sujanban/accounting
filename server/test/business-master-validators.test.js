@@ -5,7 +5,6 @@ const { validateCreateContact, validateCatalogUpdate, validateContactLedgerMappi
 
 test("validateCreateContact rejects a malformed contact group ID", () => {
   const errors = validateCreateContact({
-    contactCode: "CUS-001",
     name: "Example Customer",
     roles: ["CUSTOMER"],
     contactGroupId: "Corrupti in qui aut"
@@ -18,13 +17,37 @@ test("validateCreateContact rejects a malformed contact group ID", () => {
 
 test("validateCreateContact accepts a valid contact group ID", () => {
   const errors = validateCreateContact({
-    contactCode: "CUS-001",
     name: "Example Customer",
     roles: ["CUSTOMER"],
     contactGroupId: "507f1f77bcf86cd799439011"
   });
 
   assert.deepEqual(errors, []);
+});
+
+test("validateCreateContact rejects the removed contact code field", () => {
+  const errors = validateCreateContact({
+    contactCode: "CUS-001",
+    name: "Example Customer",
+    roles: ["CUSTOMER"]
+  });
+
+  assert.deepEqual(errors, [
+    { field: "contactCode", message: "This field cannot be modified." }
+  ]);
+});
+
+test("validateCreateContact accepts only one tax registration number", () => {
+  const errors = validateCreateContact({
+    name: "Example Customer",
+    roles: ["CUSTOMER"],
+    panNumber: "123456789",
+    vatNumber: "987654321"
+  });
+
+  assert.deepEqual(errors, [
+    { field: "vatNumber", message: "Provide either a PAN number or VAT number, not both." }
+  ]);
 });
 
 test("contact ledger mappings accept only a statement role and ledger identifier", () => {
