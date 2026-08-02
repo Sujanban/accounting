@@ -59,6 +59,7 @@ import {
   useCatalogPage,
 } from "./use-masters";
 import { mastersApi } from "./masters-api";
+import { buildCatalogCreateInput } from "./catalog-form";
 
 const roles: ContactRole[] = [
   "CUSTOMER",
@@ -907,27 +908,7 @@ function Catalog<T extends { id: string; isActive: boolean }>({
             {form((event) => {
               event.preventDefault();
               const formData = new FormData(event.currentTarget);
-              const input: Record<string, unknown> = Object.fromEntries(formData);
-              for (const key of [
-                "parentId",
-                "categoryId",
-                "taxId",
-                "barcode",
-                "description",
-              ])
-                if (input[key] === "") delete input[key];
-              for (const key of [
-                "percentage",
-                "dueDays",
-                "purchasePrice",
-                "sellingPrice",
-                "reorderLevel",
-                "minimumStock",
-              ])
-                if (input[key] !== undefined) input[key] = Number(input[key]);
-              input.decimalAllowed = formData.get("decimalAllowed") === "true";
-              input.isService = formData.get("isService") === "true";
-              input.isDefault = formData.get("isDefault") === "true";
+              const input = buildCatalogCreateInput(formData);
               void (async () => {
                 try {
                   await create.mutateAsync(input);
